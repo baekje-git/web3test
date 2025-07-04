@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k01.main.inspector">
+
+    <select id="selectScheduleMonth" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+     /* k01.main.inspector.selectScheduleMonth - 검사관일정(도핑검사(KADAMS,adtis),교육) */
+    
+        SELECT   'KADAMS' AS TYPE  
+                ,'도핑검사(KADAMS)' AS TYPE_NM
+                ,T1.IPNT_DATE||T1.IPNT_TIME AS START_DATE    
+                ,T1.IPNT_DONE_DATE AS DONE_DATE            
+                ,SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',1,2)-1) AS TITLE
+                ,T1.IPNT_NAME AS TITLE2
+                ,TO_CHAR(T1.IPNT_UPPER_SEQ) AS SEQ
+                ,T1.IPNT_NO AS NO
+                ,SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',1,2)-1) AS AREA
+                ,'DCO:'||(NVL(T1.IPNT_DCO,0)+NVL(T1.IPNT_DCO_F,0))||'(남:'||NVL(T1.IPNT_DCO,0)||' 여:'||NVL(T1.IPNT_DCO_F,0)||'),BCO:'||TO_CHAR(NVL(T1.IPNT_BCO,0)) AS CHOOSE_DESC
+                ,CASE WHEN TO_CHAR(SYSDATE,'YYYYMMDD') <= T1.IPNT_DONE_DATE THEN '진행중'
+                    ELSE '마감'
+                END AS STATUS             
+                ,T2.CHOOSE_BCO_YN
+                ,T2.CHOOSE_DCO_YN
+                ,T2.CHOOSE_DCOBCO_YN
+                ,T2.PREDECESSOR_YN
+                ,T2.CHAPERON_YN                        
+                ,T2.CHOOSE_CHAPERON_YN  
+        FROM    K03_DOPING_INSPECT_REG T1
+        LEFT OUTER JOIN K03_DOPING_INSPECT_DCO T2 ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ AND T2.USER_ID = #{USER_ID}
+        WHERE T1.CHOOSE_DONE_YN != 'Y'          
+        UNION ALL
+        SELECT   'ADTIS'
+                ,'도핑검사(adtis)' AS TYPE_NM
+                ,T1.IPNT_DATE||T1.IPNT_TIME AS START_DATE
+                ,T1.IPNT_DONE_DATE AS DONE_DATE
+                ,SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',1,2)-1) AS TITLE
+                ,T1.IPNT_NAME AS TITLE2
+                ,TO_CHAR(T1.IPNT_UPPER_SEQ) AS SEQ
+                ,T1.IPNT_NO AS NO
+                ,SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',1,2)-1)
+                ,'DCO:'||(NVL(T1.IPNT_DCO,0)+NVL(T1.IPNT_DCO_F,0))||'(남:'||NVL(T1.IPNT_DCO,0)||' 여:'||NVL(T1.IPNT_DCO_F,0)||'),BCO:'||TO_CHAR(NVL(T1.IPNT_BCO,0))
+                ,CASE WHEN TO_CHAR(SYSDATE,'YYYYMMDD') <= T1.IPNT_DONE_DATE THEN '진행중'
+                    ELSE '마감'
+                END AS STATUS
+                ,T2.CHOOSE_BCO_YN
+                ,T2.CHOOSE_DCO_YN
+                ,T2.CHOOSE_DCOBCO_YN
+                ,T2.PREDECESSOR_YN
+                ,T2.CHAPERON_YN                        
+                ,T2.CHOOSE_CHAPERON_YN
+        FROM    IPNT01TB T1
+        LEFT OUTER JOIN IPNT07TB T2 ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ AND T2.USER_ID = #{USER_ID}
+        WHERE T1.CHOOSE_DONE_YN != 'Y'          
+        UNION ALL
+        SELECT   'EDU'   
+                ,'교육' AS TYPE_CODE
+                ,T1.EDNT_DATE||T1.EDNT_TIME AS START_DATE
+                ,T1.EDNT_DONE_DATE
+                ,T1.EDNT_NAME AS TITLE
+                ,T1.EDNT_NAME AS TITLE2
+                ,T1.EDNT_NO
+                ,T1.EDNT_NO
+                ,T1.EDNT_PLACE_DETAIL
+                ,'강사:'||NVL(T1.EDNT_TEACHER_COUNT,0)||',학생:'||NVL(T1.EDNT_STUDENT_COUNT,0)
+                ,CASE WHEN TO_CHAR(SYSDATE,'YYYYMMDD') <= T1.EDNT_DONE_DATE THEN '진행중'
+                    ELSE '마감'
+                END AS STATUS
+                ,NULL AS CHOOSE_BCO_YN
+                ,NULL AS CHOOSE_DCO_YN
+                ,NULL AS CHOOSE_DCOBCO_YN
+                ,NULL AS PREDECESSOR_YN
+                ,NULL AS CHAPERON_YN                        
+                ,NULL AS CHOOSE_CHAPERON_YN
+        FROM    EDNT01TB T1  
+        WHERE 1=2 /* 임시로 교육 제외 */
+    ]]>               
+    </select>
+    
+</mapper>
+ 

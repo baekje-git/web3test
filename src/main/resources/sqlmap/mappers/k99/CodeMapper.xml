@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.code">
+    
+    <select id="selectCodeMst" parameterType="HashMap" resultType="HashMap" >
+     /* k99.code.selectCodeMst (CodeMapper.xml) */
+     SELECT * 
+       FROM K99_CODE_MST T
+      WHERE 1=1
+      <if test="MST_CODE != null and MST_CODE != ''">
+       AND T.MST_CODE = #{MST_CODE}
+      </if> 
+      <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+        AND  (MST_CODE LIKE '%'||#{CONDITION_TEXT}||'%' OR  CODE_NAME LIKE  '%'||#{CONDITION_TEXT}||'%')
+      </if> 
+      ORDER BY T.SORT_ORDER
+    </select>
+    
+    <insert id="insertCodeMst" parameterType="HashMap">
+    /* k99.code.insertCodeMst (CodeMapper.xml) */
+        INSERT INTO K99_CODE_MST (
+            CODE_NAME,
+            MST_CODE,
+            OPTION1,
+            OPTION2,
+            OPTION3,
+            OPTION4,
+            OPTION5,
+            REG_DATE,
+            REG_USER,
+            EDT_DATE,
+            EDT_USER,  
+            SORT_ORDER,                   
+            USE_YN 
+        ) VALUES (
+            #{CODE_NAME},
+            #{MST_CODE},
+            #{OPTION1},
+            #{OPTION2},
+            #{OPTION3},
+            #{OPTION4},
+            #{OPTION5},
+            SYSDATE,
+            #{REG_USER},
+            SYSDATE,
+            #{EDT_USER},
+            #{SORT_ORDER},                     
+            #{USE_YN} 
+        )
+    </insert>
+    
+    <update id="updateCodeMst" parameterType="HashMap">
+    /* k99.code.updateCodeMst (CodeMapper.xml) */
+        UPDATE K99_CODE_MST
+          SET  CODE_NAME = #{CODE_NAME},                     
+               OPTION1 = #{OPTION1},
+               OPTION2 = #{OPTION2},
+               OPTION3 = #{OPTION3},
+               OPTION4 = #{OPTION4},
+               OPTION5 = #{OPTION5},
+               EDT_DATE = SYSDATE,
+               EDT_USER = #{EDT_USER},
+               SORT_ORDER = #{SORT_ORDER},    
+               USE_YN = #{USE_YN}
+         WHERE MST_CODE = #{MST_CODE}    
+    </update>
+    
+    <select id="selectCodeDtl" parameterType="HashMap" resultType="HashMap">
+    /* k99.code.selectCodeDtl (CodeMapper.xml) */
+     SELECT T.CODE_NAME,
+            T.DTL_CODE,
+            T.EDT_DATE,
+            T.EDT_USER,    
+            T.MST_CODE,
+            T.OPTION1,
+            T.OPTION2,
+            T.OPTION3,
+            T.OPTION4,
+            T.OPTION5,
+            T.OPTION6,
+            T.OPTION7,
+            T.OPTION8,
+            T.OPTION9,
+            T.REG_DATE,
+            T.REG_USER,
+            T.SORT_ORDER,
+            T.USE_YN 
+       FROM K99_CODE_DTL T
+      WHERE T.MST_CODE = #{MST_CODE}
+      <if test="USE_YN != null and USE_YN != ''">
+        AND USE_YN = #{USE_YN}
+      </if>
+      <if test="OPTION1 != null and OPTION1 != ''">
+        AND  OPTION1 = #{OPTION1}
+      </if>    
+      <if test="OPTION2 != null and OPTION2 != ''">
+        AND  OPTION2 = #{OPTION2}
+      </if>
+      <if test="OPTION3 != null and OPTION3 != ''">
+        AND  OPTION3 = #{OPTION3}
+      </if>
+      <if test="OPTION4 != null and OPTION4 != ''">
+        AND  OPTION4 = #{OPTION4}
+      </if>
+      <if test="OPTION5 != null and OPTION5 != ''">
+        AND  OPTION5 = #{OPTION5}
+      </if>
+      <if test="OPTION6 != null and OPTION6 != ''">
+        AND  OPTION6 = #{OPTION6}
+      </if>
+      <if test="OPTION7 != null and OPTION7 != ''">
+        AND  OPTION7 = #{OPTION7}
+      </if>
+      <if test="OPTION8 != null and OPTION8 != ''">
+        AND  OPTION8 = #{OPTION8}
+      </if>
+      <if test="OPTION9 != null and OPTION9 != ''">
+        AND  OPTION9 = #{OPTION9}
+      </if>
+      
+      
+   ORDER BY T.SORT_ORDER
+    </select>
+    
+    <insert id="insertCodeDetail" parameterType="HashMap">
+    /* k99.code.insertCodeDetail (CodeMapper.xml) */
+    
+        INSERT INTO K99_CODE_DTL (
+            DTL_CODE,
+            CODE_NAME,
+            MST_CODE,
+            OPTION1,
+            OPTION2,
+            OPTION3,
+            OPTION4,
+            OPTION5,
+            OPTION6,
+            OPTION7,
+            OPTION8,
+            OPTION9,
+            REG_DATE,
+            REG_USER,
+            EDT_DATE,
+            EDT_USER,  
+            SORT_ORDER,                   
+            USE_YN 
+        ) VALUES (
+            #{DTL_CODE},
+            #{CODE_NAME},
+            #{MST_CODE},
+            #{OPTION1},
+            #{OPTION2},
+            #{OPTION3},
+            #{OPTION4},
+            #{OPTION5},
+            #{OPTION6},
+            #{OPTION7},
+            #{OPTION8},
+            #{OPTION9},
+            SYSDATE,
+            #{REG_USER},
+            SYSDATE,
+            #{EDT_USER},
+            #{SORT_ORDER},                     
+            #{USE_YN} 
+        )
+    </insert>
+    
+    <update id="updateCodeDetail" parameterType="HashMap">
+    /* k99.code.updateCodeDetail (CodeMapper.xml) */
+    
+        UPDATE K99_CODE_DTL
+          SET  CODE_NAME = #{CODE_NAME},                     
+               OPTION1 = #{OPTION1},
+               OPTION2 = #{OPTION2},
+               OPTION3 = #{OPTION3},
+               OPTION4 = #{OPTION4},
+               OPTION5 = #{OPTION5},
+               OPTION6 = #{OPTION6},
+               OPTION7 = #{OPTION7},
+               OPTION8 = #{OPTION8},
+               OPTION9 = #{OPTION9},
+               EDT_DATE = SYSDATE,
+               EDT_USER = #{EDT_USER},
+               SORT_ORDER = #{SORT_ORDER},    
+               USE_YN = #{USE_YN}
+         WHERE MST_CODE = #{MST_CODE}
+           AND DTL_CODE = #{DTL_CODE}    
+    </update>
+    
+    <delete id="deleteCodeDetail" parameterType="HashMap">
+    /* k99.code.deleteCodeDetail (CodeMapper.xml) */
+    
+        DELETE FROM K99_CODE_DTL
+         WHERE MST_CODE = #{MST_CODE}
+           AND DTL_CODE = #{DTL_CODE}   
+    </delete>
+    
+    <select id="getCodeList" parameterType="HashMap" resultType="HashMap">
+        /* k99.code.getCodeList - 도핑검사공지 및 신청 : 선수등록 */
+    
+		 SELECT T.CODE_NAME,
+	            T.DTL_CODE,
+	            T.EDT_DATE,
+	            T.EDT_USER,    
+	            T.MST_CODE,
+	            T.OPTION1,
+	            T.OPTION2,
+	            T.OPTION3,
+	            T.OPTION4,
+	            T.OPTION5,
+	            T.OPTION6,
+	            T.OPTION7,	            
+	            T.REG_DATE,
+	            T.REG_USER,
+	            T.SORT_ORDER,
+	            T.USE_YN 
+		   FROM K99_CODE_DTL T
+		  WHERE 1=1	
+		    AND T.USE_YN = 'Y'	
+		    AND T.MST_CODE IN
+		<foreach collection="MST_CODE" item="item"  open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+		ORDER BY T.MST_CODE,T.SORT_ORDER    
+    </select>
+    
+    <select id="selectInstruction" parameterType="HashMap" resultType="HashMap">
+         /* k99.code.selectInstruction - 지시사항 */
+    
+		 /*
+		 SELECT 0 AS CODE, '선택' AS CODE_NAME
+		   FROM DUAL
+		 UNION ALL
+		 SELECT 1 AS CODE, 'ICT' AS CODE_NAME
+		   FROM DUAL
+		 UNION ALL
+		 SELECT 2 AS CODE, 'OOCT' AS CODE_NAME
+		   FROM DUAL
+		 UNION ALL
+		 SELECT 3 AS CODE, 'RTP' AS CODE_NAME
+		   FROM DUAL
+		 UNION ALL
+		 SELECT 4 AS CODE, '프로' AS CODE_NAME
+		   FROM DUAL
+		 UNION ALL
+		 SELECT 5 AS CODE, '표적' AS CODE_NAME
+		   FROM DUAL
+		 */      
+		 
+		 /*SELECT 4 AS CODE, '프로' AS CODE_NAME
+           FROM DUAL */
+           
+         SELECT A.CODE,
+                A.CODE_NAME
+	        FROM
+		        ( SELECT 0 AS CODE, '선택' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		        SELECT 1 AS CODE, 'ICT' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 2 AS CODE, 'OOCT' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 3 AS CODE, 'RTP' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 4 AS CODE, '프로' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 5 AS CODE, '표적' AS CODE_NAME
+		           FROM DUAL) A
+           LEFT OUTER JOIN (SELECT T.CODE,        
+							       T.USE_YN
+							 FROM K99_INDICATION T
+							 LEFT OUTER JOIN USER01TB U1 ON U1.USER_ID = T.REG_USER
+							 LEFT OUTER JOIN USER01TB U2 ON U2.USER_ID = T.EDT_USER) B ON A.CODE = B.CODE
+		 WHERE B.USE_YN = 'Y'
+		 ORDER BY A.CODE 
+           
+    </select>
+    
+    <select id="selectAppVersion" parameterType="HashMap" resultType="HashMap">
+       /* k99.code.selectAppVersion - 앱버전 */
+    
+		SELECT *
+		 FROM K99_CODE_MST T
+		 WHERE T.MST_CODE = 'APP_VERSION'    
+    </select>
+    
+    <update id="updateAppVersion" parameterType="HashMap">
+        /* k99.code.updateAppVersion - 앱버전 저장 */
+        
+        UPDATE K99_CODE_MST
+           SET OPTION1 = #{OPTION1}
+         WHERE MST_CODE = 'APP_VERSION'
+    </update>
+    
+    <select id="selectEventCode" parameterType="HashMap" resultType="HashMap">
+    /* k99.code.selectEventCode - 종목코드  */
+     SELECT T.CODE_NAME,
+            T.DTL_CODE,
+            T.EDT_DATE,
+            T.EDT_USER,    
+            T.MST_CODE,
+            T.OPTION1,
+            T.OPTION2,
+            T.OPTION3,
+            T.OPTION4,
+            T.OPTION5,
+            T.OPTION6,
+            T.OPTION7,
+            T.OPTION8,
+            T.OPTION9,
+            T.REG_DATE,
+            T.REG_USER,
+            T.SORT_ORDER,
+            T.USE_YN 
+       FROM K99_CODE_DTL T
+      WHERE T.MST_CODE = 'EVENT_CODE'
+        AND T.OPTION6 = 'KADAMS' /* 프로종목 지정 */ 
+   ORDER BY T.SORT_ORDER
+    </select>
+    
+</mapper>

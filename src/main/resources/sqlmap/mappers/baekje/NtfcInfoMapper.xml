@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="ntfctInfo">
+    <select id="selectNtfctInfoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ntfctInfo.selectNtfctInfoList 고시정보 조회*/
+        SELECT A.BRCH_CD
+             , C.BRCH_SNM
+             , B.BOHUM_CD
+             , F_S_MASTER('MAKER', B.MAKER_CD, 'NM') AS MAKER_NM
+             , A.ITEM_CD
+             , B.ITEM_NM || ' ' || B.UNIT ITEM_NM_UNIT
+             , A.APPLY_DT
+             , A.REG_DT
+             , A.CHG_DT
+             , A.IP_OLD
+             , A.WP2_OLD
+             , A.BP_OLD
+             , A.BP1_OLD
+             , A.BP2_OLD
+             , A.PRICE_OLD
+             , A.MIN_WP2_AMT_OLD
+             , A.IP_NEW
+             , A.WP2_NEW
+             , A.BP_NEW
+             , A.BP1_NEW
+             , A.BP2_NEW
+             , A.PRICE_NEW
+             , A.MIN_WP2_AMT_NEW
+             , ROUND(A.PRICE_CHG_PCT, 2) AS PRICE_CHG_PCT
+             , ROUND(A.BOHUM_CHG_PCT, 2) AS BOHUM_CHG_PCT
+             , CASE WHEN A.CAN_BRCH_YN = 'T'   THEN 'Y'
+                     WHEN A.CAN_BRCH_YN = 'F'   THEN 'N'
+                     WHEN A.CAN_BRCH_YN = ''    THEN 'N'
+                     WHEN A.CAN_BRCH_YN IS NULL THEN 'N'
+                     ELSE A.CAN_BRCH_YN
+               END AS CAN_BRCH_YN
+             , A.PRICE_NEW - A.PRICE_OLD PRICE_DIFF
+             , A.WP2_NEW - A.WP2_OLD WP2_DIFF
+             ,(A.PRICE_NEW - A.PRICE_OLD) PRICE_NEW_DIFF
+             , ROUND(CASE WHEN A.WP2_OLD = 0 THEN 0
+                            ELSE 100.0*(A.WP2_NEW-A.WP2_OLD)/A.WP2_OLD END, 2) AS WP2_CHG_PCT
+             , B.BOHUM_UNIT_QTY
+             , CASE WHEN B.SUBDIV_YN = 'Y' THEN '소분' ELSE '' END AS SUBDIV_YN
+             , CASE WHEN B.FORBID_YN = 'Y' THEN '금지' ELSE '' END AS FORBID_YN
+             , CASE WHEN D.USE_YN    = 'Y' THEN '사용' ELSE '' END AS USE_YN
+             , A.CHUL_QTY
+             , SUBSTRING(CASE WHEN B.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+             , SUBSTRING(COALESCE(E.CD_NM,''), 1, 1) AS MED_NM
+          FROM T_ITEM_BOHUM A
+         INNER JOIN T_ITEM B
+            ON B.ITEM_CD = A.ITEM_CD
+            AND B.SUBDIV_YN = 'N'
+         INNER JOIN T_BRANCH C
+            ON C.BRCH_CD = A.BRCH_CD
+         INNER JOIN T_ITEM_STOCK D
+            ON D.BRCH_CD = A.BRCH_CD
+           AND D.ITEM_CD = A.ITEM_CD
+           AND D.USE_YN = 'Y'
+          LEFT OUTER JOIN T_CODE E
+            ON E.P_CODE = '101'
+           AND E.CODE = B.MED_CD
+         WHERE 1 = 1   
+         AND A.CHG_DT BETWEEN TO_CHAR(CURRENT DATE + 1 DAY,'YYYYMMDD') AND TO_CHAR(LAST_DAY(CURRENT DATE + 1 MONTH),'YYYYMMDD')
+        <!--  AND A.BRCH_CD LIKE F_S_EMPTY(#{brchCd}, '')|| '%'-->
+           AND A.BRCH_CD = F_S_BRCH(#{brchCd},'P')
+        <!--  <if test="keyword != null and keyword != ''">
+           AND (B.BOHUM_CD = #{bohumCd} OR
+                B.ITEM_NM LIKE #{itemNm}
+               )
+        </if>-->
+         <if test="itemNm != null and itemNm !=''">
+            <bind name="itemNm" value='"%" + itemNm + "%"'/>
+            AND B.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test="bohumCd != null and bohumCd !=''">
+            <bind name="bohumCd" value='"%" + bohumCd + "%"'/>
+            AND B.BOHUM_CD LIKE #{bohumCd}
+        </if>
+        
+        <if test="makerNm != null and makerNm !=''">
+            <bind name="makerNm" value='"%" + makerNm + "%"'/>
+                AND F_S_MASTER('MAKER', B.MAKER_CD, 'NM') LIKE #{makerNm}
+        </if>
+        <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
+           AND A.CHG_DT BETWEEN #{startDt} AND #{endDt}
+        </if>
+         ORDER BY C.SORT_NO, A.BRCH_CD, B.BOHUM_CD, B.ITEM_NM, B.UNIT
+    </select>
+</mapper>

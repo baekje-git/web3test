@@ -1,0 +1,390 @@
+td[class*="td-"] {
+  cursor: pointer;
+  line-height: 1;
+}
+
+td[class*="td-"]:not(.td-multi, .td-price, [class*="td-comp"]) {
+  >div:not(.q-table_item, .table_widearea, .td-prd_name) {
+    width: inherit;
+    margin: 0 auto;
+  }
+
+  .itemSearch_input {
+    width: 100%;
+    height: 24px;
+  }
+}
+
+//품목명
+.td-prd_name {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+}
+
+//품목
+.td-prd {
+  width: 38%;
+  min-width: 260px;
+  max-width: 600px;
+
+  &:has(.q-table_badge_wrap) .td-prd_name {
+    width: calc(100% - 94px);
+  }
+
+  &:has(.table_widearea) .td-prd_name {
+    width: calc(100% - 42px);
+  }
+}
+
+//품목 - 장바구니
+.td-prd_cart {
+  width: 50%;
+  min-width: 150px;
+
+  .td-prd_name {
+    display: inline;
+  }
+
+  >div {
+    width: 100% !important;
+  }
+
+  &:has(.table_widearea) .td-prd_name {
+    width: calc(100% - 42px);
+  }
+}
+
+//규격
+.td-unit {
+  width: 104px;
+
+  >div {
+    line-height: 1;
+    white-space: normal;
+    word-break: break-all;
+  }
+}
+
+//제약회사
+.td-comp,
+.td-comp_cart,
+.td-comp_int,
+.td-comp_dtl {
+  padding-right: 0 !important;
+  width: 10%;
+  max-width: 126px;
+
+  >div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.td-comp_dtl {
+  min-width: 96px;
+
+  >div {
+    // overflow: visible;
+    // text-overflow: initial;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1;
+  }
+}
+
+.td-comp_cart {
+  max-width: 126px;
+}
+
+[class*="td-comp"]+.td-prd {
+  padding-left: 12px !important;
+}
+
+//단가
+.td-price {
+  width: 70px;
+
+  .q-table_number {
+    float: right;
+    width: 100%;
+    min-width: 56px;
+    border-radius: 0;
+    border: none;
+
+    .q-field__native {
+      border: 1px solid $line-400;
+    }
+  }
+}
+
+//재고
+.td-inven {
+  width: 60px;
+}
+
+//수량
+.td-qty {
+  width: 64px;
+}
+
+//반품가능 수량
+.td-qty_limit {
+  width: 64px;
+}
+
+//반품, 담기, 수정, 메모, 인수증, 잔고확인, 광역, 회수사유
+.td-return,
+.td-add,
+.td-edit,
+.td-memo,
+.td-insu,
+.td-sign,
+.td-dlv,
+.td-note {
+  width: 40px;
+}
+
+//이력, 관심, 삭제
+.td-hist,
+.td-wish,
+.td-del {
+  padding: 0 !important;
+  width: 30px;
+  text-align: center;
+
+  >div {
+    line-height: 1em;
+    cursor: pointer;
+  }
+
+  img {
+    vertical-align: middle;
+  }
+}
+
+//보험코드
+.td-code {
+  width: 85px;
+}
+
+//주문일자
+.td-date {
+  width: 80px;
+}
+
+//제조번호
+.td-serial {
+  width: 80px;
+}
+
+//유효기간
+.td-exp {
+  width: 80px;
+}
+
+//그룹명
+.td-grp {
+  width: 40%;
+  min-width: 100px;
+  font-weight: 600;
+
+  p {
+    white-space: normal;
+    word-break: break-all;
+  }
+}
+
+//월평균 사용량
+.td-use_month {
+  width: 100px;
+}
+
+//전전월, 전월, 당월
+.td-ord_mnt {
+  width: 70px;
+}
+
+//품목수
+.td-count {
+  width: 50px;
+}
+
+//진행현황
+.td-exam {
+  width: 70px;
+}
+
+//회수확인서, 소품반품라벨
+.td-label,
+.td-detail {
+  width: 65px;
+}
+
+//박스라벨
+.td-label_box {
+  width: 90px;
+}
+
+//반품요청서
+.td-print {
+  width: 65px;
+}
+
+//반품취소
+.td-cncl {
+  width: 70px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+//검수결과
+.td-exam_rslt {
+  width: 60px;
+}
+
+//종류
+.td-type {
+  width: 60px;
+}
+
+//구분
+.td-cate {
+  width: 60px;
+}
+
+//주문서 종류
+.td-type_ord {
+  width: 80px;
+}
+
+//승인번호
+.td-aprv_no {
+  width: 80px;
+}
+
+//표준코드
+.td-code_st {
+  width: 120px;
+}
+
+//변동가, 변동율
+.td-vari {
+  width: 70px;
+}
+
+//보험약가, 변경 전, 변경 후
+.td-price_insu {
+  width: 100px;
+}
+
+//순번
+.td-num {
+  width: 50px;
+}
+
+//작성자
+.td-writer {
+  width: 110px;
+}
+
+//제목
+.td-tit {
+  width: 55%;
+  min-width: 200px;
+  max-width: 400px;
+
+  >div {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+//급여
+.td-pay {
+  width: 40px;
+}
+
+.td-add,
+.td-edit,
+.td-hist,
+.td-wish,
+.td-del {
+  >div {
+    display: inline-block;
+  }
+}
+
+@media screen and (max-width: 1770px) {
+  .td-unit {
+    width: 84px;
+  }
+
+  .td-comp {
+    width: 76px;
+  }
+
+  .td-comp_cart {
+    width: 66px;
+  }
+
+  .td-comp_int {
+    width: 86px;
+  }
+
+  .td-price {
+    width: 60px;
+  }
+
+  .td-inven {
+    width: 50px;
+  }
+}
+
+@media screen and (max-width: 1600px) {
+  .td-prd {
+    max-width: 400px;
+  }
+
+  .td-prd_name {
+    width: 100% !important;
+  }
+
+  .td-comp,
+  .td-comp_int {
+    max-width: 106px;
+  }
+
+  .td-comp_cart {
+    max-width: 96px;
+  }
+}
+
+@media screen and (max-width: 830px) {}
+
+@media screen and (min-width: 1800px) and (max-width: 2199px) {
+
+  .td-comp,
+  .td-comp_int {
+    max-width: 116px;
+  }
+
+  .td-unit {
+    padding-right: 10px !important;
+  }
+}
+
+@media screen and (min-width: 2200px) {
+
+  .td-comp,
+  .td-comp_int {
+    max-width: 226px;
+  }
+
+  .td-unit {
+    width: 120px;
+    padding-right: 26px !important;
+  }
+}

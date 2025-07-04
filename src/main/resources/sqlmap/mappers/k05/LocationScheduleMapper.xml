@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.LocationSchedule">
+    <select id="selectPlayerLocationScheduleList" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+      /* k05.LocationSchedule.selectPlayerLocationScheduleList - 소재지관리일정조회(마이페이지)*/
+    SELECT B.*                    
+      FROM (
+       SELECT SEQ	         
+	        , A.START_DT
+	        , A.END_DT        
+	        , A.LOCATION_CD
+	        , F_CODE_NM('LOCATION_CD',A.LOCATION_CD) LOCATION_CD_NM    
+	        , A.CLUB_GROUP
+            , F_CODE_NM_USE_Y('CLUB_GROUP',A.CLUB_GROUP) AS CLUB_GROUP_NM    
+	        , A.LOCATION_NM
+	        , A.LOCATION_ADDRESS
+	        , A.LOCATION_X
+            , A.LOCATION_Y
+	        , A.REG_DATE
+	        , A.REG_USER
+	        , D.USER_NAME REG_USER_NAME
+	        , '' AS CHK	   
+	        , A.PLAYER_ID     
+	     FROM K03_PLAYER_LOC_SCHEDULE A	          
+	     LEFT OUTER JOIN USER01TB D
+	       ON D.USER_ID =A.REG_USER
+	    WHERE 1=1 
+	      AND A.PLAYER_ID IS NULL
+	    ]]>
+	    <if test="CLUB_CODE != null and CLUB_CODE != ''">
+	     AND A.CLUB_CODE = #{CLUB_CODE}
+	    </if>	    
+	     AND A.START_DT BETWEEN #{START_DATE}||'0000' AND TO_CHAR(TO_DATE(#{END_DATE},'YYYYMMDD')+1,'YYYYMMDD')||'0000' ) B
+	  WHERE 1=1    
+	     <if test="CONDITION_CODE != null and CONDITION_CODE != ''">
+            <choose>
+                <when test="CONDITION_CODE == 'club_group'">
+                    AND B.CLUB_GROUP_NM LIKE  '%'||#{CONDITION_TEXT}||'%'  
+                </when>             
+                <when test="CONDITION_CODE == 'reg_user'">
+                    AND B.REG_USER_NAME LIKE  '%'||#{CONDITION_TEXT}||'%'  
+                </when>
+                <when test="CONDITION_CODE == 'location_nm'">
+                    AND B.LOCATION_NM LIKE  '%'||#{CONDITION_TEXT}||'%'  
+                </when>
+            </choose> 
+        </if>
+	    ORDER BY B.START_DT DESC, B.END_DT,B.PLAYER_ID 
+    </select>
+    
+    <insert id="insertK03_CLUB_LOC_SCHEDULE" parameterType="HashMap" >
+       /* k05.LocationSchedule.insertK03_CLUB_LOC_SCHEDULE 구단일정 입력 */
+    
+	    INSERT INTO K03_PLAYER_LOC_SCHEDULE ( 
+		       SEQ		     
+		     , START_DT
+		     , END_DT	     
+		     , LOCATION_CD
+		     , CLUB_GROUP
+		     , LOCATION_NM
+		     , LOCATION_ADDRESS
+		     , LOCATION_X
+		     , LOCATION_Y
+		     , SCHEDULE_MEMO
+		     , PRO_ORGZ
+		     , CLUB_CODE
+		     , REG_USER
+		     , REG_DATE
+	     ) VALUES(
+	           SEQ_SCHEDULE.NEXTVAL
+		     , #{START_DT}||#{START_DT2} 
+		     , #{END_DT}||#{END_DT2} 
+		     , #{LOCATION_CD} 
+		     , #{CLUB_GROUP}
+		     , #{LOCATION_NM} 
+		     , #{LOCATION_ADDRESS} 
+		     , #{LOCATION_X}
+		     , #{LOCATION_Y}
+		     , #{SCHEDULE_MEMO} 
+		     , #{PRO_ORGZ}
+		     , #{CLUB_CODE}
+		     , #{GSS.USER_ID}
+		     , SYSDATE
+	    )
+    </insert>
+    
+    <update id="updateK03_CLUB_LOC_SCHEDULE" parameterType="HashMap">
+       /* k05.LocationSchedule.updateK03_CLUB_LOC_SCHEDULE 구단일정 수정 */
+        
+        UPDATE K03_PLAYER_LOC_SCHEDULE
+           SET START_DT = #{START_DT}
+             , END_DT = #{END_DT}       
+             , LOCATION_CD = #{LOCATION_CD} 
+             , CLUB_GROUP = #{CLUB_GROUP}
+             , LOCATION_NM = #{LOCATION_NM} 
+             , LOCATION_ADDRESS = #{LOCATION_ADDRESS}
+             , LOCATION_X = #{LOCATION_X}
+             , LOCATION_Y = #{LOCATION_Y}
+             , SCHEDULE_MEMO = #{SCHEDULE_MEMO}
+             , EDT_USER = #{GSS.USER_ID}
+             , EDT_DATE = SYSDATE
+         WHERE SEQ = #{SEQ}
+    </update>
+    
+    <delete id="deleteK03_CLUB_LOC_SCHEDULE" parameterType="HashMap">
+        /* k05.LocationSchedule.deleteK03_CLUB_LOC_SCHEDULE 구단일정 삭제 */
+        
+        DELETE FROM K03_PLAYER_LOC_SCHEDULE
+         WHERE SEQ = #{SEQ}
+    </delete>
+  
+  <select id="selectTermCheckByClub" parameterType="HashMap" resultType="HashMap">
+  <![CDATA[
+     /* k05.LocationSchedule.selectTermCheckByClub 일정을 검증 */
+     
+	 SELECT SUBSTR(A.START_DT,1,8) AS START_DT,
+	        SUBSTR(A.START_DT,9) AS START_DT2,
+	        SUBSTR(A.END_DT,1,8) AS END_DT,
+	        SUBSTR(A.END_DT,9) AS END_DT2,
+	        A.LOCATION_CD,
+	        A.LOCATION_NM,
+	        A.LOCATION_ADDRESS,
+	        A.LOCATION_X,
+            A.LOCATION_Y,
+	        A.SCHEDULE_MEMO
+	   FROM K03_PLAYER_LOC_SCHEDULE A
+	  WHERE A.CLUB_CODE = #{CLUB_CODE} 
+	    AND A.PLAYER_ID IS NULL
+	    AND A.START_DT < #{END_DT}||#{END_DT2}
+	    AND A.END_DT > #{START_DT}||#{START_DT2}
+	]]>   
+	<if test="SEQ != null and SEQ != ''">
+         AND A.SEQ != #{SEQ}
+    </if> 
+    
+  </select>
+  
+  <delete id="deletePLAYER_LOC_SCHE_ERR" parameterType="HashMap">
+    DELETE FROM K03_PLAYER_LOC_SCH_ERR
+     WHERE REG_USER = #{GSS.USER_ID}
+  </delete>
+  
+  <select id="selectClubCode" parameterType="HashMap" resultType="HashMap">
+	  SELECT USER_ID,
+	         USER_FLAG,
+	         PRO_ORGZ,
+	         CLUB_CODE
+	    FROM USER01TB U	    
+	   WHERE U.USER_ID = #{USER_ID}	   
+  </select>
+  
+  <insert id="insertCLUB_LOC_SCHE_ERR" parameterType="HashMap">
+       /* LocationScheduleMapper.xml - k05.LocationSchedule.insertCLUB_LOC_SCHE_ERR 엑셀데이터 오류저장 */
+    
+        INSERT INTO K03_PLAYER_LOC_SCH_ERR (
+	           NO
+	         , GUBUN
+	         , START_DT
+	         , END_DT        
+	         , LOCATION_CD
+	         , LOCATION_NM
+	         , LOCATION_ADDRESS
+	         , SCHEDULE_MEMO
+	         , REG_USER
+	         , REG_DATE
+	         , PRO_ORGZ
+	         , CLUB_CODE
+	         , ERR_REASON
+         ) VALUES(
+	           #{NO}
+	         , #{GUBUN}
+	         , #{START_DT}||#{START_DT2} 
+	         , #{END_DT}||#{END_DT2} 
+	         , #{LOCATION_CD} 
+	         , #{LOCATION_NM} 
+	         , #{LOCATION_ADDRESS} 
+	         , #{SCHEDULE_MEMO} 
+	         , #{GSS.USER_ID}
+	         , SYSDATE
+	         , #{PRO_ORGZ}
+	         , #{CLUB_CODE}
+	         , #{ERR_REASON}
+       )
+  </insert>
+  
+  <select id="selectUploadError" parameterType="HashMap" resultType="HashMap">
+  <![CDATA[
+     /* LocationScheduleMapper.xml - k05.LocationSchedule.selectUploadError 일정이 충돌난 데이터를 출력 */
+     
+	 SELECT DECODE(A.GUBUN,'1','업로드','2','충돌대상',NULL) AS GUBUN,
+	        A.ERR_REASON,
+	        A.START_DT,
+	        A.END_DT,
+	        A.LOCATION_CD,
+	        F_CODE_NM('LOCATION_CD',A.LOCATION_CD) AS LOCATION_CD_NM,
+	        A.LOCATION_NM,
+	        A.LOCATION_ADDRESS,
+	        A.SCHEDULE_MEMO,
+	        U2.USER_NAME AS REG_USER_NAME
+	   FROM K03_PLAYER_LOC_SCH_ERR A
+	   LEFT OUTER JOIN USER01TB U2 ON A.REG_USER = U2.USER_ID  
+	  WHERE A.REG_USER = #{USER_ID}
+	  ORDER BY NO     
+  ]]>
+  </select>
+  
+  <select id="selectLocationScheduleByPK" parameterType="HashMap" resultType="HashMap">
+      /* k05.LocationSchedule.selectLocationScheduleByPK - 소재지관리일정조회-상세*/
+    
+         SELECT SUBSTR(A.START_DT,1,8) AS START_DT,
+                SUBSTR(A.END_DT,1,8) AS END_DT,
+		        SUBSTR(A.START_DT,1,8) AS SCH_DT,
+                SUBSTR(A.START_DT,9) AS START_TIME,
+                SUBSTR(A.END_DT,9) AS END_TIME,
+		        A.LOCATION_CD,
+		        F_CODE_NM('LOCATION_CD',A.LOCATION_CD) AS LOCATION_CD_NM,
+		        A.CLUB_GROUP,
+                F_CODE_NM('CLUB_GROUP',A.CLUB_GROUP) AS CLUB_GROUP_NM,
+		        A.LOCATION_NM,
+		        A.LOCATION_ADDRESS,
+		        A.LOCATION_X,
+                A.LOCATION_Y,
+		        A.SCHEDULE_MEMO,
+		        A.PRO_ORGZ,		        
+		        A.CLUB_CODE,
+		        TO_CHAR(A.REG_DATE,'YYYY-MM-DD AM hh:mm:ss') AS REG_DATE,               
+                TO_CHAR(A.EDT_DATE,'YYYY-MM-DD AM hh:mm:ss') AS EDT_DATE
+		 FROM K03_PLAYER_LOC_SCHEDULE A
+		WHERE A.SEQ = #{SEQ}
+  </select>
+  
+  <select id="selectRepeatLocationScheduleCheck" parameterType="HashMap" resultType="HashMap">
+  <![CDATA[
+      /* k05.LocationSchedule.selectRepeatLocationScheduleCheck - 반복일정 오류 체크 */
+      
+		SELECT M.START_DT,
+		       M.END_DT,
+		       N.DT_START,
+		       N.DT_END,
+		       SUBSTR(N.DT_START,1,8) AS ERR_DT
+		FROM (SELECT A.START_DT,
+		             A.END_DT
+		       FROM K03_PLAYER_LOC_SCHEDULE A
+		      WHERE A.CLUB_CODE = #{CLUB_CODE}
+		        AND A.PLAYER_ID IS NULL) M,               
+		     (SELECT A.*
+		        FROM (  SELECT TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1),'YYYYMMDD')||#{REPEAT_START_TIME} AS DT_START,
+		                       TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1),'YYYYMMDD')||#{REPEAT_END_TIME} AS DT_END
+		                  FROM DUAL
+		               CONNECT BY LEVEL <= TO_DATE(#{REPEAT_END_DT},'YYYYMMDD') - TO_DATE(#{REPEAT_START_DT},'YYYYMMDD') + 1 ) A                          
+		            WHERE 1=1
+	]]>	                         
+		            <if test="EXCEPT_DT!=null  and !EXCEPT_DT.isEmpty()">
+                    AND SUBSTR(A.DT_START,1,8) != ALL <foreach collection="EXCEPT_DT" item="item"  open="(" close=")" separator=",">TRIM(#{item})</foreach>
+                   </if> 
+	<![CDATA[	            
+		     ) N
+		WHERE M.START_DT < N.DT_END
+		  AND M.END_DT > N.DT_START                  
+    ]]>
+  </select>
+  
+  <update id="insertRepeatLocationSchedule" parameterType="HashMap">
+  <![CDATA[
+      /* k05.LocationSchedule.insertRepeatLocationSchedule - 반복일정 입력 */
+      
+      INSERT INTO K03_PLAYER_LOC_SCHEDULE ( 
+               SEQ           
+             , START_DT
+             , END_DT        
+             , LOCATION_CD
+             , CLUB_GROUP
+             , LOCATION_NM
+             , LOCATION_ADDRESS
+             , LOCATION_X
+             , LOCATION_Y
+             , SCHEDULE_MEMO
+             , PRO_ORGZ
+             , CLUB_CODE
+             , REG_USER
+             , REG_DATE
+      )  
+      SELECT SEQ_SCHEDULE.NEXTVAL, A.*
+      FROM (  SELECT TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1),'YYYYMMDD')||#{REPEAT_START_TIME} AS DT_START,
+			         TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1*DECODE(#{LOCATION_CD},'HM',0,1)),'YYYYMMDD')||#{REPEAT_END_TIME} AS DT_END,
+			         #{LOCATION_CD} AS LOCATION_CD,
+		             #{CLUB_GROUP} AS CLUB_GROUP,
+		             #{LOCATION_NM}  AS LOCATION_NM,
+		             #{LOCATION_ADDRESS} AS LOCATION_ADDRESS,
+		             #{LOCATION_X} AS LOCATION_X,
+		             #{LOCATION_Y} AS LOCATION_Y,
+		             #{SCHEDULE_MEMO} AS SCHEDULE_MEMO,
+		             #{PRO_ORGZ} PRO_ORGZ,
+		             #{CLUB_CODE} AS CLUB_CODE,
+		             #{GSS.USER_ID} AS REG_USER,
+		             SYSDATE AS REG_DATE
+			   FROM DUAL
+			   CONNECT BY LEVEL <= TO_DATE(#{REPEAT_END_DT},'YYYYMMDD') - TO_DATE(#{REPEAT_START_DT},'YYYYMMDD') + 1*DECODE(#{LOCATION_CD},'HM',0,1) ) A			   
+  ]]>
+    WHERE 1=1
+    <if test="EXCEPT_DT!=null  and !EXCEPT_DT.isEmpty()">
+    AND SUBSTR(A.DT_START,1,8) != ALL <foreach collection="EXCEPT_DT" item="item"  open="(" close=")" separator=",">TRIM(#{item})</foreach>
+    </if>    
+  </update>
+  
+</mapper>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.inspectpay">
+    <select id="selectDopingInspectPay" parameterType="HashMap" resultType="HashMap">
+            /* InspectPayMapper.xml - InspectPay.vue - selectDopingInspectPay  도핑검사지급수당조회(마이페이지)*/
+        <![CDATA[
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT	T.IPNT_UPPER_SEQ
+                                ,T.IPNT_NO
+                                ,T.IPNT_NAME
+                                ,T.IPNT_PLACE_DETAIL
+                                , SUBSTR(T.IPNT_PLACE_DETAIL,1,INSTR(T.IPNT_PLACE_DETAIL,' ',1,2)) IPNT_PLACE_DETAIL_SHOT
+                                ,T.IPNT_DATE
+                                ,T.IPNT_TIME
+                                , T.IPNT_DATE ||' ' ||T.IPNT_TIME AS IPNT_DATETIME
+                                ,T.CONFIRM_STATUS
+                                ,T.CONFIRM_STATUS_NAME
+                                ,T.CONFIRM_DATE
+                                ,T.EXTRA_PAY
+                                ,T.TRIP_PAY
+                                ,T.TOTAL_PAY
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                , 1 AS CURR_PAGE
+                                , 1000000 AS PER_PAGE
+                        FROM	(
+                                SELECT	T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_ADDRESS AS IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T2.CONFIRM_STATUS
+                                        ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'CONFIRM_STATUS' AND DTL_CODE = T2.CONFIRM_STATUS) AS CONFIRM_STATUS_NAME
+                                        ,TO_CHAR(T2.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CONFIRM_DATE
+                                        ,NVL(T3.EXTRA_PAY, 0) AS EXTRA_PAY
+                                        ,NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TRIP_PAY
+                                        ,NVL(T3.EXTRA_PAY, 0) + NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TOTAL_PAY
+                                FROM	K03_DOPING_INSPECT_REG T1
+                                        ,K03_DOPING_INSPECT_ING_MST T2
+                                        ,K03_DOPING_INSPECT_PAY T3
+                                WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND		T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND		T3.USER_ID = #{USER_ID}
+                                ) T
+		                WHERE   1 = 1
+        ]]>
+        <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+            AND   T.IPNT_DATE BETWEEN replace(#{START_DATE},'-','') AND replace(#{END_DATE},'-','')
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+            AND   T.IPNT_NAME LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+            AND   T.IPNT_PLACE_DETAIL LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        </if>
+        <![CDATA[
+						ORDER BY T.IPNT_DATE || T.IPNT_TIME
+                		) A
+        ]]>
+    </select>
+    
+    <select id="selectEduInspectPay" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+         /* InspectPayMapper.xml - InspectPay.vue selectEduInspectPay - 교육홍보지급수당조회(마이페이지) */ 
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT	T.EDNT_NO
+                                ,T.EDNT_NAME
+                                ,T.EDNT_PLACE_DETAIL
+                                ,T.EDNT_DATE
+                                ,T.EDNT_TIME
+                                ,T.CONFIRM_STATUS
+                                ,T.CONFIRM_STATUS_NAME
+                                ,T.CONFIRM_DATE
+                                ,T.EXTRA_PAY
+                                ,T.TRIP_PAY
+                                ,T.TOTAL_PAY
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                        FROM	(
+                                SELECT	T1.EDNT_NO
+                                        ,T1.EDNT_NAME
+                                        ,T1.EDNT_PLACE_DETAIL
+                                        ,T1.EDNT_DATE
+                                        ,T1.EDNT_TIME
+                                        ,T2.CONFIRM_STATUS
+                                        ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CONFIRM_STATUS' AND DTL_CODE = T2.CONFIRM_STATUS) AS CONFIRM_STATUS_NAME
+                                        ,TO_CHAR(T2.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CONFIRM_DATE
+                                        ,NVL(T3.EXTRA_PAY, 0) EXTRA_PAY
+                                        ,NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TRIP_PAY
+                                        ,NVL(T3.EXTRA_PAY, 0) + NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TOTAL_PAY
+                                FROM	EDNT01TB T1
+                                        ,EDCF01TB T2
+                                        ,EDCF02TB T3
+                                WHERE	T1.EDNT_NO = T2.EDNT_NO
+                                AND		T1.EDNT_NO = T3.EDNT_NO
+                                AND		T3.USER_ID = #{USER_ID}
+                                ) T
+		                WHERE   1 = 1
+        ]]>
+        <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+            AND   T.EDNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   T.EDNT_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   T.EDNT_PLACE_DETAIL LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <![CDATA[
+						ORDER BY T.EDNT_DATE || T.EDNT_TIME
+                		) A
+        ]]>
+    </select>
+</mapper>

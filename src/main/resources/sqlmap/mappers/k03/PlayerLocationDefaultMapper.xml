@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.playerlocationdefault">
+
+    <select id="selectPlayerInfo" resultType="HashMap">
+        <![CDATA[
+    /* k03.playerlocationdefault.selectPlayerInfo - 선수 조회 */
+    SELECT A.USER_ID
+          , A.USER_NAME AS PLAYER_NAME 
+          , A.USER_EN_NAME AS PLAYER_EN_NAME
+          , A.USER_SEX AS PLAYER_SEX
+          , E.CODE_NAME AS PLAYER_SEX_NM /* 성별*/
+          , A.PLAYER_NO
+          , A.PRO_ORGZ
+          , B.CODE_NAME AS PRO_ORGZ_NM  /*소속협회명칭*/
+          , A.CLUB_CODE
+          , F.CODE_NAME AS CLUB_CODE_NM  /*소속구단명칭*/
+          , A.BIRTH_DT                   /*생년월일*/
+          , A.LOGIN_ID 
+          , B.OPTION8 EVENT_CODE    /*종목코드*/
+          , C.CODE_NAME AS SPORTS   /*종목명*/
+          , B.OPTION9 EVENT_DET_CODE /*세부종목코드*/
+          , D.CODE_NAME DISCIPLINE  /*세부종목명*/
+       FROM USER01TB A
+       LEFT OUTER JOIN K99_CODE_DTL B  /*소속협회*/
+         ON B.MST_CODE ='PRO_ORGZ'
+        AND B.DTL_CODE = A.PRO_ORGZ
+       LEFT OUTER JOIN K99_CODE_DTL C /*종목코드*/
+         ON C.MST_CODE ='EVENT_CODE'
+        AND C.DTL_CODE=B.OPTION8
+       LEFT OUTER JOIN K99_CODE_DTL D  /*세부종목코드*/
+         ON D.MST_CODE ='EVENT_DET_CODE'
+        AND D.DTL_CODE=B.OPTION9
+       LEFT OUTER JOIN K99_CODE_DTL E  /*세부종목코드*/
+         ON E.MST_CODE ='SEX_CODE'
+        AND E.DTL_CODE=A.USER_SEX
+       LEFT OUTER JOIN K99_CODE_DTL F  /*구단정보*/
+         ON F.MST_CODE =A.PRO_ORGZ
+        AND F.DTL_CODE=A.CLUB_CODE
+      WHERE 1=1
+        AND A.USER_FLAG ='P' 
+      ]]>
+        <if test="PLAYER_SEARCH_KIND != null and PLAYER_SEARCH_KIND != '' and PLAYER_SEARCH_KIND == 'NAME'">
+			            AND  A.USER_NAME LIKE '%'||#{CONDITION_TEXT}||'%' 
+        </if>
+			        <if test="PLAYER_SEARCH_KIND != null and PLAYER_SEARCH_KIND != '' and PLAYER_SEARCH_KIND == 'USERID'">
+			            AND  A.USER_ID LIKE '%'||#{CONDITION_TEXT}||'%' 
+	        		</if>
+	        		
+      ORDER BY A.USER_NAME, B.CODE_NAME, F.CODE_NAME, A.BIRTH_DT  /* 선수명, 소속협회명 , 구단명, 생일  */
+                         
+    </select>
+    
+    <select id="selectPlayerWhereAboutsVal" resultType="HashMap">
+    /* k03.playerlocationdefault.selectPlayerWhereAboutsVal - 소재지정보불이행관리리스트 조회 */
+        <![CDATA[
+        SELECT  C.* FROM (
+        SELECT  FLOOR((ROWNUM - 1) / 100000 + 1) AS PAGE
+                ,B.*
+        FROM    (
+                SELECT  ROWNUM AS LIST_SEQUENCE
+                        ,A.*
+                FROM    (
+				        SELECT  T1.SEQ,
+                                T1.TYPE,
+                                (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'WHEREABOUTS_TYPE' AND DTL_CODE = T1.TYPE) AS TYPE_NAME,
+                                T1.ABOUT_DATE,
+                                T1.ABOUT_NOTICE_DATE,
+                                        T1.ABOUT_END_DATE,
+                                        T1.REPLY_DATE,
+                                        T1.REPLY_NOTICE_DATE,
+                                        T1.REPLY_END_DATE,
+                                        T1.JUDGE_CLAIM_DATE,
+                                        T1.JUDGE_NOTICE_DATE,
+                                        T1.FAILURE_REG_DATE,
+                                        T1.PLAYER_NO,
+                                        T2.USER_SEX AS PLAYER_SEX,
+                                        T3.OPTION8 AS EVENT_CODE,                                    
+                                        (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T3.OPTION8) AS EVENT_NAME,
+                                        NVL((SELECT OPTION3 FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T3.OPTION8),'') AS EVENT_KR_NAME,
+                                        T3.OPTION9 AS EVENT_DET_CODE,
+                                        (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T3.OPTION9) AS EVENT_DET_NAME,
+                                        T2.USER_NAME AS PLAYER_NAME,
+                                        T2.USER_ID AS ADAMS_ID,
+                                        COUNT(1) OVER() AS ALL_COUNT,
+                                        1 AS CURR_PAGE,
+                                        100000 AS PER_PAGE
+					     FROM K03_PLAYER_WHEREABOUTS T1 
+					     LEFT OUTER JOIN USER01TB T2 
+					       ON T1.PLAYER_NO = T2.PLAYER_NO
+					     LEFT OUTER JOIN K99_CODE_DTL T3
+					       ON T3.MST_CODE='PRO_ORGZ'
+					      AND T3.DTL_CODE= T2.PRO_ORGZ
+				        WHERE   1=1
+				        ]]> 
+				         <if test="EVENT_CODE != null and EVENT_CODE != ''">
+                            AND  T3.OPTION8 = #{EVENT_CODE}
+                         </if>
+                         <if test="EVENT_DET_CODE != null and EVENT_DET_CODE != ''">
+                            AND  T3.OPTION9 = #{EVENT_DET_CODE}
+                         </if>
+                         <if test="TYPE != null and TYPE != ''">
+                            AND  T1.TYPE = #{TYPE}
+                         </if>
+                         <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'PLAYER_NAME'">
+                           AND   UPPER(T2.PLAYER_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                         </if>
+                         <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'ADAMS_ID'">
+                           AND   UPPER(T2.USER_ID) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                         </if>
+                        <![CDATA[
+                        ORDER   BY T1.SEQ DESC
+                        ) A
+                ) B
+        ) C
+        WHERE   C.PAGE = 1
+        ]]>
+    </select>
+    
+    <select id="selectPlayerWhereAboutsValDetail" resultType="HashMap">
+    /* k03.playerlocationdefault.selectPlayerWhereAboutsValDetail - 소재지정보불이행관리상세 조회 */
+        <![CDATA[
+    SELECT  T1.SEQ,
+                                T1.TYPE,
+                                (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'WHEREABOUTS_TYPE' AND DTL_CODE = T1.TYPE) AS TYPE_NAME,
+                                T1.ABOUT_DATE,
+                                T1.ABOUT_NOTICE_DATE,
+                                        T1.ABOUT_END_DATE,
+                                        T1.REPLY_DATE,
+                                        T1.REPLY_NOTICE_DATE,
+                                        T1.REPLY_END_DATE,
+                                        T1.JUDGE_CLAIM_DATE,
+                                        T1.JUDGE_NOTICE_DATE,
+                                        T1.FAILURE_REG_DATE,
+                                        T1.PLAYER_NO, 
+                                        T2.USER_SEX AS PLAYER_SEX,
+                                        T3.OPTION8 AS EVENT_CODE,                                    
+                                        (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T3.OPTION8) AS EVENT_NAME,
+                                        NVL((SELECT OPTION3 FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T3.OPTION8),'') AS EVENT_KR_NAME,
+                                        T3.OPTION9 AS EVENT_DET_CODE,
+                                        (SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T3.OPTION9) AS EVENT_DET_NAME,
+                                        T2.USER_NAME AS PLAYER_NAME,
+                                        T2.USER_ID AS ADAMS_ID,
+                                        COUNT(1) OVER() AS ALL_COUNT
+					     FROM K03_PLAYER_WHEREABOUTS T1 
+					     LEFT OUTER JOIN USER01TB T2 
+					       ON T1.PLAYER_NO = T2.PLAYER_NO
+					     LEFT OUTER JOIN K99_CODE_DTL T3
+					       ON T3.MST_CODE='PRO_ORGZ'
+					      AND T3.DTL_CODE= T2.PRO_ORGZ
+				        WHERE   1=1 
+				          and   T1.SEQ =#{SEQ} 
+                          and   T1.PLAYER_NO =#{PLAYER_NO}
+                        ORDER   BY T1.SEQ DESC
+    ]]>
+    </select>
+
+     <select id="selectPlayerLocationDefaultSequence" resultType="Integer">
+        /* (PlayerLocationDefaultMapper.xml) - k03.playerlocationdefault.selectPlayerLocationDefaultSequence.소재지위반등록 시퀀스조회 */
+        <![CDATA[
+        SELECT  NVL(MAX(T1.SEQ), 0) + 1 AS SEQ 
+        FROM    K03_PLAYER_WHEREABOUTS T1
+        ]]>
+    </select>
+    
+    <select id="selectDateAddGep" resultType="HashMap">
+        /* (PlayerLocationDefaultMapper.xml) - k03.playerlocationdefault.selectDateAddGep.일자더하기조회 */
+        <![CDATA[
+        SELECT TO_CHAR(TO_DATE(#{STRDATE},'YYYYMMDD') + #{DAYS} ,'YYYYMMDD') AS DATE_RESULT FROM DUAL
+        ]]>
+    </select>
+
+    <insert id="insertPlayerWhereAbouts" parameterType="HashMap">
+       /* k03.playerlocationdefault.insertPlayerWhereAbouts - 소재지정보불이행관리등록 */
+        <![CDATA[
+        INSERT INTO K03_PLAYER_WHEREABOUTS
+                (
+                SEQ,
+                PLAYER_NO,
+                TYPE,
+                ABOUT_DATE,
+                ABOUT_NOTICE_DATE,
+                ABOUT_END_DATE,
+                REPLY_DATE,
+                REPLY_NOTICE_DATE,
+                REPLY_END_DATE,
+                JUDGE_CLAIM_DATE,
+                JUDGE_NOTICE_DATE,
+                FAILURE_REG_DATE
+                )
+        VALUES (
+                #{SEQ},
+                #{PLAYER_NO},
+                #{TYPE},
+                #{ABOUT_DATE},
+                #{ABOUT_NOTICE_DATE},
+                #{ABOUT_END_DATE},
+                #{REPLY_DATE},
+                #{REPLY_NOTICE_DATE},
+                #{REPLY_END_DATE},
+                #{JUDGE_CLAIM_DATE},
+                #{JUDGE_NOTICE_DATE},
+                #{FAILURE_REG_DATE}
+                )
+            ]]>
+    </insert>
+
+    <update id="updatePlayerWhereAbouts" parameterType="HashMap">
+        /* k03.playerlocationdefault.updatePlayerWhereAbouts - 소재지정보불이행관리수정 */
+        <![CDATA[
+         UPDATE K03_PLAYER_WHEREABOUTS
+         SET    PLAYER_NO = #{PLAYER_NO},
+                TYPE = #{TYPE},
+                ABOUT_DATE = #{ABOUT_DATE},
+                ABOUT_NOTICE_DATE = #{ABOUT_NOTICE_DATE},
+                ABOUT_END_DATE = #{ABOUT_END_DATE},
+                REPLY_DATE = #{REPLY_DATE},
+                REPLY_NOTICE_DATE = #{REPLY_NOTICE_DATE},
+                REPLY_END_DATE = #{REPLY_END_DATE},
+                JUDGE_CLAIM_DATE = #{JUDGE_CLAIM_DATE},
+                JUDGE_NOTICE_DATE = #{JUDGE_NOTICE_DATE},
+                FAILURE_REG_DATE = #{FAILURE_REG_DATE}
+         WHERE SEQ = #{SEQ}
+        ]]>
+    </update>
+     
+</mapper>

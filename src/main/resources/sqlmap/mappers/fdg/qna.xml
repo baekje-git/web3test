@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdg.qna">
+	<select id="selectFdgQnaList" parameterType="HashMap" resultType="HashMap" >
+	/* fdg.qna.selectFdgQnaList (qna.xml) */
+	  SELECT SEQ												AS SEQ    		/* SEQ */
+			,D.MENU_NM			   					 		AS PROCESS_NM   /* 문서 */
+			,A.PROD_NO               							AS PROD_NO    	/* 제조번호 */
+			,A.INQUIRE_TITLE		   							AS INQUIRE_TITLE/* 문의제목 */
+			,B.USER_NM               							AS INQUIRER_NM  /* 질의자 */
+			,DATE_FORMAT(A.INQUIRE_DTM, '%y-%m-%d %H:%i') 		AS INQUIRE_DTM	/* 작성일시 */
+			,C.USER_NM               							AS RESPONSER_NM /* 답변자 */
+			,DATE_FORMAT(A.RESPONSE_DTM, '%y-%m-%d %H:%i') 		AS RESPONSE_DTM /* 답변일시 */
+		FROM T_FDG_QNA A
+		LEFT JOIN Z_USER B
+		  ON B.USER_ID = A.INQUIRER_ID
+		LEFT JOIN Z_USER C
+		  ON C.USER_ID = A.RESPONSER_ID
+		LEFT JOIN Z_MENU D
+		  ON D.ROUTE_NM = A.PROCESS
+	   WHERE 1=1
+		<if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+		 AND A.INQUIRE_DTM between REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+		</if>
+		<if test="PROCESS != null and PROCESS != ''">
+		 AND A.PROCESS = #{PROCESS}
+		</if>
+		<if test="PROD_NO != null and PROD_NO != ''">
+		 AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+		</if>
+		<if test="INQUIRER_NM != null and INQUIRER_NM != ''">
+		 AND B.USER_NM LIKE CONCAT('%',#{INQUIRER_NM},'%')
+		</if>
+		<if test="RESPONSER_NM != null and RESPONSER_NM != ''">
+		 AND C.USER_NM LIKE CONCAT('%',#{RESPONSER_NM},'%')
+		</if>
+	   ORDER BY A.INQUIRE_DTM DESC, A.PROD_NO DESC
+	</select>
+    
+    <select id="selectFdgQnaData" parameterType="HashMap" resultType="HashMap" >
+     /* fdg.qna.selectFdgQnaData (qna.xml) */
+	  SELECT SEQ												AS SEQ    		/* SEQ */
+			,D.MENU_NM			   					 		AS PROCESS_NM   /* 문서 */
+			,A.PROD_NO               							AS PROD_NO    	/* 제조번호 */
+			,A.INQUIRE_TITLE		   							AS INQUIRE_TITLE/* 문의제목 */
+			,A.INQUIRE_CONTENT		   							AS INQUIRE_CONTENT/* 문의내용 */
+			,B.USER_NM               							AS INQUIRER_NM  /* 질의자 */
+			,DATE_FORMAT(A.INQUIRE_DTM, '%y-%m-%d %H:%i') 		AS INQUIRE_DTM	/* 작성일시 */
+			,C.USER_NM               							AS RESPONSER_NM /* 답변자 */
+			,A.RESPONSE_CONTENT		   							AS RESPONSE_CONTENT/* 답변내용 */
+			,DATE_FORMAT(A.RESPONSE_DTM, '%y-%m-%d %H:%i') 		AS RESPONSE_DTM /* 답변일시 */
+			,FN_FMT_DT(E.MANDATE_DT) 							AS MANDATE_DT 	/* 지시자확인일 */
+	        ,F.USER_NM               							AS MANDATE_NM 	/* 지시자 */
+		FROM T_FDG_QNA A
+		LEFT JOIN Z_USER B
+		  ON B.USER_ID = A.INQUIRER_ID
+		LEFT JOIN Z_USER C
+		  ON C.USER_ID = A.RESPONSER_ID
+		LEFT JOIN Z_MENU D
+		  ON D.ROUTE_NM = A.PROCESS
+		LEFT JOIN T_FDGP_BPR E
+		  ON E.PROD_NO = A.PROD_NO
+	    LEFT JOIN Z_USER F
+	      ON F.USER_ID = E.MANDATE_ID
+	   WHERE 1=1
+	     AND SEQ = #{SEQ}
+    </select>
+    
+    <insert id="insertFdgQnaQusData" parameterType="HashMap">
+    /* fdg.qna.insertFdgQnaQusData (qna.xml) */
+    INSERT INTO T_FDG_QNA
+       SET SEQ = (SELECT IFNULL(MAX(SEQ+0) + 1, 1) FROM T_FDG_QNA A)
+          ,PROD_NO = #{PROD_NO}
+          ,INQUIRER_ID = #{userData.USER_ID}
+          ,INQUIRE_DTM = now()
+          ,PROCESS = #{PROCESS}
+          ,INQUIRE_TITLE = #{INQUIRE_TITLE}
+          ,INQUIRE_CONTENT = #{INQUIRE_CONTENT}
+          ,REG_ID = #{userData.USER_ID}
+          ,REG_DTM = DEFAULT
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+    </insert>
+    
+    <update id="updateFdgQnaQusData" parameterType="HashMap">
+    /* fdg.qna.updateFdgQnaQusData (qna.xml) */
+    UPDATE T_FDG_QNA
+       SET INQUIRE_TITLE = #{INQUIRE_TITLE}
+          ,INQUIRE_CONTENT = #{INQUIRE_CONTENT}
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+     WHERE SEQ = #{SEQ}
+    </update>
+    
+    <update id="updateFdgQnaAnsData" parameterType="HashMap">
+    /* fdg.qna.updateFdgQnaAnsData (qna.xml) */
+    UPDATE T_FDG_QNA
+       SET RESPONSE_CONTENT = #{RESPONSE_CONTENT}
+          ,RESPONSE_DTM = IFNULL(RESPONSE_DTM,now())
+          ,RESPONSER_ID = IFNULL(RESPONSER_ID,#{userData.USER_ID})
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+     WHERE SEQ = #{SEQ}
+    </update>
+</mapper>

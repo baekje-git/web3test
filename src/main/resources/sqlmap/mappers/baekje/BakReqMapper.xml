@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="bakReq">
+
+    <select id="selectBakReqList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* bakReq.selectBakReqList 반품현황 리스트조회 */
+        /* 진행상태가 담당자 , 처리중일 경우 금액을 단가 * (등록수량 - 불가수량) 으로 변경 */
+        SELECT F_S_FORMAT(A.BACK_DT, 'YYYY.MM.DD') AS BACK_DT          --반품일자
+             , IFNULL(F_S_FORMAT(A.EXAM_DT ,  'YYYY.MM.DD'),'')  AS EXAM_DT      -- 승인일자
+             , A.ITEM_NM_UNIT                                       --적요
+             , A.ITEM_CNT                                           --품목수
+             , A.BACK_EXAM_CD
+             , A.BACK_EXAM_NM
+             , IFNULL(A.BACK_MEMO,'') AS ORD_MEMO
+             , A.SN
+             , A.PRINT_YN
+             , A.BACK_PRT_CNT
+             <!-- \
+             , (SELECT SUM(B.ITEM_QTY * B.ITEM_WP2_AMT)
+                          FROM V_WEB_BACK_D B
+                         WHERE B.SN = A.SN) AS TOTAL_AMT
+             -->
+             ,(SELECT SUM(CASE WHEN A.BACK_EXAM_CD IN ('02','11') THEN (B.ITEM_QTY_REQ - B. ITEM_QTY_NO)
+                                      ELSE B.ITEM_QTY
+                                      END * B.ITEM_WP2_AMT)
+               FROM V_WEB_BACK_D B
+               WHERE B.SN = A.SN) AS TOTAL_AMT
+             , A.TREAT_MEMO 
+             , SUBSTRING(CASE WHEN C.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+             , SUBSTRING(COALESCE(D.CD_NM,''), 1, 1) AS MED_NM
+             , (CASE WHEN A.GUBUN = 'RCPT' AND A.ORD_TYPE_CD = '33' AND A.BACK_EXAM_CD IN ('01','11','02','12') THEN 1 ELSE 0 END) AS CNT
+             , (SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                  FROM V_WEB_BACK_D B
+                  JOIN T_ITEM_HAZARD C
+                    ON C.ITEM_CD = B.ITEM_CD
+                   AND F_S_EMPTY(C.PROD_NO,B.PROD_NO) = B.PROD_NO
+                 WHERE B.SN = A.SN
+               ) AS HAZARD_YN /* 반품상세의 품목정보가 회수의약품테이블과 일치한 품목이 있는지 체크 */
+             , A.CNCL_ABLE_YN 
+             , F.MAKER_NM
+          FROM V_WEB_BACK_M A
+          <!--  
+          JOIN (SELECT SUM(M.ITEM_QTY_REQ * M.ORD_WP2_AMT) AS TOTAL_AMT
+                     , M.SN
+                  FROM (SELECT X.SN
+                             , X.ITEM_QTY_REQ
+                             , CASE WHEN Y.WP2_AMT IS NULL THEN Z.WP2_AMT
+                                    ELSE Y.WP2_AMT
+                               END AS ORD_WP2_AMT
+                          FROM V_WEB_BACK_D X
+                          LEFT OUTER JOIN T_ITEM Y
+                            ON Y.ITEM_CD = X.ITEM_CD
+                           AND Y.USE_YN = 'Y'
+                          LEFT OUTER JOIN T_ITEM_PRICE Z
+                            ON Z.ITEM_CD = X.ITEM_CD
+                           AND Z.BRCH_CD = X.BRCH_CD
+                        ) M
+                 WHERE 1 = 1
+                 GROUP BY M.SN       
+                ) B
+            ON B.SN = A.SN
+         -->  
+         INNER JOIN T_ITEM C
+            ON C.ITEM_CD = A.ITEM_CD
+          LEFT OUTER JOIN T_CODE D
+            ON D.P_CODE = '101'
+           AND D.CODE = C.MED_CD
+            JOIN T_MAKER F
+            ON F.MAKER_CD = C.MAKER_CD
+         WHERE CUST_CD = #{custCd}
+           AND A.BACK_DT BETWEEN #{startDt} AND #{endDt}
+           <if test="itemNm != null and itemNm !=''">   
+           AND A.ITEM_NM LIKE #{itemNm}
+           </if>
+           <if test="makerNm != null and makerNm !=''">
+           <bind name="makerNm" value='"%" + makerNm + "%"'/>
+           AND F.MAKER_NM LIKE #{makerNm}
+           </if>
+         ORDER BY BACK_DT DESC, BACK_TM DESC
+         <!-- LIMIT #{PAGE_PER_CNT} OFFSET #{PAGE_OFFSET_CNT} -->
+    </select>
+
+    <select id="selectCntSAL00010" parameterType="java.util.HashMap" resultType="int">
+        SELECT COUNT(1)
+          FROM T_SAL00010
+         WHERE SN = #{sn}
+    </select>
+
+    <select id="selectCntSAL00013" parameterType="java.util.HashMap" resultType="int">
+        SELECT COUNT(1)
+          FROM T_SAL00013
+         WHERE SN = #{sn}
+    </select>
+
+    <update id="updateOrdMemoSAL00010" parameterType="java.util.HashMap">
+        /* bakReq.updateOrdMemoSAL00010 메모 수정 */
+        UPDATE T_SAL00010
+           SET ORD_MEMO = #{bakMemo}
+         WHERE SN = #{sn}
+    </update>
+
+    <update id="updateOrdMemoSAL00013" parameterType="java.util.HashMap">
+        /* bakReq.updateOrdMemoSAL00013 메모 수정 */
+        UPDATE T_SAL00013
+           SET ORD_MEMO = #{bakMemo}
+         WHERE SN = #{sn}
+    </update>
+
+    <select id="selectBakReqDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* bakReq.selectBakReqDtlList 반품현황 상세 */
+        /* 진행상태가 담당자 , 처리중일 경우 금액을 단가 * (등록수량 - 불가수량) 으로 변경 */
+        SELECT M.*
+             <!-- , M.ORD_WP2_AMT * M.ITEM_QTY AS PRICE-->
+              , M.ORD_WP2_AMT * (CASE WHEN M.BACK_EXAM_CD IN ('02','11') THEN (M.ITEM_QTY_REQ - M.ITEM_QTY_NO) ELSE M.ITEM_QTY END) AS PRICE
+          FROM (SELECT A.CUST_CD
+                     , A.SN
+                     , A.SNO
+                     , F_S_FORMAT(A.BACK_DT,'YYYY-MM-DD') AS BACK_DT
+                     , F_S_FORMAT(A.BACK_TM,'HH24:MI:SS') AS BACK_TM
+                     , A.MAKER_NM
+                     , A.ITEM_NM_UNIT
+                     , A.BOHUM_CD
+                     , A.ITEM_QTY_REQ
+                     , A.ITEM_QTY
+                     , A.ITEM_QTY_NO
+                     , A.EXAM_RSLT_NM
+                     , A.ITEM_CD
+                     , CASE WHEN B.WP2_AMT IS NULL THEN C.WP2_AMT
+                            ELSE B.WP2_AMT
+                       END AS ORD_WP2_AMT
+                     , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+                     , SUBSTRING(A.MED_NM, 1,1) AS MED_NM
+                     , A.BACK_EXAM_CD
+                  FROM V_WEB_BACK_D A
+                  LEFT OUTER JOIN T_ITEM B
+                    ON B.ITEM_CD = A.ITEM_CD
+                   AND B.USE_YN = 'Y'
+                  LEFT OUTER JOIN T_ITEM_PRICE C
+                    ON C.ITEM_CD = A.ITEM_CD
+                   AND C.BRCH_CD = A.BRCH_CD
+                 WHERE A.SN = #{sn}
+                ) M
+         ORDER BY M.SN DESC, M.SNO
+    </select>
+
+    <select id="selectBakReqExcelList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	/* bakReq.selectBakReqExcelList 반품현황 엑셀 다운로드 */
+    	SELECT M.*
+       <!--  , M.ORD_WP2_AMT * M.ITEM_QTY_REQ AS PRICE -->
+    		 , M.ORD_WP2_AMT * (CASE WHEN M.BACK_EXAM_CD IN ('02','11') THEN (M.ITEM_QTY_REQ - M.ITEM_QTY_NO) ELSE M.ITEM_QTY END) AS PRICE
+          FROM (
+		        SELECT ROW_NUMBER() OVER(ORDER BY A.SN DESC, A.SNO) AS ROWNUMBER
+		             , F_S_FORMAT(A.BACK_DT,'YYYY-MM-DD') AS BACK_DT
+		             , IFNULL(F_S_FORMAT(A.EXAM_DT ,  'YYYY.MM.DD'),'')  AS EXAM_DT   
+		             , A.MAKER_NM
+		             , A.ITEM_NM_UNIT
+		             , A.BOHUM_CD
+		             , A.EXAM_RSLT_NM
+		             , A.ITEM_QTY_REQ
+		             , A.ITEM_QTY
+		             , A.ITEM_QTY_NO
+		             , CASE WHEN B.ORD_WP2_AMT IS NULL THEN C.ORD_WP2_AMT
+		                    ELSE B.ORD_WP2_AMT
+		                END AS ORD_WP2_AMT
+		             , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+                     , SUBSTRING(A.MED_NM, 1,1) AS MED_NM
+                     , A.BACK_EXAM_CD
+		          FROM V_WEB_BACK_D A
+		          LEFT OUTER JOIN T_SALEBACKRCPT_DTL B
+                    ON B.SN = A.SN
+                    AND B.SNO = A.SNO      -- 추가
+                  LEFT OUTER JOIN T_SALEBACKRCPTMOVE_DTL C
+                    ON C.SN = A.SN
+                    AND C.SNO = A.SNO      -- 추가
+		         WHERE CUST_CD =#{custCd}
+		           AND A.BACK_DT BETWEEN #{startDt} AND #{endDt}
+           		 ORDER BY BACK_DT DESC, BACK_TM DESC
+               ) M
+         ORDER BY M.ROWNUMBER ASC
+    </select>
+    
+    <update id="procBackReqDelete" statementType="CALLABLE" parameterType="java.util.HashMap">
+        /*+[MypageMapper.xml][mypage.procBackDelete][마이페이지 주문취소 프로시져 호출][by.ABJ1]+*/
+        {CALL P_BACKRCPT_D(
+                #{TYPE}
+              , #{SN}
+              , #{SNO}
+              , #{USER_ID}
+              , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+              , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+              )}
+    </update>
+    
+    <select id="selectDlvInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* bakReq.selectDlvInfo 레포트 호출용 파라미터 조회 */
+        SELECT DLV_BRCH_CD
+             , DLV_COURSE_CD
+             , DLV_AREA_CD
+          FROM T_CUST
+         WHERE CUST_CD = #{custCd}
+    </select>
+    
+    
+    <select id="selectBakReqListChk" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* bakReq.selectBakReqListChk 반품현황 체크 */
+        SELECT 
+               A.CNCL_ABLE_YN 
+          FROM V_WEB_BACK_M A
+          JOIN (SELECT SUM(M.ITEM_QTY_REQ * M.ORD_WP2_AMT) AS TOTAL_AMT
+                     , M.SN
+                  FROM (SELECT X.SN
+                             , X.ITEM_QTY_REQ
+                             , CASE WHEN Y.WP2_AMT IS NULL THEN Z.WP2_AMT
+                                    ELSE Y.WP2_AMT
+                               END AS ORD_WP2_AMT
+                          FROM V_WEB_BACK_D X
+                          LEFT OUTER JOIN T_ITEM Y
+                            ON Y.ITEM_CD = X.ITEM_CD
+                           AND Y.USE_YN = 'Y'
+                          LEFT OUTER JOIN T_ITEM_PRICE Z
+                            ON Z.ITEM_CD = X.ITEM_CD
+                           AND Z.BRCH_CD = X.BRCH_CD
+                        ) M
+                 WHERE 1 = 1
+                 GROUP BY M.SN       
+                ) B
+            ON B.SN = A.SN
+         INNER JOIN T_ITEM C
+            ON C.ITEM_CD = A.ITEM_CD
+          LEFT OUTER JOIN T_CODE D
+            ON D.P_CODE = '101'
+           AND D.CODE = C.MED_CD
+          LEFT OUTER JOIN
+               (SELECT COUNT(1) CNT
+                     , A.ITEM_CD
+                  FROM T_SALEBACKRCPT A
+                  LEFT JOIN T_ITEM Z
+                    ON Z.ITEM_CD = A.ITEM_CD
+                  LEFT JOIN T_CODE Y
+                    ON Y.P_CODE = '402'
+                   AND Y.CODE = A.BACK_EXAM_CD
+                  JOIN T_CUST X
+                    ON X.CUST_CD = A.CUST_CD
+                 WHERE A.CUST_CD =#{custCd} 
+                   AND A.ORD_TYPE_CD NOT IN ('34','91')  -- 약가보상,수금할인 제외
+                   AND A.ORD_TYPE_CD ='33'
+                   AND A.BACK_EXAM_CD IN ('01','11','02','12') --담당자검수 및 반품검수단계 처리후에도 출력할수 있게끔
+                   AND A.BACK_DT BETWEEN #{startDt} AND #{endDt}
+                 GROUP BY A.ITEM_CD
+               ) E
+            ON E.ITEM_CD = A.ITEM_CD
+         WHERE CUST_CD = #{custCd}
+           AND A.BACK_DT BETWEEN #{startDt} AND #{endDt}
+           AND A.SN = #{sn}
+         ORDER BY BACK_DT DESC, BACK_TM DESC
+         <!-- LIMIT #{PAGE_PER_CNT} OFFSET #{PAGE_OFFSET_CNT} -->
+    </select>
+
+</mapper>

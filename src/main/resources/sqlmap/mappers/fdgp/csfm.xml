@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgp.csfm">
+   	<select id="selectFdgpCsfmList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgp.csfm.selectFdgpCsfmList (csfm.xml) */
+	SELECT FN_FMT_DT(E.PROD_DT)    AS PROD_DT    /* 제조일 */
+		  ,FN_FMT_DT(A.WORK_DT)	   AS WORK_DT    /* 작업일 */
+	      ,E.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,B.USER_NM               AS CHARGE_NM  /* 담당자 */
+	      ,C.USER_NM               AS CONFIRM_NM /* 확인자 */
+	      ,D.USER_NM               AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgp-csfm' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(E.DEL_NY = 'Y','O','') AS DEL_YN
+	  FROM T_FDGP_BPR E
+	  LEFT JOIN T_FDGP_CSFM A
+	    ON E.PROD_NO = A.PROD_NO
+	  LEFT JOIN Z_USER B
+	    ON B.USER_ID = A.CHARGE_ID
+	  LEFT JOIN Z_USER C
+	    ON C.USER_ID = A.CONFIRM_ID
+	  LEFT JOIN Z_USER D
+	    ON D.USER_ID = A.MANDATE_ID
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = E.PROD_NO
+	 WHERE 1=1
+	   AND E.MANDATE_SIGN IS NOT NULL
+	   <if test="START_PROD_DT != null and START_PROD_DT != '' and END_PROD_DT != null and END_PROD_DT != ''">
+       AND E.PROD_DT between REPLACE(#{START_PROD_DT},'-','') AND REPLACE(#{END_PROD_DT},'-','')
+       </if>
+       <if test="START_WORK_DT != null and START_WORK_DT != '' and END_WORK_DT != null and END_WORK_DT != ''">
+       AND A.WORK_DT between REPLACE(#{START_WORK_DT},'-','') AND REPLACE(#{END_WORK_DT},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="CHARGE_NM != null and CHARGE_NM != ''">
+       AND B.USER_NM LIKE CONCAT('%',#{CHARGE_NM},'%')
+       </if>
+       <if test="CONFIRM_NM != null and CONFIRM_NM != ''">
+       AND C.USER_NM LIKE CONCAT('%',#{CONFIRM_NM},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND D.USER_NM LIKE CONCAT('%',#{MANDATE_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND E.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY E.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY E.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgCsfm" parameterType="HashMap">
+    /* fdgp.csfm.insertFdgCsfm */
+
+                INSERT INTO T_FDGP_CSFM
+                SET PROD_NO = #{eData.PROD_NO}
+			       ,A02 = #{eData.A02}
+			       ,B02 = #{eData.B02}
+			       ,C02 = #{eData.C02}
+			       ,D02 = #{eData.D02}
+			       ,E02 = #{eData.E02}
+			       ,F02 = #{eData.F02}
+			       ,G02 = #{eData.G02}
+			       ,H02 = #{eData.H02}
+			       ,I02 = #{eData.I02}
+			       ,J02 = #{eData.J02}
+			       ,K02 = #{eData.K02}
+			       ,L02 = #{eData.L02}
+			       ,M02 = #{eData.M02}
+			       ,N02 = #{eData.N02}
+			       ,O02 = #{eData.O02}
+			       ,P02 = #{eData.P02}
+			       ,Q02 = #{eData.Q02}
+			       ,R02 = #{eData.R02}
+			       ,S02 = #{eData.S02}
+			       ,WORK_DT = REPLACE(#{eData.WORK_DT},'-','')
+			       ,INSP_TIME  = #{eData.INSP_TIME}
+			       ,ETC        = #{eData.ETC}
+			 <if test='userData.USER_LVL.equals("1")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("2")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("3")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("4")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 , REG_ID = #{userData.USER_ID}
+			 , REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+			       A02 = #{eData.A02}
+			       ,B02 = #{eData.B02}
+			       ,C02 = #{eData.C02}
+			       ,D02 = #{eData.D02}
+			       ,E02 = #{eData.E02}
+			       ,F02 = #{eData.F02}
+			       ,G02 = #{eData.G02}
+			       ,H02 = #{eData.H02}
+			       ,I02 = #{eData.I02}
+			       ,J02 = #{eData.J02}
+			       ,K02 = #{eData.K02}
+			       ,L02 = #{eData.L02}
+			       ,M02 = #{eData.M02}
+			       ,N02 = #{eData.N02}
+			       ,O02 = #{eData.O02}
+			       ,P02 = #{eData.P02}
+			       ,Q02 = #{eData.Q02}
+			       ,R02 = #{eData.R02}
+			       ,S02 = #{eData.S02}
+			       ,WORK_DT = REPLACE(#{eData.WORK_DT},'-','')
+			       ,INSP_TIME  = #{eData.INSP_TIME}
+			       ,ETC        = #{eData.ETC}
+			 <if test='userData.USER_LVL.equals("1")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("2")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("3")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("4")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 , EDT_ID = #{userData.USER_ID}
+			 , EDT_DTM = NOW()
+    </insert>
+</mapper>

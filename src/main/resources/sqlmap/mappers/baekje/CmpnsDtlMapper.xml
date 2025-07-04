@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cmpnsDtl">
+    <select id="selectCmpnsDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* cmpnsDtl.selectCmpnsDtlList 보상내역 목록 조회 */
+        SELECT M.*
+             , (M.ITEM_QTY * M.PRICE_AMT) AS AMT
+             , ROW_NUMBER() OVER (ORDER BY M.APPLY_DT DESC) AS ROWNUMBER
+          FROM (SELECT F_S_FORMAT(B.CHG_DT,'YYYY.MM.DD') AS APPLY_DT
+                     , B.ITEM_CD
+                     , C.ITEM_NM
+                     , IFNULL(C.ITEM_NM,'')||' '||IFNULL(C.UNIT,'') AS ITEM_NM_UNIT
+                     , F_S_MASTER('MAKER', C.MAKER_CD, 'NM') AS MAKER_NM
+                     , C.BOHUM_CD
+                     , B.WP2_OLD
+                     , B.WP2_NEW
+                     , (B.WP2_OLD - B.WP2_NEW) AS PRICE_AMT
+                     , B.PRICE_CHG_PCT
+                     , IFNULL(D.ITEM_QTY, 0) AS ITEM_QTY
+                     , F_S_FORMAT(D.SALE_DT, 'YYYY.MM.DD') AS SALE_DT
+                     , SUBSTRING(COALESCE(E.CD_NM,''), 1, 1) AS MED_NM
+                     , SUBSTRING(CASE WHEN C.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM 
+                 FROM T_CUST A
+                 JOIN T_ITEM_BOHUM B
+                   ON B.BRCH_CD = A.BRCH_CD
+                 JOIN T_ITEM C
+                   ON C.ITEM_CD = B.ITEM_CD
+                 LEFT JOIN V_SALE_DTL D
+                   ON D.CUST_CD = A.CUST_CD
+                  AND D.ITEM_CD = C.ITEM_CD
+                 LEFT OUTER JOIN T_CODE E
+                   ON E.P_CODE = '101'
+                  AND E.CODE = C.MED_CD 
+                WHERE A.CUST_CD = #{custCd}
+                  AND A.CUST_GB_CD NOT IN ('09')
+               <if test="keyword != null and keyword != ''">
+                  AND (C.BOHUM_CD = #{bohumCd} OR
+                       C.ITEM_NM LIKE #{itemNm})
+               </if>
+               <if test="startDt != null and startDt != '' and endDt != null and endDt != ''">
+                  AND B.CHG_DT BETWEEN #{startDt} AND #{endDt}
+               </if>
+               <if test="makerNm != null and makerNm !=''">
+                   <bind name="makerNm" value='"%" + makerNm + "%"'/>
+                       AND F_S_MASTER('MAKER', C.MAKER_CD, 'NM') LIKE #{makerNm}
+               </if>
+               ) M
+         ORDER BY M.APPLY_DT DESC
+    </select>
+</mapper>

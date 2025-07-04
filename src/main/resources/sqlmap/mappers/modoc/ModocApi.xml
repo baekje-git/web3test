@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="modoc.ModocApi">
+    
+    <select id="selectAthletes" parameterType="HashMap" resultType="HashMap">
+     /* modoc.ModocApi.selectAthletes 선수정보 전달 */
+     
+        SELECT  A.PLAYER_NO AS "id",
+                CASE INSTR(USER_EN_NAME, ' ') WHEN 0 THEN USER_EN_NAME ELSE SUBSTR(USER_EN_NAME, 0, INSTR(USER_EN_NAME, ' ')) END AS "firstName",
+                A.USER_NAME AS "middleName",
+                CASE INSTR(USER_EN_NAME, ' ') WHEN 0 THEN ' ' ELSE SUBSTR(USER_EN_NAME, INSTR(USER_EN_NAME, ' ')) END AS "lastName",
+                USER_SEX AS "gender",
+                TO_CHAR(TO_DATE(BIRTH_DT,'YYYYMMDD'), 'YYYY-MM-DD HH24:MI:SS') AS "dateOfBirth",
+                '117' as "nationalityId",
+                USER_ADDRESS1 as "address",
+                '' as "street",
+                '' as "city",
+                '' as "zip",
+                '' as "state",
+                '117' as "countriesId",
+                USER_EMAIL_PREFIX||'@'||USER_EMAIL_SUFFIX AS "email",
+                '+82' || CASE SUBSTR(USER_PHONE,0,1) WHEN '0' THEN SUBSTR(USER_PHONE,2) ELSE USER_PHONE END AS "phone",
+                F_CODE_OPTION('PRO_ORGZ',A.PRO_ORGZ,'OPTION6') AS "sportsId",
+                F_CODE_OPTION('PRO_ORGZ',A.PRO_ORGZ,'OPTION7') as "sportDisciplinesId",
+                --PLAYER_STATE  as "poolsId",
+                --CASE PLAYER_STATE WHEN 'RTP' THEN 2 WHEN 'TP' THEN 2 ELSE 5 END as "poolsId", -- RTP:1, TP:2, NA:5, RT:5 / 경기기간외
+                USER_ID as "externalId",
+            TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "createdAt",
+            TO_CHAR(EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "modifiedAt"
+          FROM  USER01TB A
+          LEFT OUTER JOIN ZATHLETES B ON A.PLAYER_NO = B.PLAYER_NO        
+         WHERE  1=1
+           AND  A.USER_ID = #{USER_ID}
+           AND A.USER_FLAG = 'P'         
+    </select>
+    
+    <update id="updatePlayerNo" parameterType="HashMap">
+     /* modoc.ModocApi.selectAthletes modoc의 player_no 업데이트 */
+    
+        UPDATE USER01TB
+           SET PLAYER_NO = #{id}
+         WHERE USER_ID = #{USER_ID}
+    
+    </update>
+    
+    <insert id="insertModocError" parameterType="HashMap">
+    /* modoc.ModocApi.insertModocError modoc연동시 에러 저장 */
+    
+        INSERT INTO K99_MODOC_ERROR (
+            ERR_DATE, 
+            MENU_NAME, 
+            MENU_DATA, 
+            SEND_DATA, 
+            RETURN_DATA
+        ) VALUES (
+            SYSDATE, 
+            #{MENU_NAME}, 
+            #{MENU_DATA}, 
+            #{SEND_DATA}, 
+            #{RETURN_DATA}
+        )        
+    </insert>
+    
+    <select id="selectModocError" parameterType="HashMap" resultType="HashMap">
+    /* modoc.ModocApi.selectModocError modoc연동 에러 조회 */
+    
+        SELECT TO_CHAR(ERR_DATE,'YYYY-MM-DD HH24:MI:SS') AS ERR_DATE, 
+               MENU_NAME, 
+               MENU_DATA, 
+               TO_CHAR(SEND_DATA) AS SEND_DATA, 
+               RETURN_DATA
+          FROM K99_MODOC_ERROR      
+         WHERE ERR_DATE BETWEEN TO_DATE(#{START_DATE},'YYYYMMDD') AND TO_DATE(#{END_DATE},'YYYYMMDD') + 1
+         ORDER BY ERR_DATE DESC
+    </select>
+    
+    <select id="selectMissions" parameterType="HashMap" resultType="HashMap">
+       /* modoc.ModocApi.selectMissions  */
+    
+        SELECT  T1.IPNT_UPPER_SEQ AS "id",
+                T1.IPNT_NO AS "code",
+                '1' AS "status",
+                DECODE(D.ID, null, 70620, D.ID) AS "assigneesId", -- WUSER 이메일 비교
+                1103 AS "federationsId", -- 임의값처리
+                CASE T1.IPNT_PERIOD_CODE WHEN '0' THEN 3 WHEN '1' THEN 1 END as "testSituationsId", -- 경기기간중 0 / 경기기간외 1
+                TO_NUMBER(DECODE(E.MODOC_CODE,null,'10010',E.MODOC_CODE)) AS "testAuthority", -- 검사주관기구
+                TO_NUMBER(DECODE(F.MODOC_CODE,null,'10010',F.MODOC_CODE)) AS "resultAuthority", -- 검사결과기구
+                TO_NUMBER(DECODE(G.MODOC_CODE,null,'10010',G.MODOC_CODE)) AS "sampleAuthoritiesId" , --시료채취기구             
+                T1.IPNT_NAME AS "eventName",
+                (SELECT GAME_NAME FROM K99_GAME WHERE GAME_CODE = T1.GAME_CODE) AS "race",
+                '' AS "place",
+                NVL(B.STREET,'') || ' ' ||NVL( T1.IPNT_PLACE_DETAIL,'') AS "street",                
+                NVL(B.STATE, SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ')-1)) AS "state",
+                NVL(B.CITY,SUBSTR(T1.IPNT_PLACE_ADDRESS,INSTR(T1.IPNT_PLACE_ADDRESS,' ')+1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',INSTR(T1.IPNT_PLACE_ADDRESS,' ',1)-1))) AS "city",
+                T1.IPNT_PLACE_ZIPCODE AS "zip",             
+                117 AS "countriesId",
+                TO_CHAR(TO_DATE(T1.IPNT_DATE||T1.IPNT_TIME,'YYYYMMDDHH24MI'), 'YYYY-MM-DD HH24:MI:SS') AS "dateFrom",
+                TO_CHAR(TO_DATE(T1.IPNT_DATE||T1.IPNT_TIME,'YYYYMMDDHH24MI'),'YYYY-MM-DD HH24:MI:SS') AS "dateTo",
+                bloodLabsid AS "bloodLabsid",
+                urineLabsid AS "urineLabsid",
+                T1.IPNT_NAME AS "generalComments",
+                '' AS "internalComments",
+                B.tests AS "tests",
+                TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "createdAt",
+                TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "modifiedAt",
+                (SELECT A.ID 
+                   FROM K99_CODE_DTL c2 join wsports a on c2.option1 = A.CODE
+                  WHERE MST_CODE = 'EVENT_CODE'
+                    AND C2.DTL_CODE = T1.IPNT_EVENT_CODE) AS "sportsId", --종목
+                (SELECT A.ID 
+                      FROM CODE01TB c2 JOIN  WSPORT_DISCIPLINES a ON C2.OPTION5 = A.ID
+                  WHERE MST_CODE = 'EVENT_DET_CODE'
+                        AND C2.DTL_CODE = T1.IPNT_EVENT_DET_CODE  ) AS "sportDisciplinesId" --세부종목    
+          FROM K03_DOPING_INSPECT_REG T1
+          LEFT OUTER JOIN K00_ZMISSIONS B ON T1.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ AND T1.IPNT_NO = B.IPNT_NO
+          LEFT OUTER JOIN USER01TB C ON T1.IPNT_CHARGER_ID=C.USER_ID          
+          LEFT OUTER JOIN (
+          SELECT *
+            FROM
+            (SELECT D2.*, ROW_NUMBER() OVER(PARTITION BY D2.EMAIL ORDER BY D2.SYNCAT DESC) AS RN
+               FROM WUSERS D2
+            ) D3
+            WHERE D3.RN = 1
+          ) D ON trim(C.USER_EMAIL_PREFIX) || '@' || C.USER_EMAIL_SUFFIX = D.EMAIL
+          LEFT OUTER JOIN ZCODE E ON E.MST_CODE = 'ORGANIZATION' AND E.DTL_CODE = T1.IPNT_SUPERVISOR
+          LEFT OUTER JOIN ZCODE F ON F.MST_CODE = 'ORGANIZATION' AND F.DTL_CODE = T1.IPNT_RESULT_MANAGER
+          LEFT OUTER JOIN ZCODE G ON G.MST_CODE = 'ORGANIZATION' AND G.DTL_CODE = T1.IPNT_COLLECTOR
+         WHERE T1.IPNT_NO = #{IPNT_NO}    
+    </select>
+    
+    <select id="selectDCOs" parameterType="HashMap" resultType="HashMap">
+     /* modoc.ModocApi.selectDCOs  */
+    
+       SELECT C.ID AS "dcosId"
+	     FROM K03_DOPING_INSPECT_REG T1
+	     JOIN K03_DOPING_INSPECT_DCO T2 ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+	     JOIN USER01TB B ON T2.USER_ID = B.USER_ID
+	     JOIN ( SELECT *
+	              FROM
+	             (SELECT C2.*, ROW_NUMBER() OVER(PARTITION BY C2.EMAIL ORDER BY C2.SYNCAT DESC) AS RN
+	                FROM WDCOS C2 ) C3
+	             WHERE C3.RN = 1) C ON C.EMAIL = TRIM(B.USER_EMAIL_PREFIX) || '@' || B.USER_EMAIL_SUFFIX
+	     WHERE T2.USE_YN = 'Y'
+	     AND T2.CHAPERON_YN != 'Y'
+	     AND (T2.CHOOSE_DCO_YN = 'Y' or T2.CHOOSE_DCOBCO_YN = 'Y')
+	     AND T1.IPNT_NO = #{IPNT_NO}    
+    </select>
+    
+    <select id="selectUrineAnalyses" parameterType="HashMap" resultType="HashMap">
+       /* modoc.ModocApi.selectUrineAnalyses  */
+       
+          SELECT DISTINCT TO_NUMBER(B.MODOC_CODE) as "analysesId"
+            FROM K03_DOPING_INSPECT_DTL A
+            LEFT OUTER JOIN ZCODE B 
+              ON B.MST_CODE = 'IPNT_SUB_FLAG' 
+             AND B.DTL_CODE = A.IPNT_SUB_FLAG 
+             AND (B.OPT1 = #{testSituationsId} OR B.OPT1 IS NULL)
+            WHERE A.IPNT_NO = #{IPNT_NO}    
+    </select>
+    
+    <select id="selectMissionStatus" parameterType="HashMap" resultType="HashMap">
+         /* modoc.ModocApi.selectMissionStatus  */
+    
+          SELECT IPNT_NO
+            FROM K00_ZMISSIONS
+            WHERE 1=1
+            AND IPNT_NO = #{IPNT_NO}
+            AND APIOKYN = 'Y'    
+    </select>
+    
+    <update id="updateZMISSIONS_APIOK" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocApi.updateZMISSIONS_APIOK  */
+        
+        UPDATE K00_ZMISSIONS
+           SET APIOKYN = 'Y',
+               APIOKTIME = SYSDATE
+         WHERE IPNT_NO = #{IPNT_NO}
+        ]]>
+    </update>
+    
+    <select id="selectTests" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocApi.selectTests - 테스트내역  */
+    
+        SELECT  G.TEST_NO AS "id",
+                '1' AS "status",
+                DECODE(D.ID, null, 70620, D.ID) AS "assigneesId",
+                T1.IPNT_UPPER_SEQ AS "missionsId",
+                TO_NUMBER(T2.PLAYER_NO) AS "athletesId",
+                G.SORT_NO,
+                1103 AS "federationsId", --경기연맹
+                CASE IPNT_PERIOD_CODE WHEN '0' THEN 3 WHEN '1' THEN 1 END as "testSituationsId", -- 경기기간중 0 / 경기기간외 1
+                TO_NUMBER(DECODE(E.MODOC_CODE,null,'10010',E.MODOC_CODE)) AS "testAuthority", -- 검사주관기구
+                TO_NUMBER(DECODE(F.MODOC_CODE,null,'10010',F.MODOC_CODE)) AS "resultAuthority", -- 검사결과기구
+                CASE T1.IPNT_KIND_CODE WHEN '2' THEN 2 WHEN '7' THEN 2 WHEN '14' THEN 2 WHEN '15' THEN 2 WHEN '19' THEN 2 ELSE 5 END as "poolsId",              
+                (SELECT C.ID 
+                   FROM K03_DOPING_INSPECT_DCO T2 
+                   JOIN USER01TB B ON T2.USER_ID = B.USER_ID 
+                   JOIN (SELECT *
+                            FROM
+                                (
+                                    SELECT C2.*, ROW_NUMBER() OVER(PARTITION BY C2.EMAIL ORDER BY C2.SYNCAT DESC) AS RN
+                                    FROM WDCOS C2
+                                ) C3
+                            WHERE
+                                C3.RN = 1) C ON trim(B.USER_EMAIL_PREFIX) || '@' || B.USER_EMAIL_SUFFIX = C.EMAIL  
+                  WHERE T2.USE_YN = 'Y' AND T2.CHAPERON_YN != 'Y' AND  (CHOOSE_BCO_YN = 'Y' OR CHOOSE_DCOBCO_YN = 'Y') AND T2.IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ ) AS "bcosId",
+                1 AS "requireNotificationSignature",
+                1 AS "isPersonallyKnownAllowed",
+                0 AS "oneHourSlot",
+                0 AS "allowDelayDeadline",
+                T1.IPNT_NAME AS "eventName",
+                (SELECT GAME_NAME FROM K99_GAME WHERE GAME_CODE = T1.GAME_CODE) AS "race",
+                '' AS "place",
+                NVL(B.STREET,'') || ' ' ||NVL( T1.IPNT_PLACE_DETAIL,'') AS "street",
+                NVL(B.STATE, SUBSTR(T1.IPNT_PLACE_ADDRESS,1,INSTR(T1.IPNT_PLACE_ADDRESS,' ')-1)) AS "state",
+                NVL(B.CITY,SUBSTR(T1.IPNT_PLACE_ADDRESS,INSTR(T1.IPNT_PLACE_ADDRESS,' ')+1,INSTR(T1.IPNT_PLACE_ADDRESS,' ',INSTR(T1.IPNT_PLACE_ADDRESS,' ',1)-1))) AS "city",
+                T1.IPNT_PLACE_ZIPCODE AS "zip",             
+                117 AS "countriesId",
+                TO_CHAR(TO_DATE(T1.IPNT_DATE||T1.IPNT_TIME,'YYYYMMDDHH24MI'), 'YYYY-MM-DD HH24:MI:SS') AS "dateFrom",
+                TO_CHAR(TO_DATE(T1.IPNT_DATE||T1.IPNT_TIME,'YYYYMMDDHH24MI'),'YYYY-MM-DD HH24:MI:SS') AS "dateTo",
+                '' AS "generalComments",
+                '' AS "internalComments",
+                '' AS "mission",
+                '' AS "athlete",
+                TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "createdAt",
+                TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS "modifiedAt"
+          FROM K03_DOPING_INSPECT_REG T1
+          JOIN ( SELECT SORT_NO,PLAYER_NO ,#{IPNT_NO} AS IPNT_NO
+                   FROM K03_DOPING_INSPECT_DTL 
+                  WHERE IPNT_NO = #{IPNT_NO} 
+                  GROUP BY SORT_NO,PLAYER_NO )T2 ON T2.IPNT_NO = T1.IPNT_NO
+          JOIN K00_ZMISSIONS B ON T1.IPNT_NO = B.IPNT_NO
+          JOIN ( SELECT SORT_NO, PLAYER_NO, MIN(TEST_NO) AS TEST_NO 
+                   FROM  K00_ZTESTS 
+                  WHERE IPNT_NO = #{IPNT_NO} 
+                  GROUP BY SORT_NO, PLAYER_NO ) G  ON T2.SORT_NO = G.SORT_NO
+          LEFT OUTER JOIN USER01TB C ON T1.IPNT_CHARGER_ID = C.USER_ID          
+          LEFT OUTER JOIN (
+           SELECT *
+            FROM
+            (select D2.*, ROW_NUMBER() OVER(PARTITION BY D2.EMAIL ORDER BY D2.SYNCAT DESC) AS RN
+            from WUSERS D2
+            ) D3
+            WHERE D3.RN = 1
+          ) D ON TRIM(C.USER_EMAIL_PREFIX) || '@' || C.USER_EMAIL_SUFFIX = D.EMAIL
+          LEFT OUTER JOIN ZCODE E ON E.MST_CODE = 'ORGANIZATION' AND E.DTL_CODE = T1.IPNT_SUPERVISOR
+          LEFT OUTER JOIN ZCODE F ON F.MST_CODE = 'ORGANIZATION' AND F.DTL_CODE = T1.IPNT_RESULT_MANAGER
+         WHERE T1.IPNT_NO = #{IPNT_NO}    
+    </select>
+   
+    
+    <select id="selectAthletesUnRegModoc" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocApi.selectAthletesUnRegModoc - modoc 미등록 조회 */
+    
+		SELECT A.PLAYER_NAME AS "firstName",
+		       '' AS "middleName",
+		       ' ' AS "lastName",
+		       A.SEX AS "gender",
+		       TO_CHAR(NVL(TO_DATE(U.BIRTH_DT,'YYYYMMDD'),A.REG_DATE), 'YYYY-MM-DD HH24:MI:SS') AS "dateOfBirth",
+		       '117' as "nationalityId",
+		       '' as "address",
+		       '' as "street",
+		       '' as "city",
+		       '' as "zip",
+		       '' as "state",
+		       '117' as "countriesId",
+		       U.USER_EMAIL_PREFIX||'@'||U.USER_EMAIL_SUFFIX AS "email",
+		       '+82' || CASE SUBSTR(U.USER_PHONE,0,1) WHEN '0' THEN SUBSTR(U.USER_PHONE,2) ELSE USER_PHONE END AS "phone",
+		       (SELECT MODOC_CODE FROM ZCODE WHERE MST_code = 'EVENT_CODE' AND DTL_CODE = A.EVENT_CODE) AS "sportsId",
+		       (SELECT MODOC_CODE FROM ZCODE WHERE MST_code = 'EVENT_DET_CODE' AND DTL_CODE = A.EVENT_DET_CODE) AS "sportDisciplinesId",       
+		       2 as "poolsId", -- RTP:1, TP:2, NA:5, RT:5 / 경기기간외
+		       U.USER_ID as "externalId",
+		       TO_CHAR(NVL(U.REG_DATE,A.REG_DATE), 'YYYY-MM-DD HH24:MI:SS') AS "createdAt",
+		       TO_CHAR(NVL(U.EDT_DATE,A.EDT_DATE), 'YYYY-MM-DD HH24:MI:SS') AS "modifiedAt",
+		       A.IPNT_SEQ,
+		       A.SORT_NO,
+               A.IPNT_NO,
+               U.USER_ID
+		 FROM (SELECT T.*,ROW_NUMBER() OVER(PARTITION BY T.SORT_NO ORDER BY T.IPNT_SEQ) AS RN
+		         FROM K03_DOPING_INSPECT_DTL T
+		        WHERE T.IPNT_NO = #{IPNT_NO} 
+		          AND T.PLAYER_NO IS NULL) A 
+		 LEFT OUTER JOIN USER01TB U ON A.USER_ID = U.USER_ID
+		 WHERE A.RN = 1
+    </select>
+    
+    <update id="updateAthletesForDopingInspectDtl" parameterType="HashMap">
+        /* modoc.ModocApi.updateAthletesForDopingInspectDtl - athletesId 저장 */
+        
+        UPDATE K03_DOPING_INSPECT_DTL T
+           SET T.PLAYER_NO = #{PLAYER_NO},
+               T.USER_ID = #{USER_ID}
+         WHERE T.IPNT_NO = #{IPNT_NO}
+           AND T.SORT_NO = #{SORT_NO}
+    </update>
+    
+    <update id="updateAthletesForK00_ZTESTS" parameterType="HashMap">
+        /* modoc.ModocApi.updateAthletesForK00_ZTESTS - athletesId 저장  */
+        
+        UPDATE K00_ZTESTS T
+           SET T.PLAYER_NO = #{PLAYER_NO}
+         WHERE T.IPNT_NO = #{IPNT_NO}
+           AND T.SORT_NO = #{SORT_NO}
+    </update>
+    
+    <update id="updateAthletesForUSER01TB" parameterType="HashMap">
+        /* modoc.ModocApi.updateAthletesForUSER01TB - athletesId 저장  */
+        
+        UPDATE USER01TB T
+           SET T.PLAYER_NO = #{PLAYER_NO}
+         WHERE T.USER_ID = #{USER_ID}           
+    </update>
+    
+    <select id="selectProOrgzCode" parameterType="HashMap" resultType="String">
+        /* modoc.ModocApi.selectProOrgzCode - 선수의 소속단체코드  */
+    
+		SELECT T.DTL_CODE
+		  FROM K99_CODE_DTL T
+		 WHERE T.MST_CODE = 'PRO_ORGZ'
+		   AND T.OPTION6 = #{OPTION6}
+		   AND T.OPTION7 = #{OPTION7}    
+    </select>
+    
+    <insert id="insertAthletesForUSER01TB" parameterType="HashMap">
+        /* modoc.ModocApi.insertAthletesForUSER01TB - 신규선수저장  */
+        
+        INSERT INTO USER01TB (
+            USER_ID
+           ,USER_NAME
+           ,USER_SEX
+           ,REG_USER
+           ,REG_DATE
+           ,USER_FLAG
+           ,PRO_ORGZ           
+           ,USER_PWD
+           ,USER_PWD_ORI
+           ,BIRTH_DT
+           ,PLAYER_NO
+         ) VALUES (
+            #{USER_ID}
+           ,#{USER_NAME}
+           ,#{USER_SEX}
+           ,#{GSS.USER_ID}
+           ,SYSDATE
+           ,'P'
+           ,#{PRO_ORGZ}           
+           ,#{USER_PWD}
+           ,#{USER_PWD_ORI}
+           ,#{BIRTH_DT} 
+           ,#{PLAYER_NO}
+         )        
+    </insert>
+    
+    <select id="selectUrineAnalysesTests" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+            /* modoc.ModocApi.selectUrineAnalysesTests   */
+        
+            SELECT TO_NUMBER(B.MODOC_CODE) as "analysesId"
+            FROM K03_DOPING_INSPECT_DTL A
+            LEFT OUTER JOIN ZCODE B ON B.MST_CODE = 'IPNT_SUB_FLAG' AND B.DTL_CODE = A.IPNT_SUB_FLAG AND (B.OPT1 <> 3 OR B.OPT1 IS NULL)
+            WHERE A.IPNT_NO = #{IPNT_NO}
+            AND A.PLAYER_NO = #{athletesId}
+        ]]>
+        <if test="IPNT_SUB_SEQ != null and IPNT_SUB_SEQ != ''">
+            AND   A.IPNT_SUB_SEQ = #{IPNT_SUB_SEQ}
+        </if>
+    </select>
+    
+    <select id="selectTestStatus" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+           /* modoc.ModocApi.selectTestStatus   */
+        
+            SELECT IPNT_NO
+            FROM K00_ZTESTS
+            WHERE 1=1
+            AND TEST_NO = #{test_no}
+            AND APIOKYN = 'Y'
+        ]]>
+    </select>
+    
+    <select id="doUpdateIpntUpperSeq" statementType="CALLABLE" parameterType="HashMap">
+       /* modoc.ModocApi.doUpdateIpntUpperSeq - IPNT_UPPER_SEQ 일괄수정   */ 
+     
+       {CALL P_UPDATE_IPNT_UPPER_SEQ(
+              #{I_IPNT_UPPER_SEQ     , mode=IN  , jdbcType=INTEGER } 
+            , #{I_IPNT_NO            , mode=IN  , jdbcType=VARCHAR} 
+            , #{O_VAL                , mode=OUT , jdbcType=VARCHAR}
+            , #{O_MSG                , mode=OUT , jdbcType=VARCHAR}
+            , #{O_NEW_IPNT_UPPER_SEQ , mode=OUT , jdbcType=INTEGER }
+            )}
+    </select>
+    
+    
+    <update id="updateZTESTS_API" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocApi.updateZTESTS_API   */
+        
+        UPDATE K00_ZTESTS
+           SET TEST_NO = #{new_id}
+         WHERE TEST_NO = #{id}
+
+        ]]>
+    </update>
+    
+    <update id="updateZTESTS_APIOK" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocApi.updateZTESTS_APIOK   */
+        
+        UPDATE ZTESTS
+        SET     APIOKYN = 'Y',
+                APIOKTIME = SYSDATE
+         WHERE TEST_NO = #{id}
+
+        ]]>
+    </update>
+    
+</mapper>

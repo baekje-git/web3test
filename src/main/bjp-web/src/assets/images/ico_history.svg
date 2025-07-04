@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16" viewBox="0 0 16 16">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="Rectangle_17" data-name="Rectangle 17" width="16" height="16" transform="translate(0.5 0.98)" fill="#fff"/>
+    </clipPath>
+  </defs>
+  <g id="ico_history" transform="translate(-0.5 -0.98)" clip-path="url(#clip-path)">
+    <g id="Group_13" data-name="Group 13" transform="translate(-0.171 -0.34)">
+      <path id="Path_37" data-name="Path 37" d="M12.84,2.32H2.07V15.79H12.84Z" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+      <path id="Path_38" data-name="Path 38" d="M10.68,16.32a4.59,4.59,0,1,0-4.59-4.59A4.59,4.59,0,0,0,10.68,16.32Z" fill="#fff" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+      <path id="Path_39" data-name="Path 39" d="M10.68,11.93h2.49" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+      <path id="Path_40" data-name="Path 40" d="M10.68,11.93v-3" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+      <path id="Path_41" data-name="Path 41" d="M3.82,4.88H7.86" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+      <path id="Path_42" data-name="Path 42" d="M3.82,7.57H5.17" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgi.lot">
+   	<select id="selectFdgiLotList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.lot.selectFdgiLotList (lot.xml) */
+	SELECT A.ITEM_CD					AS ITEM_CD    	/* 재료코드 */
+	      ,B.ITEM_NM					AS ITEM_NM    	/* 재료명 */
+	      ,A.LOT_NO						AS LOT_NO    	/* LOT NO */
+	      ,A.QTY						AS QTY    		/* 수량 */
+	      ,A.TEST_NO
+	  FROM T_FDGI_LOT A
+	  LEFT JOIN T_FDGI_MST B
+	    ON B.ITEM_CD = A.ITEM_CD
+	 WHERE 1=1
+       <if test="ITEM_CD != null and ITEM_CD != ''">
+       AND A.ITEM_CD = #{ITEM_CD}
+       </if>
+       <if test="LOT_NO != null and LOT_NO != ''">
+       AND A.LOT_NO LIKE CONCAT('%',#{LOT_NO},'%')
+       </if>
+       <if test="TEST_NO != null and TEST_NO != ''">
+       AND A.TEST_NO LIKE CONCAT('%',#{TEST_NO},'%')
+       </if>
+	 ORDER BY A.ITEM_CD, A.REG_DTM DESC, A.LOT_NO
+    </select>
+    
+    <insert id="changeFdgiLotData" parameterType="HashMap">
+    INSERT INTO T_FDGI_LOT
+       SET ITEM_CD = #{ITEM_CD}
+          ,LOT_NO = #{LOT_NO}
+          ,TEST_NO = #{TEST_NO}
+          ,QTY = #{QTY}
+          ,USE_RANK = (SELECT IFNULL(MAX(A.USE_RANK + 0) + 1, 1)
+					     FROM T_FDGI_LOT A
+					    WHERE A.ITEM_CD = #{ITEM_CD})
+          ,REG_ID = #{userData.USER_ID}
+          ,REG_DTM = DEFAULT
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+    	ON DUPLICATE KEY UPDATE
+    	   TEST_NO = #{TEST_NO}
+          ,QTY = (SELECT A.QTY 
+          			FROM T_FDGI_LOT A 
+          		   WHERE A.ITEM_CD = #{ITEM_CD} 
+          		     AND A.LOT_NO = #{LOT_NO}) + #{QTY}
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+    </insert>
+</mapper>

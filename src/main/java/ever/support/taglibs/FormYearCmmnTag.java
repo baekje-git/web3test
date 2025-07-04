@@ -1,0 +1,198 @@
+package ever.support.taglibs;
+
+import ever.support.date.DateUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.tagext.TagSupport;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class FormYearCmmnTag extends TagSupport {
+	private static final long serialVersionUID = -7554569730732606856L;
+
+	final Logger logger = LoggerFactory.getLogger(getClass());
+
+	String pId = "";
+
+	String pNm = "";
+
+	String pClass = "";
+
+	String pStyle = "";
+
+	String pValue = "";
+
+	Boolean pDefaultValue = Boolean.valueOf(false);
+
+	Boolean pReadonly = Boolean.valueOf(false);
+
+	Boolean pDisabled = Boolean.valueOf(false);
+
+	int pBtnCnt = 0;
+
+	public String getpId() {
+		return this.pId;
+	}
+
+	public void setpId(String pId) {
+		this.pId = pId;
+	}
+
+	public String getpNm() {
+		return this.pNm;
+	}
+
+	public void setpNm(String pNm) {
+		this.pNm = pNm;
+	}
+
+	public String getpClass() {
+		return this.pClass;
+	}
+
+	public void setpClass(String pClass) {
+		this.pClass = pClass;
+	}
+
+	public String getpStyle() {
+		return this.pStyle;
+	}
+
+	public void setpStyle(String pStyle) {
+		this.pStyle = pStyle;
+	}
+
+	public String getpValue() {
+		return this.pValue;
+	}
+
+	public void setpValue(String pValue) {
+		this.pValue = pValue;
+	}
+
+	public Boolean getpDefaultValue() {
+		return this.pDefaultValue;
+	}
+
+	public void setpDefaultValue(Boolean pDefaultValue) {
+		this.pDefaultValue = pDefaultValue;
+	}
+
+	public Boolean getpReadonly() {
+		return this.pReadonly;
+	}
+
+	public void setpReadonly(Boolean pReadonly) {
+		this.pReadonly = pReadonly;
+	}
+
+	public Boolean getpDisabled() {
+		return this.pDisabled;
+	}
+
+	public void setpDisabled(Boolean pDisabled) {
+		this.pDisabled = pDisabled;
+	}
+
+	public int getpBtnCnt() {
+		return this.pBtnCnt;
+	}
+
+	public void setpBtnCnt(int pBtnCnt) {
+		this.pBtnCnt = pBtnCnt;
+	}
+
+	public int doStartTag() throws JspException {
+		String serverYear = DateUtil.getDate("yyyy");
+		StringBuffer date = new StringBuffer();
+		try {
+			date.append("<span class=\"board_data_wrap year\">");
+			date.append("<input type=\"text\" ");
+			date.append("class =\"").append(this.pClass).append("\" ");
+			date.append("id    =\"").append(this.pId).append("\" ");
+			date.append("name  =\"").append(this.pNm).append("\" ");
+			if (!StringUtils.isEmpty(getpStyle()))
+				date.append("style =\"").append(this.pStyle).append("\" ");
+			if (!StringUtils.isEmpty(getpValue()))
+				date.append("value =\"").append(this.pValue).append("\" ");
+			if (this.pDefaultValue.booleanValue())
+				date.append("value =\"").append(serverYear).append("\" ");
+			if (this.pDisabled.booleanValue())
+				date.append("disabled=\"disabled\" ");
+			if (this.pReadonly.booleanValue())
+				date.append("readonly=\"readonly\" ");
+			date.append("maxlength =\"4\" />");
+			date.append("<label for=\"" + this.pId + "\"></label>");
+			date.append("</span>").append("\r\n");
+			List<HashMap<String, String>> listBtn = new ArrayList<>();
+			HashMap<String, String> mapAttr = new HashMap<>();
+			if (this.pBtnCnt > 0) {
+				if (this.pBtnCnt >= 1) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y1");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','12','','" + this.pNm + "_BTCLR_Y1');");
+					mapAttr.put("text", "1년전");
+					listBtn.add(mapAttr);
+				}
+				if (this.pBtnCnt >= 2) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y2");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','24','','" + this.pNm + "_BTCLR_Y2');");
+					mapAttr.put("text", "2년전");
+					listBtn.add(mapAttr);
+				}
+				if (this.pBtnCnt >= 3) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y3");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','36','','" + this.pNm + "_BTCLR_Y3');");
+					mapAttr.put("text", "3년전");
+					listBtn.add(mapAttr);
+				}
+				if (this.pBtnCnt >= 4) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y4");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','48','','" + this.pNm + "_BTCLR_Y4');");
+					mapAttr.put("text", "4년전");
+					listBtn.add(mapAttr);
+				}
+				if (this.pBtnCnt >= 5) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y5");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','60','','" + this.pNm + "_BTCLR_Y5');");
+					mapAttr.put("text", "5년전");
+					listBtn.add(mapAttr);
+				}
+				if (this.pBtnCnt >= 6) {
+					mapAttr = new HashMap<>();
+					mapAttr.put("name", String.valueOf(this.pNm) + "_BTCLR_Y6");
+					mapAttr.put("onclick",
+							"DateUtil.getYearContrl('" + this.pNm + "','m','72','','" + this.pNm + "_BTCLR_Y6');");
+					mapAttr.put("text", "6년전");
+					listBtn.add(mapAttr);
+				}
+			}
+			for (HashMap<String, String> mAttr : listBtn) {
+				date.append("<a ");
+				date.append("name=\"" + (String) mAttr.get("name") + "\" ");
+				date.append("onclick=\"" + (String) mAttr.get("onclick") + "\" ");
+				date.append("class=\"btn1\">");
+				date.append(mAttr.get("text"));
+				date.append("</a> ").append("\r\n");
+			}
+			this.pageContext.getOut().print(date);
+		} catch (Exception e) {
+			this.logger.error(ExceptionUtils.getStackTrace(e));
+			e.printStackTrace();
+		}
+		return 0;
+	}
+}

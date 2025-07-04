@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.error">
+    <select id="select0306IPER01TB" parameterType="HashMap" resultType="HashMap">
+            /* ErrorReportingMapper.xml - ErrorReporting.vue - 오류보고(마이페이지)*/
+        <![CDATA[
+                        SELECT  T1.IPER_SEQ
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                                ,T1.MISTAKE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS MISTAKE_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.IPNT_NO
+                                ,T1.USER_ID
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME
+                                ,t2.ipnt_date
+                                ,t2.IPNT_TIME
+                                ,t2.IPNT_PLACE_DETAIL
+ 								,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+ 								,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T2.IPNT_EVENT_DET_CODE AND OPTION2 = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                                ,T1.MEMO
+                                ,T1.REMARK
+                                ,T1.USE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,T1.IPNT_START_DATE
+                                ,T1.IPNT_END_DATE
+                                ,T1.MISTAKE_MEMO
+                                ,T1.MISTAKE_PRIORITY
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_PRIORITY' AND DTL_CODE = T1.MISTAKE_PRIORITY) AS MISTAKE_PRIORITY_NAME
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    K03_ERROR_REPORT T1
+                                ,K03_DOPING_INSPECT_REG T2
+                                ,USER01TB T3
+                        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND     T1.USER_ID = T3.USER_ID
+                        AND     T1.USE_YN = 'Y'
+                        AND     T2.USE_YN = 'Y'
+                        AND     T1.USER_ID = #{USER_ID}
+        ]]>
+       <if test='stopYn == "Y"'>
+            AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN T1.IPNT_START_DATE AND T1.IPNT_END_DATE
+        </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND T2.IPNT_PLACE_DETAIL LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+	      ]]>
+	      </if>
+      </if>
+        <![CDATA[
+                ORDER BY IPER_SEQ DESC
+        ]]>
+    </select>
+</mapper>

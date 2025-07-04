@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.playerMng">
+    
+    <select id="selectPlayerListByClub" parameterType="HashMap" resultType="HashMap">
+        /* k05.playerMng.selectPlayerListByClub - 구단별 소속선수  */
+        
+        SELECT U.*,
+               F_CODE_NM('SEX_CODE',U.USER_SEX) AS USER_SEX_NAME,
+               U.USER_EMAIL_PREFIX||'@'||U.USER_EMAIL_SUFFIX AS USER_EMAIL,
+               F_CODE_NM('CLUB_GROUP',U.CLUB_GROUP) AS CLUB_GROUP_NAME
+		  FROM USER01TB U
+		 WHERE U.USER_FLAG = 'P'  /* 선수 */
+		   AND U.PRO_ORGZ = #{PRO_ORGZ}
+	   <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+       <![CDATA[
+           AND U.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+       ]]>       
+       </if>
+	   <if test="CLUB_CODE != null and CLUB_CODE != '' ">
+       <![CDATA[
+           AND U.CLUB_CODE = #{CLUB_CODE} 
+       ]]>       
+       </if>
+         ORDER BY NVL2(U.EDT_DATE,U.EDT_DATE,U.REG_DATE) DESC    
+    </select>
+    
+    <select id="selectPlayerCreateUser" parameterType="HashMap" resultType="java.lang.String">
+    /* k05.playerMng.selectPlayerCreateUser - 선수아이디생성  */
+    SELECT #{PRO_ORGZ}||#{CLUB_CODE}||LPAD(COUNT(USER_ID)+1,5,'0') 
+             FROM USER01TB
+            WHERE PRO_ORGZ =#{PRO_ORGZ}
+              AND CLUB_CODE =#{CLUB_CODE}
+    </select>
+        
+    <update id="updatePlayer" parameterType="HashMap">
+        /* k05.playerMng.updatePlayer - 구단별 소속선수 저장  */
+    
+    MERGE INTO USER01TB
+          USING DUAL
+      ON  ( USER_ID = NVL(#{USER_ID},#{USERID}) )    
+    WHEN MATCHED THEN      
+    UPDATE  
+       SET  USER_NAME = #{USER_NAME}
+           ,USER_EN_NAME = #{USER_EN_NAME}
+           ,USER_SEX = #{USER_SEX}
+           ,USER_PHONE = #{USER_PHONE}
+           ,SMS_AGREE_YN = #{SMS_AGREE_YN}
+           ,USER_COMPANY_PHONE = #{USER_COMPANY_PHONE}
+           ,USER_HOME_PHONE = #{USER_HOME_PHONE}
+           ,ADDRESS_TYPE1 = #{ADDRESS_TYPE1}
+           ,USER_ZIPCODE1 = #{USER_ZIPCODE1}
+           ,USER_ADDRESS1 = #{USER_ADDRESS1}
+           ,USER_DETAIL_ADDRESS1 = #{USER_DETAIL_ADDRESS1}
+           ,USER_ADDRESS_LATITUDE1 = #{USER_ADDRESS_LATITUDE1}
+           ,USER_ADDRESS_LONGITUDE1 = #{USER_ADDRESS_LONGITUDE1}
+           ,ADDRESS_TYPE2 = #{ADDRESS_TYPE2}
+           ,USER_ZIPCODE2 = #{USER_ZIPCODE2}
+           ,USER_ADDRESS2 = #{USER_ADDRESS2}
+           ,USER_DETAIL_ADDRESS2 = #{USER_DETAIL_ADDRESS2}
+           ,USER_ADDRESS_LATITUDE2 = #{USER_ADDRESS_LATITUDE2}
+           ,USER_ADDRESS_LONGITUDE2 = #{USER_ADDRESS_LONGITUDE2}
+           ,USER_EMAIL_PREFIX = #{USER_EMAIL_PREFIX}
+           ,USER_EMAIL_SUFFIX = #{USER_EMAIL_SUFFIX}
+           ,EMAIL_AGREE_YN = #{EMAIL_AGREE_YN}
+           ,CLUB_CODE = #{CLUB_CODE}
+           ,CLUB_GROUP = #{CLUB_GROUP} 
+           ,EDT_USER = #{GSS.USER_ID}
+           ,EDT_DATE = SYSDATE
+           ,USER_FILE_PATH = #{USER_FILE_PATH}
+           ,USER_FILE_NAME = #{USER_FILE_NAME}       
+           ,BIRTH_DT = #{BIRTH_DT}    
+           ,LOGIN_ID = NVL(#{LOGIN_ID},#{USERID})
+           ,COUNTRY = #{COUNTRY}
+     WHEN NOT MATCHED THEN
+	     INSERT  (
+	        USER_ID
+	       ,USER_NAME
+           ,USER_EN_NAME
+           ,USER_SEX
+           ,USER_PHONE
+           ,SMS_AGREE_YN
+           ,USER_COMPANY_PHONE
+           ,USER_HOME_PHONE
+           ,ADDRESS_TYPE1
+           ,USER_ZIPCODE1
+           ,USER_ADDRESS1
+           ,USER_DETAIL_ADDRESS1
+           ,USER_ADDRESS_LATITUDE1
+           ,USER_ADDRESS_LONGITUDE1
+           ,ADDRESS_TYPE2
+           ,USER_ZIPCODE2
+           ,USER_ADDRESS2
+           ,USER_DETAIL_ADDRESS2
+           ,USER_ADDRESS_LATITUDE2
+           ,USER_ADDRESS_LONGITUDE2
+           ,USER_EMAIL_PREFIX
+           ,USER_EMAIL_SUFFIX
+           ,EMAIL_AGREE_YN
+           ,REG_USER
+           ,REG_DATE
+           ,USER_FILE_PATH
+           ,USER_FILE_NAME
+           ,USER_FLAG
+           ,PRO_ORGZ
+           ,CLUB_CODE
+           ,CLUB_GROUP
+           ,USER_PWD
+           ,USER_PWD_ORI
+           ,BIRTH_DT
+           ,LOGIN_ID
+           ,COUNTRY
+	     ) VALUES (
+	        NVL(#{USER_ID},#{USERID})
+	       ,#{USER_NAME}
+           ,#{USER_EN_NAME}
+           ,#{USER_SEX}
+           ,#{USER_PHONE}
+           ,#{SMS_AGREE_YN}
+           ,#{USER_COMPANY_PHONE}
+           ,#{USER_HOME_PHONE}
+           ,#{ADDRESS_TYPE1}
+           ,#{USER_ZIPCODE1}
+           ,#{USER_ADDRESS1}
+           ,#{USER_DETAIL_ADDRESS1}
+           ,#{USER_ADDRESS_LATITUDE1}
+           ,#{USER_ADDRESS_LONGITUDE1}
+           ,#{ADDRESS_TYPE2}
+           ,#{USER_ZIPCODE2}
+           ,#{USER_ADDRESS2}
+           ,#{USER_DETAIL_ADDRESS2}
+           ,#{USER_ADDRESS_LATITUDE2}
+           ,#{USER_ADDRESS_LONGITUDE2}
+           ,#{USER_EMAIL_PREFIX}
+           ,#{USER_EMAIL_SUFFIX}
+           ,#{EMAIL_AGREE_YN}
+           ,#{GSS.USER_ID}
+           ,SYSDATE
+           ,#{USER_FILE_PATH}
+           ,#{USER_FILE_NAME}
+           ,'P'
+           ,#{PRO_ORGZ}
+           ,#{CLUB_CODE}
+           ,#{CLUB_GROUP}
+           ,#{USER_PWD}
+           ,#{USER_PWD_ORI}
+           ,#{BIRTH_DT} 
+           ,NVL(#{LOGIN_ID},#{USERID})
+           ,#{COUNTRY}
+	     )
+         
+    </update>
+    
+    <delete id="deletePLAYER_MNG_ERR" parameterType="HashMap">
+	    /* k05.playerMng.deletePLAYER_MNG_ERR - 에러내역삭제  */
+	    
+	    DELETE FROM K05_PLAYER_MNG_ERR
+	     WHERE REG_USER = #{GSS.USER_ID}
+    </delete>
+    
+    <insert id="insertPLAYER_MNG_ERR" parameterType="HashMap">
+        /* k05.playerMng.insertPLAYER_MNG_ERR - 에러내역입력  */
+    
+        INSERT INTO K05_PLAYER_MNG_ERR (
+            SEQ,
+            GUBUN,
+            ERR_REASON,
+            USER_ID,
+            USER_NAME,
+            USER_EN_NAME,
+            USER_SEX,
+            USER_PHONE,
+            USER_EMAIL,
+            BIRTH_DT,
+            REG_USER,
+            REG_DATE            
+        ) VALUES (
+            #{SEQ},
+            #{GUBUN},
+            #{ERR_REASON},
+            #{USER_ID},
+            #{USER_NAME},
+            #{USER_EN_NAME},
+            #{USER_SEX},
+            #{USER_PHONE},
+            #{USER_EMAIL},
+            #{BIRTH_DT},
+            #{GSS.USER_ID},
+            SYSDATE
+        )        
+     
+    </insert>
+    
+    <select id="selectPlayerCnt" parameterType="HashMap" resultType="Integer">
+        /* k05.playerMng.selectPlayerCnt - 선수id존재여부 체크  */
+    
+		SELECT COUNT(*) 
+		FROM USER01TB U
+		WHERE U.USER_ID = #{USER_ID}    
+    </select>
+    
+    <select id="selectPlayerCnt2" parameterType="HashMap" resultType="HashMap">
+        /* k05.playerMng.selectPlayerCnt2 - 선수id존재여부 체크  */
+    
+        SELECT USER_ID
+        FROM Z_USER U
+        WHERE 1=1
+        AND USER_ID = #{USER_ID}
+    </select>
+    
+    <select id="selectPlayerCnt3" parameterType="HashMap" resultType="HashMap">
+        /* k05.playerMng.selectPlayerCnt3 - 선수의 login_id 중복여부 체크  */
+    
+        SELECT COUNT(*) AS CNT 
+          FROM USER01TB U
+         WHERE U.LOGIN_ID = #{LOGIN_ID}
+           AND U.PLAYER_REG_YN = 'Y' 
+    </select>
+    
+    <insert id="insertPlayer" parameterType="HashMap">
+        /* k05.playerMng.insertPlayer - 엑셀을 이용한 선수등록  */
+    
+        INSERT INTO USER01TB (
+            USER_ID,
+            USER_NAME,
+            USER_EN_NAME,
+            USER_SEX,
+            USER_PHONE,
+            USER_EMAIL_PREFIX,
+            USER_EMAIL_SUFFIX,
+            USER_ADDRESS1,
+            USER_PWD,
+            USER_PWD_ORI,
+            CHANGE_PWD_DATE,
+            WRONG_COUNT,
+            USER_FLAG,
+            PRO_ORGZ,
+            CLUB_CODE,
+            CLUB_GROUP,
+            BIRTH_DT,
+            REG_USER,
+            REG_DATE,
+            LOGIN_ID,
+            COUNTRY            
+        ) VALUES (
+            #{USER_ID},
+            #{USER_NAME},
+            #{USER_EN_NAME},
+            #{USER_SEX},
+            #{USER_PHONE},
+            #{USER_EMAIL_PREFIX},
+            #{USER_EMAIL_SUFFIX},
+            #{USER_ADDRESS1},
+            #{USER_PWD},
+            #{USER_PWD_ORI},
+            null,
+            0,
+            'P',  /* 선수 */
+            #{PRO_ORGZ},
+            #{CLUB_CODE},
+            #{CLUB_GROUP},
+            #{BIRTH_DT},
+            #{GSS.USER_ID},
+            SYSDATE,
+            #{USER_ID},
+            #{USER_COUNTRY}
+        )        
+    
+    </insert>
+    
+    <select id="selectUploadError" parameterType="HashMap" resultType="HashMap">
+	<![CDATA[
+	     /* k05.playerMng.selectUploadError 에러 데이터를 출력 */
+	     
+	     SELECT  A.ERR_REASON,
+	             A.USER_ID,             
+	             A.USER_NAME,
+	             A.USER_EN_NAME,
+	             A.USER_SEX,
+	             A.USER_PHONE,
+	             A.USER_EMAIL
+            FROM K05_PLAYER_MNG_ERR A       
+           WHERE A.REG_USER = #{USER_ID}
+           ORDER BY A.SEQ     
+	]]>
+	</select>
+	
+	<select id="selectClubGroup" parameterType="HashMap" resultType="HashMap">
+	   /* k05.playerMng.selectClubGroup 소속구단의 그룹코드 */
+	   
+	   SELECT T.DTL_CODE,
+	          T.CODE_NAME
+		 FROM K99_CODE_DTL T
+		WHERE T.MST_CODE = 'CLUB_GROUP'
+		  AND T.OPTION1 = #{CLUB_CODE}
+		  AND T.USE_YN = 'Y'
+	</select>
+    
+</mapper>

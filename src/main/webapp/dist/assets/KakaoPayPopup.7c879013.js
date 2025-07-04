@@ -1,0 +1,1 @@
+import{a as e,o,b as a}from"./index.23979a80.js";const r={},t={id:"PayForm",name:"PayForm",style:{display:"block",width:"80vw",height:"80vh",border:"none"}};function c(n,s){return o(),a("iframe",t)}var i=e(r,[["render",c]]);export{i as default};

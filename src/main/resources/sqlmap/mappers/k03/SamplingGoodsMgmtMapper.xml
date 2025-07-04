@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="k03.SampleGoods">
+    <select id="selectSTOCK_STATUS_MNG" parameterType="HashMap" resultType="HashMap">
+        /* SamplingGoodsmgmtMapper.xml - SamplingGoodsMgmt.vue - DCO활동실적*/
+		WITH TEMP AS (
+		SELECT SH.STOCK_ITEM,SH.STATUS,         
+		       CASE SH.STATUS        
+		       WHEN 'SEC_01' THEN QTY --구매
+		       WHEN 'SEC_02' THEN QTY --폐기       
+		       WHEN 'SEC_03' THEN QTY --정기
+		       WHEN 'SEC_04' THEN QTY --요청  
+		       WHEN 'SEC_05' THEN QTY --사용
+		       WHEN 'SEC_06' THEN QTY --반납              
+		       ELSE 0 END QTY
+		FROM K03_STOCK_HISTORY SH
+		)
+		SELECT D.STOCK_ITEM,
+		       D.STOCK_NM,
+		       D.STOCK_CATE,
+		       NVL(A.SEC_01,0) AS SEC_01,
+		       NVL(A.SEC_02,0) AS SEC_02,
+		       NVL(A.SEC_03,0) AS SEC_03,
+		       NVL(A.SEC_04,0) AS SEC_04,
+		       NVL(A.SEC_05,0) AS SEC_05,
+		       NVL(A.SEC_06,0) AS SEC_06,
+		       NVL(A.SEC_03,0) + NVL(A.SEC_04,0) - NVL(A.SEC_05,0) - NVL(A.SEC_06,0) AS SEC_07, --보유
+		       NVL(A.SEC_01,0) - NVL(A.SEC_02,0) - NVL(A.SEC_03,0) - NVL(A.SEC_04,0) + NVL(A.SEC_06,0) AS SEC_08 --재고
+		FROM 
+		(SELECT D1.DTL_CODE AS STOCK_ITEM,
+		       D1.CODE_NAME AS STOCK_NM,
+		       D1.SORT_ORDER,
+		       D2.CODE_NAME AS STOCK_CATE 
+		FROM
+		(SELECT D.DTL_CODE,D.CODE_NAME,D.SORT_ORDER,D.OPTION1
+		FROM K99_CODE_DTL D
+		WHERE D.MST_CODE = 'SAMPLE_ITEM') D1 JOIN 
+		(SELECT D.DTL_CODE,D.CODE_NAME
+		FROM K99_CODE_DTL D
+		WHERE D.MST_CODE = 'SAMPLE_CATE') D2 ON D1.OPTION1 = D2.DTL_CODE) D LEFT OUTER JOIN
+		(SELECT *
+		FROM TEMP
+		PIVOT(
+		SUM(QTY)
+		FOR STATUS
+		IN ('SEC_01' AS SEC_01 ,'SEC_02' AS SEC_02,'SEC_03' AS SEC_03,'SEC_04' AS SEC_04,'SEC_05' AS SEC_05,'SEC_06' AS SEC_06)
+		)) A ON D.STOCK_ITEM = A.STOCK_ITEM 
+		ORDER BY D.SORT_ORDER
+    
+    </select>
+    
+    <select id="selectSAMPLE_ITEM_STOCK_ByIPNTNO" parameterType="HashMap" resultType="HashMap">
+       /* k03.SampleGoods.selectSAMPLE_ITEM_STOCK_ByIPNTNO - 사용,반납내역 */
+        SELECT SH.STOCK_NO,
+               SH.EVENT_DT,
+               SH.STATUS,
+               SH.QTY,
+               SH.USER_ID,
+               SH.STOCK_ITEM,
+               SH.REG_DATE,
+               SH.REG_ID,
+               SH.CHARGE_USER,
+               SH.IPNT_NO
+        FROM STOCK_HISTORY SH
+        WHERE SH.IPNT_NO = #{IPNT_NO}    
+    </select>
+    
+    <delete id="deleteSAMPLE_ITEM_STOCK" parameterType="HashMap">
+    /* k03.SampleGoods.deleteSAMPLE_ITEM_STOCK - 사용,반납내역 */
+    
+        DELETE FROM STOCK_HISTORY
+        WHERE IPNT_NO = #{IPNT_NO}
+    </delete>    
+    
+    <insert id="insertSAMPLE_ITEM_STOCK" parameterType="HashMap">
+    /* k03.SampleGoods.insertSAMPLE_ITEM_STOCK - 사용,반납내역 */
+    
+        INSERT INTO STOCK_HISTORY (
+            STOCK_NO,  
+            EVENT_DT,  
+            STATUS,    
+            QTY,       
+            USER_ID,   
+            STOCK_ITEM,
+            REG_DATE,  
+            REG_ID,    
+            CHARGE_USER,
+            IPNT_NO     
+        ) VALUES (
+            STOCK_HISTORY_SEQ.NEXTVAL,  
+            #{EVENT_DT},  
+            #{STATUS},    
+            #{QTY},       
+            #{USER_ID},   
+            #{STOCK_ITEM},
+            SYSDATE,  
+            #{REG_ID},    
+            #{CHARGE_USER},
+            #{IPNT_NO}
+        )
+    </insert>
+    
+    <select id="selectSTOCK_HISTORY" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+		/* SamplingGoodsmgmtMapper.xml - selectSTOCK_HISTORY -새료채취용품관리 조회*/
+		WITH TEMP AS (
+		SELECT SH.STOCK_NO, SH.USER_ID, SH.CHARGE_USER, SH.STATUS, SH.EVENT_DT,SH.IPNT_NO, SH.STOCK_ITEM, 
+		]]>  
+		<if test="SAMPLE_USER == 'SU_01'">
+		<![CDATA[
+		       CASE STATUS WHEN 'SEC_01' THEN QTY WHEN 'SEC_02' THEN QTY ELSE 0 END QTY    
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER == 'SU_02'">
+		<![CDATA[
+		       CASE STATUS WHEN 'SEC_03' THEN QTY WHEN 'SEC_04' THEN QTY ELSE 0 END QTY 
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER == 'SU_03'">
+		<![CDATA[
+		       CASE STATUS WHEN 'SEC_05' THEN QTY WHEN 'SEC_06' THEN QTY WHEN 'SEC_07' THEN QTY ELSE 0 END QTY     
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER != 'SU_01' and SAMPLE_USER != 'SU_02' and SAMPLE_USER != 'SU_03'  ">
+		<![CDATA[
+		       SH.QTY
+		 ]]>  
+		</if>
+		<![CDATA[
+		FROM STOCK_HISTORY SH
+		WHERE ]]>  
+		<if test="SAMPLE_USER == 'SU_01'">
+		<![CDATA[
+		       SH.STATUS IN ('SEC_01','SEC_02')  
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER == 'SU_02'">
+		<![CDATA[
+		       SH.STATUS IN ('SEC_03','SEC_04')
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER == 'SU_03'">
+		<![CDATA[
+		       SH.STATUS IN ('SEC_05','SEC_06','SEC_07')    
+		 ]]>  
+		</if>
+		<if test="SAMPLE_USER != 'SU_01' and SAMPLE_USER != 'SU_02' and SAMPLE_USER != 'SU_03'  ">
+		<![CDATA[
+		       1=1 
+		 ]]>  
+		</if>
+		<if test="SAMPLE_EVENT_CODE != null and SAMPLE_EVENT_CODE != '' ">
+		<![CDATA[
+		 AND      SH.STATUS =#{SAMPLE_EVENT_CODE}   
+		 ]]>  
+		</if>
+		<![CDATA[
+		  AND SH.EVENT_DT BETWEEN REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+		)
+		SELECT ROWNUM AS STOCK_NO,
+		       A.STATUS,
+		       D.CODE_NAME AS STATUS_NM, 
+		       A.USER_ID,
+		       U.USER_NAME AS USER_NM, 
+		       A.CHARGE_USER,
+		       U2.USER_NAME AS CHARGE_NM,
+		       A.EVENT_DT,
+		       (SELECT SH.STOCK_ITEM FROM STOCK_HISTORY SH WHERE SH.STOCK_NO = A.STOCK_NO) AS STOCK_ITEM,
+		       A.IPNT_NO,
+		       NVL(A.SI_01,0) AS SI_01,
+		       NVL(A.SI_02,0) AS SI_02,
+		       NVL(A.SI_03,0) AS SI_03,
+		       NVL(A.SI_04,0) AS SI_04,
+		       NVL(A.SI_05,0) AS SI_05,
+		       NVL(A.SI_06,0) AS SI_06,
+		       NVL(A.SI_07,0) AS SI_07,
+		       NVL(A.SI_08,0) AS SI_08,
+		       NVL(A.SI_09,0) AS SI_09,
+		       NVL(A.SI_10,0) AS SI_10,
+		       NVL(A.SI_11,0) AS SI_11,
+		       NVL(A.SI_12,0) AS SI_12,
+		       NVL(A.SI_13,0) AS SI_13,
+		       NVL(A.SI_14,0) AS SI_14,
+		       NVL(A.SI_15,0) AS SI_15,
+		       NVL(A.SI_16,0) AS SI_16,
+		       NVL(A.SI_17,0) AS SI_17,
+		       NVL(A.SI_18,0) AS SI_18,
+		       NVL(A.SI_19,0) AS SI_19,
+		       NVL(A.SI_20,0) AS SI_20,
+		       NVL(A.SI_21,0) AS SI_21,
+		       NVL(A.SI_22,0) AS SI_22
+		FROM		
+		(SELECT *
+		FROM TEMP
+		PIVOT(
+		SUM(QTY)
+		FOR STOCK_ITEM
+		IN('SI_01' AS SI_01,'SI_02' AS SI_02,'SI_03' AS SI_03,'SI_04' AS SI_04,'SI_05' AS SI_05,
+		   'SI_06' AS SI_06,'SI_07' AS SI_07,'SI_08' AS SI_08,'SI_09' AS SI_09,'SI_10' AS SI_10,
+		   'SI_11' AS SI_11,'SI_12' AS SI_12,'SI_13' AS SI_13,'SI_14' AS SI_14,'SI_15' AS SI_15,
+		   'SI_16' AS SI_16,'SI_17' AS SI_17,'SI_18' AS SI_18,'SI_19' AS SI_19,'SI_20' AS SI_20,
+		   'SI_21' AS SI_21,'SI_22' AS SI_22)		
+		)) A
+		LEFT OUTER JOIN CODE01TB D ON A.STATUS = D.DTL_CODE AND D.MST_CODE = 'SAMPLE_EVENT_CODE'
+		LEFT OUTER JOIN USER01TB U ON A.USER_ID = U.USER_ID
+		LEFT OUTER JOIN USER01TB U2 ON A.CHARGE_USER = U2.USER_ID
+		WHERE 1=1
+        ]]>        
+		<if test="CONDITION_CODE != null and CONDITION_CODE != ''">
+			<if test="CONDITION_CODE == 'DCO_NM'">
+           <![CDATA[ AND U.USER_NAME LIKE '%'||#{CONDITION_TEXT}||'%' ]]> 
+        	</if>   
+        	<if test="CONDITION_CODE == 'IPNT_NO'">
+          <![CDATA[  AND A.IPNT_NO LIKE '%'||#{CONDITION_TEXT}||'%'  ]]> 
+        	</if>  
+        </if>
+         <![CDATA[ 
+		ORDER BY A.STOCK_NO DESC  ]]> 
+		    </select>
+    
+    <insert id="insertSTOCK_HISTORY" parameterType="HashMap" useGeneratedKeys="false">
+        MERGE INTO STOCK_HISTORY S
+        USING DUAL ON (S.STOCK_NO = #{STOCK_NO})
+        WHEN MATCHED THEN
+        	UPDATE SET 
+        	    S.EVENT_DT = REPLACE(#{EVENT_DT},'-',''),
+			    S.STATUS = #{STATUS},
+			    S.QTY = #{QTY},
+			    S.USER_ID = #{USER_ID},
+			    S.STOCK_ITEM = #{STOCK_ITEM},
+			    S.REG_DATE = SYSDATE,
+			    S.REG_ID = #{REG_ID},
+			    S.CHARGE_USER = #{CHARGE_USER}
+        WHEN NOT MATCHED THEN 
+			INSERT(
+			    S.STOCK_NO,
+			    S.EVENT_DT,
+			    S.STATUS,
+			    S.QTY,
+			    S.USER_ID,
+			    S.STOCK_ITEM,
+			    S.REG_DATE,
+			    S.REG_ID,
+			    S.CHARGE_USER
+			) VALUES (
+			    STOCK_HISTORY_SEQ.NEXTVAL,
+			    REPLACE(#{EVENT_DT},'-',''),
+			    #{STATUS},
+			    #{QTY},
+			    #{USER_ID},
+			    #{STOCK_ITEM},
+			    SYSDATE,
+			    #{REG_ID},
+			    #{CHARGE_USER}
+			)    	
+    </insert>
+    
+    <insert id="insertSAMPLE_Goods_STOCK" parameterType="HashMap">
+    /* k03.SampleGoods.insertSAMPLE_Goods_STOCK - 시료채취용품관리 추가 */
+    
+        INSERT INTO STOCK_HISTORY (
+            STOCK_NO,  
+            EVENT_DT,  
+            STATUS,    
+            QTY,       
+            USER_ID,   
+            STOCK_ITEM,
+            REG_DATE,  
+            REG_ID,    
+            CHARGE_USER,
+            IPNT_NO     
+        ) VALUES (
+            STOCK_HISTORY_SEQ.NEXTVAL,  
+            #{REG_REG_DATE},  
+            #{REG_SAMPLE_EVENT_CODE},    
+            #{REG_QTY},       
+            #{REG_USER_ID},   
+            #{REG_STOCK_ITEM},
+            SYSDATE,  
+            #{GSS.USER_ID},    
+            #{REG_CHARGE_USER},
+            #{REG_IPNT_NO}
+        )
+    </insert>
+    
+    <select id="selectSTOCK_USER_DCO" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+	    SELECT U.USER_ID, 
+	           U.USER_NAME, 
+	          'SU_03' AS SAMPLE_USER, 
+	           NULL AS REG_DATE,
+	           NULL AS REG_ID
+		FROM USER01TB U
+		WHERE U.DCO_YN = 'Y'
+	]]>        
+    </select>
+    
+    <select id="selectSTOCK_USER" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        SELECT
+			  SU.USER_ID
+			, U.USER_NAME  
+			, SU.SAMPLE_USER
+			, TO_CHAR(SU.REG_DATE,'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+			, SU.REG_ID 
+			, SU.USE_YN 
+			, SU.SAMPLE_USER
+		FROM STOCK_USER SU 
+		JOIN USER01TB U 
+		  ON SU.USER_ID = U.USER_ID
+		WHERE 1=1          
+        ]]>        
+         <if test="PARAM1 != null and PARAM1 != ''">
+            AND SU.SAMPLE_USER = #{PARAM1}
+         </if>
+    </select>
+    
+</mapper>

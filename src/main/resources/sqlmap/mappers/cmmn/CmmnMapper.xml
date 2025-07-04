@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cmmn">
+
+    <!-- C_ : 현재 / F_ :  해당월 첫날 / L_ : 해당월 마지막날 -->
+    <select id="selectCmmnSvrDateInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[
+        /* (CmmnMapper.xml) - cmmn.selectCmmnSvrDateInfo.공통코드조회.강민석 */
+        SELECT TO_CHAR(SYSDATE,'YYYY-MM-DD')                 AS C_DATE
+             , TO_CHAR(TRUNC(SYSDATE, 'MONTH'),'YYYY-MM-DD') AS F_DATE
+             , TO_CHAR(LAST_DAY(SYSDATE),'YYYY-MM-DD')       AS L_DATE
+          FROM DUAL
+    ]]>
+    </select>
+
+    <!-- <select id="selectCmmnCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <choose>
+        <when test='!P_CODE.equals("ROLE_CD")'>
+        <![CDATA[
+        /* (CmmnMapper.xml) - cmmn.selectCmmnCodeList.공통코드조회.강민석 */
+        SELECT A.CODE    AS CODE_ID   /* 코드 */
+             , A.CD_NM   AS CODE_NM   /* 코드명 */
+          FROM T_CODE A
+         WHERE 1=1
+           AND A.P_CODE != '000'
+           AND A.P_CODE  = #{P_CODE}
+           AND A.USE_YN  = 'Y'
+         ORDER BY A.SORT_NO
+        ]]>
+        </when>
+        <otherwise>
+        <![CDATA[
+        /* (CmmnMapper.xml) - cmmn.selectCmmnCodeList.공통코드조회.강민석 */
+        SELECT A.ROLE_CD AS CODE_ID   /* 역할코드 */
+             , A.ROLE_NM AS CODE_NM   /* 역할명 */
+          FROM T_ROLE A
+         WHERE 1=1
+         ORDER BY A.ROLE_CD
+        ]]>
+        </otherwise>
+    </choose>
+    </select> -->
+
+    <select id="selectCmmnGateList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <choose>
+        <when test="STEP != null and !STEP.equals('')">
+        <![CDATA[
+            /* (CmmnMapper.xml) - cmmn.selectCmmnGateList.카테고리목록.강민석 */
+            SELECT A.GOODS_CATE_SEQ AS CODE_ID        /* 상품 카테고리 순번 */
+                 , A.UPPERKIND      AS UPPERKIND      /* 상위분류 */
+                 , A.KINDNM         AS CODE_NM        /* 분류명 */
+                 , A.STEP           AS STEP           /* 단계 */
+                 , A.SORT_NO        AS SORT_NO        /* 정렬 번호 */
+                 , A.TOT_CATE_NM    AS TOT_CODE_NM    /* 전체 카테고리 명 */
+                 , A.TOT_CATE_NO    AS TOT_CODE_NO    /* 전체 카테고리 번호 */
+                 , A.CATE_LCLAS     AS CATE_LCLAS     /* 카테고리 대분류 */
+                 , A.CATE_MLSFC     AS CATE_MLSFC     /* 카테고리 중분류 */
+                 , A.CATE_SCLAS     AS CATE_SCLAS     /* 카테고리 소분류 */
+              FROM T_GOODS_CATE A
+             WHERE 1=1
+               AND A.USE_YN = 'Y'
+               AND A.STEP      = #{STEP}
+             ORDER BY A.SORT_NO
+        ]]>
+        </when>
+        <otherwise>
+        <![CDATA[
+            /* (CmmnMapper.xml) - cmmn.selectCmmnGateList.카테고리목록.강민석 */
+            SELECT A.GOODS_CATE_SEQ AS CODE_ID        /* 상품 카테고리 순번 */
+                 , A.UPPERKIND      AS UPPERKIND      /* 상위분류 */
+                 , A.KINDNM         AS CODE_NM        /* 분류명 */
+                 , A.STEP           AS STEP           /* 단계 */
+                 , A.SORT_NO        AS SORT_NO        /* 정렬 번호 */
+                 , A.TOT_CATE_NM    AS TOT_CODE_NM    /* 전체 카테고리 명 */
+                 , A.TOT_CATE_NO    AS TOT_CODE_NO    /* 전체 카테고리 번호 */
+                 , A.CATE_LCLAS     AS CATE_LCLAS     /* 카테고리 대분류 */
+                 , A.CATE_MLSFC     AS CATE_MLSFC     /* 카테고리 중분류 */
+                 , A.CATE_SCLAS     AS CATE_SCLAS     /* 카테고리 소분류 */
+              FROM T_GOODS_CATE A
+             WHERE 1=1
+               AND A.USE_YN = 'Y'
+               AND A.UPPERKIND = #{UPPERKIND}
+             ORDER BY A.SORT_NO
+        ]]>
+        </otherwise>
+    </choose>
+    </select>
+
+    <select id="selectTopMenuList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[
+        /* (CmmnMapper.xml) - cmmn.selectTopMenuList.대메뉴목록.강민석 */
+        SELECT A.MENU_ID
+             , A.MENU_NM
+             , A.MENU_LVL
+             , A.MENU_SEQ
+          FROM T_MENU A
+               INNER JOIN T_ROLE_MENU C
+           ON  C.MENU_ID = A.MENU_ID
+          AND  C.ROLE_CD = #{ROLE_CD}
+         WHERE 1=1
+           AND A.MENU_LVL = '1'
+           AND A.USE_YN   = 'Y'
+         ORDER BY A.MENU_LVL, A.MENU_SEQ
+    ]]>
+    </select>
+
+    <select id="selectSubMenuList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[
+        /* (CmmnMapper.xml) - cmmn.selectSubMenuList.서브메뉴목록.강민석 */
+        SELECT A.MENU_ID                         AS MENU_ID             /* 메뉴ID */
+             , A.MENU_NM                         AS MENU_NM             /* 메뉴명 */
+             , A.P_MENU_ID                       AS P_MENU_ID           /* 상위메뉴ID */
+             , A.MENU_LVL                        AS MENU_LVL            /* 메뉴레벨 */
+             , A.MENU_SEQ                        AS MENU_SEQ            /* 메뉴순서 */
+             , B.SUB_SYSTEM_CD                   AS SUB_SYSTEM_CD       /* 업무분류코드 */
+             , B.PGM_ID                          AS PGM_ID              /* 프로그램ID */
+             , B.PGM_NM                          AS PGM_NM              /* 프로그램명 */
+             , B.BASIC_URL                       AS BASIC_URL           /* 기본URL */
+             , NVL(RTRIM(A.MENU_PARAM),'')       AS MENU_PARAM          /* 메뉴인자값 */
+             , A.SEARCH_USE_YN                   AS SEARCH_USE_YN       /* 조회사용여부 */
+             , A.INSERT_USE_YN                   AS INSERT_USE_YN       /* 입력사용여부 */
+             , A.DELETE_USE_YN                   AS DELETE_USE_YN       /* 삭제사용여부 */
+             , A.SAVE_USE_YN                     AS SAVE_USE_YN         /* 저장사용여부 */
+             , A.EXCEL_USE_YN                    AS EXCEL_USE_YN        /* 엑셀사용여부 */
+             , A.PRINT_USE_YN                    AS PRINT_USE_YN        /* 출력사용여부 */
+             , A.CANCEL_USE_YN                   AS CANCEL_USE_YN       /* 취소사용여부 */
+             , A.ETC1_USE_YN                     AS ETC1_USE_YN         /* 기타1사용여부 */
+             , A.ETC2_USE_YN                     AS ETC2_USE_YN         /* 기타2사용여부 */
+             , A.ETC3_USE_YN                     AS ETC3_USE_YN         /* 기타3사용여부 */
+             , A.ETC4_USE_YN                     AS ETC4_USE_YN         /* 기타4사용여부 */
+             , A.ETC5_USE_YN                     AS ETC5_USE_YN         /* 기타5사용여부 */
+             , A.ETC_BTN_ID1                     AS ETC_BTN_ID1         /* 기타버튼ID1 */
+             , A.ETC_BTN_ID2                     AS ETC_BTN_ID2         /* 기타버튼ID2 */
+             , A.ETC_BTN_ID3                     AS ETC_BTN_ID3         /* 기타버튼ID3 */
+             , A.ETC_BTN_ID4                     AS ETC_BTN_ID4         /* 기타버튼ID4 */
+             , A.ETC_BTN_ID5                     AS ETC_BTN_ID5         /* 기타버튼ID5 */
+             , A.USE_YN                          AS USE_YN              /* 사용여부 */
+             , (CASE WHEN A.SEARCH_USE_YN = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.INSERT_USE_YN = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.DELETE_USE_YN = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.SAVE_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.EXCEL_USE_YN  = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.PRINT_USE_YN  = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.CANCEL_USE_YN = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC1_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC2_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC3_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC4_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC5_USE_YN   = 'Y' THEN '1'           ELSE '0' END)
+             ||(CASE WHEN A.ETC1_USE_YN   = 'Y' THEN A.ETC_BTN_ID1 ELSE ''  END)
+             ||(CASE WHEN A.ETC2_USE_YN   = 'Y' THEN A.ETC_BTN_ID2 ELSE ''  END)
+             ||(CASE WHEN A.ETC3_USE_YN   = 'Y' THEN A.ETC_BTN_ID3 ELSE ''  END)
+             ||(CASE WHEN A.ETC4_USE_YN   = 'Y' THEN A.ETC_BTN_ID4 ELSE ''  END)
+             ||(CASE WHEN A.ETC5_USE_YN   = 'Y' THEN A.ETC_BTN_ID5 ELSE ''  END)
+             ||(CASE WHEN NVL(RTRIM(A.MENU_PARAM),'')!='' THEN '&'||NVL(RTRIM(A.MENU_PARAM),'') ELSE '' END) AS MENU_AUTH
+          FROM T_MENU A
+               LEFT OUTER JOIN
+               T_PGM  B
+            ON B.PGM_ID = A.PGM_ID
+           AND B.USE_YN = 'Y'
+               INNER JOIN T_ROLE_MENU C
+           ON  C.MENU_ID = A.MENU_ID
+          AND  C.ROLE_CD = #{ROLE_CD}
+         WHERE 1=1
+           AND A.USE_YN = 'Y'
+         START WITH A.P_MENU_ID IS NULL
+       CONNECT BY PRIOR A.MENU_ID = A.P_MENU_ID
+         ORDER SIBLINGS BY A.MENU_LVL, A.MENU_SEQ
+    ]]>
+    </select>
+
+    <select id="selectCateList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+           /* (CmmnMapper.xml) - cmmn.selectCateList.카테고리목록.김현 */
+           SELECT GOODS_CATE_SEQ AS CODE_ID
+                , KINDNM AS CODE_NM
+             FROM T_GOODS_CATE
+            WHERE 1=1
+        ]]>
+
+        <choose>
+            <when test="UPPERKIND != null and !UPPERKIND.equals('')">
+                <![CDATA[
+                    AND UPPERKIND = #{UPPERKIND}
+                ]]>
+            </when>
+            <otherwise>
+                <![CDATA[
+                    AND UPPERKIND = '0'
+                ]]>
+            </otherwise>
+        </choose>
+        <![CDATA[
+            AND USE_YN = 'Y'
+            ORDER BY SORT_NO
+        ]]>
+    </select>
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////
+    // 프로시저 호출 테스트
+    ////////////////////////////////////////////////////////////////////////////////////////
+     -->
+    <select id="callProcTest_S" statementType="CALLABLE" parameterType="java.util.HashMap">
+       {CALL P_TEST_S(
+              #{I_DEAL_TYPE  , mode=IN  , jdbcType=VARCHAR}
+            , #{I_CUST_CD    , mode=IN  , jdbcType=VARCHAR}
+            , #{I_DEAL_DT    , mode=IN  , jdbcType=VARCHAR}
+            , #{I_OPTION     , mode=IN  , jdbcType=VARCHAR}
+            , #{O_VAL        , mode=OUT , jdbcType=VARCHAR}
+            , #{O_MSG        , mode=OUT , jdbcType=VARCHAR}
+            )}
+    </select>
+
+    <select id="callProcTest_I" statementType="CALLABLE" parameterType="java.util.HashMap">
+       {CALL P_TEST_I(
+              #{I_DEAL_TYPE  , mode=IN  , jdbcType=VARCHAR}
+            , #{I_CUST_CD    , mode=IN  , jdbcType=VARCHAR}
+            , #{I_DEAL_DT    , mode=IN  , jdbcType=VARCHAR}
+            , #{I_OPTION     , mode=IN  , jdbcType=VARCHAR}
+            , #{O_VAL        , mode=OUT , jdbcType=VARCHAR}
+            , #{O_MSG        , mode=OUT , jdbcType=VARCHAR}
+            )}
+    </select>
+
+	<insert id="insertHistory" parameterType="java.util.HashMap">
+		INSERT INTO Z_HISTORY
+		     (
+		       PGM_URL
+		     , REG_ID
+		     , REG_DTM
+		     , ACT_CD
+		     , EDT_ID
+		     , EDT_DTM
+		     )
+		VALUES
+		     (
+		       #{PGM_URL}
+		     , #{userData.USER_ID}
+		     , NOW()
+		     , #{ACT_CD}
+		     , #{userData.USER_ID}
+		     , NOW()
+		     )
+    </insert>
+
+	<select id="selectCmmnCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	/* (CmmnMapper.xml) - cmmn.selectCmmnCodeList */
+    	<!-- SELECT B.CODE_MST_CD
+    	     , B.CODE_DTL_CD
+    	     , B.CODE_DTL_NM
+    	     , B.SORT
+    	  FROM Z_CODE_MST A
+    	  LEFT OUTER JOIN Z_CODE_DTL B ON A.CODE_MST_CD = B.CODE_MST_CD
+    	 WHERE 1=1
+    	   AND B.USE_YN = #{USE_YN}
+    	   AND A.CODE_MST_CD = #{CODE_MST_CD}
+    	 ORDER BY SORT ASC -->
+    	 SELECT CODE_MST_CD
+    	      , CODE_DTL_CD
+    	      , CODE_DTL_NM
+    	      , SORT
+    	   FROM Z_CODE_DTL
+    	  WHERE 1 = 1
+    	    AND USE_YN = #{USE_YN}
+    	    AND CODE_MST_CD = #{CODE_MST_CD}
+    	  ORDER BY SORT ASC
+    </select>
+
+    <select id="getNextSn" parameterType="java.util.HashMap" statementType="CALLABLE">
+        {CALL P_NEXT_SN(
+              #{I_DEAL_TYPE         ,mode=IN  ,jdbcType=VARCHAR}
+            , #{I_CUST_BRCH         ,mode=IN  ,jdbcType=VARCHAR}
+            , #{I_DEAL_DT           ,mode=IN  ,jdbcType=VARCHAR}
+            , #{I_OPTION            ,mode=IN  ,jdbcType=VARCHAR}
+            , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+            , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+            )}
+    </select>
+
+</mapper>

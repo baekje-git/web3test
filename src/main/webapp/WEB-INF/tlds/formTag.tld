@@ -1,0 +1,713 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.2//EN"
+        "http://java.sun.com/j2ee/dtd/web-jsptaglibrary_1_2.dtd">
+        
+<taglib>
+    <tlib-version>1.0</tlib-version>
+    <jsp-version>2.3</jsp-version>
+    <short-name>tag</short-name>
+    <description>custom tab library for the form tag</description>
+    <tag>
+        <name>select</name>
+        <tag-class>ever.support.taglibs.FormCbxCmmnTag</tag-class>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCodeId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 그룹코드값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션값을 입력하면 선택된상태가 유지됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pAllYn</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>첫번째 옵션에 '전체' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pTitle</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pAll를 사용할경우 옵션명 변경이 가능합니다.(default:'전체')</description>
+        </attribute>
+        <attribute>
+            <name>pExceptCd</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>제외할 코드를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>button</name>
+        <tag-class>ever.support.taglibs.FormBttnCmmnTag</tag-class>
+        <!-- BUTTON TYPE -->
+        <attribute>
+            <name>pType</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 버튼 기능코드를 입력하세요.(RESET,ADD_ROW,ADD_DEL,)</description>
+        </attribute>
+        <!-- BUTTON ID -->
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 버튼 Id를 입력하세요.</description>
+        </attribute>
+        <!-- BUTTON TITLE -->
+        <attribute>
+            <name>pTitle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>버튼 제목를 입력하세요.</description>
+        </attribute>
+        <!-- BUTTON CLICK EVNET -->
+        <attribute>
+            <name>pOnClick</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>이벤트 함수명을 입력하세요.</description>
+        </attribute>
+        <!-- BUTTON AUTH -->
+        <attribute>
+            <name>pRole</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+    </tag>
+    
+    <!-- 기본형 날짜 입력박스 -->
+    <tag>
+        <name>date</name>
+        <tag-class>ever.support.taglibs.FormDateCmmnTag</tag-class>
+        <description>기능설명 : input 태그의 datepicker 입력박스를 제공합니다.</description>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDefaultValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기본날짜 설정여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pBeforeYn</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>이전날짜 선택여부를 입력하세요.(default: 'true'  | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pReadonly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>읽기전용 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pBtnCnt</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기간설정 버튼갯수를 설정하세요.</description>
+        </attribute>
+    </tag>
+    
+    <!-- 기간달력 -->
+    <tag>
+        <name>termDate</name>
+        <tag-class>ever.support.taglibs.FormTermDateCmmnTag</tag-class>
+        <attribute>
+            <name>pBegin</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 시작일(을)를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pEnd</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 종료일(을)를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pBClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>시작일 스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pEClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>종료일 스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pBStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>시작일 스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pEStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>종료일 스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pBValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>시작일값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pEValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>종료일값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDefaultValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기본날짜 설정여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>시작일 종료일 동일하게 적용할 스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>시작일 종료일 동일하게 적용할 스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pReadonly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>읽기전용 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pBtnCnt</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기간설정 버튼갯수를 설정하세요.(10개까지)</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>month</name>
+        <tag-class>ever.support.taglibs.FormMonthCmmnTag</tag-class>
+        <description>기능설명 : input 태그의 datepicker 입력박스를 제공합니다.</description>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDefaultValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기본날짜 설정여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pReadonly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>읽기전용 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pBtnCnt</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기간설정 버튼갯수를 설정하세요.(6개까지)</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>year</name>
+        <tag-class>ever.support.taglibs.FormYearCmmnTag</tag-class>
+        <description>기능설명 : input 태그의 datepicker 입력박스를 제공합니다.</description>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일 클래스를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pStyle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>스타일을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDefaultValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기본날짜 설정여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pReadonly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>읽기전용 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: Boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pBtnCnt</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>기간설정 버튼갯수를 설정하세요.(6개까지)</description>
+        </attribute>
+    </tag>
+    
+    
+    <tag>
+        <name>zipPopup</name>
+        <tag-class>ever.support.taglibs.FormZipPopupCmmnTag</tag-class>
+        <attribute>
+            <name>pType</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업종류를 선택하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCode</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드ID를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pName</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description></description>
+        </attribute>
+        <attribute>
+            <name>pCallFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>호출하는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pReturnFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>반횐받는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pReadOnly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업 활성화 여부를 입력하세요.</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>gateAll</name>
+        <tag-class>ever.support.taglibs.FormCbxGateAllTag</tag-class>
+        <attribute>
+            <name>pGateCls1</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 대분류(을)를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pGateCls2</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 중분류(을)를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pGateCls3</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 소분류(을)를 입력하세요.</description>
+        </attribute>
+        <!-- 
+        <attribute>
+            <name>pValue</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션값을 입력하면 선택된상태가 유지됩니다.</description>
+        </attribute>
+         -->
+        <attribute>
+            <name>pClass</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pClass1</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pClass2</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pClass3</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pAllYn</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>첫번째 옵션에 '전체' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pTitle</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pAll를 사용할경우 옵션명 변경이 가능합니다.(default:'전체')</description>
+        </attribute>
+        <attribute> 
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>gateCls</name>
+        <tag-class>ever.support.taglibs.FormCbxGateClsTag</tag-class>
+        <attribute>
+            <name>pGateCls</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 카테코리명칭(을)를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션값을 입력하면 선택된상태가 유지됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pAllYn</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>첫번째 옵션에 '전체' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pTitle</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pAll를 사용할경우 옵션명 변경이 가능합니다.(default:'선택')</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pTotOptNo</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션에 '전체옵션코드' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pTotOptNm</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션에 '전체옵션이름' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pStep</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>카테고리 대중소분류 타입을 설정하세요.</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>check</name>
+        <tag-class>ever.support.taglibs.FormChkBoxCmmnTag</tag-class>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCodeId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 그룹코드값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션값을 입력하면 선택된상태가 유지됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pAllYn</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>첫번째 옵션에 '전체' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pExceptCd</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>제외할 코드를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>radio</name>
+        <tag-class>ever.support.taglibs.FormRadioCmmnTag</tag-class>
+        <attribute>
+            <name>pId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pNm</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 셀렉트박스 Name를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCodeId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 그룹코드값을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pValue</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>옵션값을 입력하면 선택된상태가 유지됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+        <attribute>
+            <name>pAllYn</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>첫번째 옵션에 '전체' 사용여부를 입력하세요.(default: 'true' | type: boolean)</description>
+        </attribute>
+        <attribute>
+            <name>pExceptCd</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>제외할 코드를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pDisabled</name>
+            <rtexprvalue>true</rtexprvalue>
+            <description>비활성화 사용여부를 입력하세요.(default: 'false' | type: boolean)</description>
+        </attribute>
+    </tag>
+    
+    
+    <!-- 첨부파일 타입1 -->
+    <tag>
+        <name>fileuploadH</name>
+        <tag-class>ever.support.taglibs.FormFileUpload1Tag</tag-class>
+        <attribute>
+            <name>pHeaderTitle</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>헤더 제목을 입력하세요..</description>
+        </attribute>
+        <!-- 
+        <attribute>
+            <name>pFileNo</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 파일번호를 입력하세요.</description>
+        </attribute>
+         -->
+        <attribute>
+            <name>pFileId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pAccept</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>업로드가능한 확장자를 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pMultiple</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>다중파일선택여부 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCallbackFunction</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>fileuploadB</name>
+        <tag-class>ever.support.taglibs.FormFileUpload2Tag</tag-class>
+        <!-- 
+        <attribute>
+            <name>pFileNo</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 파일번호를 입력하세요.</description>
+        </attribute>
+         -->
+        <attribute>
+            <name>pFileId</name>
+            <required>true</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* input Id를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pAccept</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>업로드가능한 확장자를 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pMultiple</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>다중파일선택여부 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCallbackFunction</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+        </attribute>
+    </tag>
+</taglib>

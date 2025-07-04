@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.loginImageMng">
+    
+    <update id="updateResetAll" parameterType="HashMap">
+		UPDATE K99_CMMN_FILE A
+		   SET A.OPTION1 = 'N'
+		 WHERE A.FILE_SEQ = #{FILE_SEQ}    
+    </update>
+    
+    <update id="updateBgImage" parameterType="HashMap">
+        UPDATE K99_CMMN_FILE A
+           SET A.OPTION1 = 'Y'
+         WHERE A.FILE_SEQ = #{FILE_SEQ}
+           AND A.SEQ_NO = #{SEQ_NO}    
+    </update>
+    
+    
+</mapper>

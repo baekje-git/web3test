@@ -1,0 +1,1650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.dopingInspectReg">
+    
+    <select id="selectInspectCharger" parameterType="HashMap" resultType="HashMap">
+         /* k03.dopingInspectReg.selectInspectCharger - 담당자(DopingInspectRegMapper.xml) */
+         
+         SELECT  T1.USER_ID
+                ,T1.AUTH_ID
+                ,T1.USER_NAME
+                ,T1.USER_EN_NAME
+                ,T1.USER_PWD
+                ,T1.USER_SEX
+                ,T1.USER_PHONE
+                ,T1.SMS_AGREE_YN
+                ,T1.USER_COMPANY_PHONE
+                ,T1.USER_HOME_PHONE
+                ,T1.ADDRESS_TYPE1
+                ,T1.USER_ZIPCODE1
+                ,T1.USER_ADDRESS1
+                ,T1.USER_DETAIL_ADDRESS1
+                ,T1.IS_ROAD_ADDRESS1
+                ,T1.USER_ADDRESS_LATITUDE1
+                ,T1.USER_ADDRESS_LONGITUDE1
+                ,T1.ADDRESS_TYPE2
+                ,T1.USER_ZIPCODE2
+                ,T1.USER_ADDRESS2
+                ,T1.USER_DETAIL_ADDRESS2
+                ,T1.IS_ROAD_ADDRESS2
+                ,T1.USER_ADDRESS_LATITUDE2
+                ,T1.USER_ADDRESS_LONGITUDE2
+                ,T1.USER_EMAIL_PREFIX
+                ,T1.USER_EMAIL_SUFFIX
+                ,T1.EMAIL_AGREE_YN
+                ,T1.COMPANY_NAME
+                ,T1.COMPANY_POSITION
+                ,T1.BANK_CODE
+                ,T1.BANK_ACCOUNT_NO
+                ,T1.BANK_OWNER_NAME
+                ,T1.UNIFORM_SIZE
+                ,T1.CHARGER_YN
+                ,T1.BCO_YN
+                ,T1.DCO_YN
+                ,T1.EDU_YN
+                ,T1.EDU_CHARGER_YN
+                ,T1.AUTH_STAGE_NO
+                ,T1.AUTH_STAGE_NAME
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,T1.EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+        FROM    USER01TB T1
+        WHERE   T1.CHARGER_YN = 'Y'
+        ORDER BY T1.USER_NAME    
+    </select>
+    
+    <select id="selectDopingInspectRegList" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectRegList - 도핑검사공지 및 신청 리스트(DopingInspectRegMapper.xml) */
+        
+		SELECT T1.IPNT_UPPER_SEQ,
+		       T1.IPNT_NO,
+		       T1.IPNT_NAME,
+		       F_CODE_NM('IPNT_TYPE',T1.IPNT_TYPE) AS IPNT_TYPE_NAME,
+		       T1.IPNT_KIND_CODE,
+		       F_CODE_NM('IPNT_KIND_CODE',T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME,       
+		       T1.IPNT_PERIOD_CODE,
+		       F_CODE_NM('IPNT_PERIOD_CODE',T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME,       
+		       T1.IPNT_SUPERVISOR,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME,
+		       T1.IPNT_COLLECTOR,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME,                    
+		       T1.IPNT_RESULT_MANAGER,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME,                  
+		       T1.IPNT_DONE_DATE,
+		       T1.IPNT_CHARGER_ID,
+		       (SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '')
+		          FROM USER01TB
+		         WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME,
+		       NULL AS IPNT_INDICATION,
+		       TO_CHAR(T1.IPNT_CHOOSE_METHOD) AS IPNT_CHOOSE_METHOD,
+		       TO_CHAR(T1.IPNT_REMARK) AS IPNT_REMARK,
+		       F_CODE_NM('EVENT_CODE',T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME,       
+		       T1.IPNT_EVENT_DET_CODE,
+		       (SELECT CODE_NAME
+		          FROM K99_CODE_DTL
+		         WHERE MST_CODE = 'EVENT_DET_CODE'
+		           AND DTL_CODE = T1.IPNT_EVENT_DET_CODE
+		           AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME,
+		       T1.IPNT_DATE,
+		       T1.IPNT_TIME,
+		       F_CODE_NM('PLACE_TYPE',T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME,
+		       T1.IPNT_PROVINCE_CODE,
+		       F_CODE_NM('PROVINCE_CODE',T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME,
+		       T1.IPNT_PLACE_DETAIL,
+		       T1.IPNT_PLACE_ZIPCODE,
+		       T1.IPNT_PLACE_ADDRESS,
+		       T1.IPNT_PLACE_NEWADDRESS,
+		       T1.IPNT_PLACE_PHONE,
+		       T1.IPNT_PLACE_LATITUDE,
+		       T1.IPNT_PLACE_LONGITUDE,
+		       T1.IPNT_SEX_M,
+		       T1.IPNT_SEX_F,
+		       T1.IPNT_SEX_MIX,
+		       T1.IPNT_DCO,
+		       T1.IPNT_DCO_F,
+		       T1.IPNT_BCO,
+		       TO_CHAR(T1.MEMO) AS MEMO,
+		       T1.CHOOSE_DONE_YN,
+		       T1.IP_ADDR,
+		       T1.USER_AGENT,
+		       T1.GAME_CODE,
+		       (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER,
+		       TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE,
+		       (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER,
+		       TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE,
+		       NVL((SELECT COUNT(1)
+		             FROM K03_DOPING_INSPECT_HIST
+		            WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ),
+		           0) AS CNT_READ,
+		       COUNT(1) OVER() AS ALL_COUNT,
+		       (SELECT COUNT(1) FROM K03_DOPING_INSPECT_DCO WHERE IPNT_NO = T1.IPNT_NO) AS COUNT_PEOPLE,
+		       CASE WHEN T1.CHOOSE_DONE_YN = 'Y' THEN '선정완료'
+		            ELSE NULL 
+		        END AS STATE,
+		       CASE WHEN TO_CHAR(SYSDATE,'YYYYMMDD') <= T1.IPNT_DONE_DATE THEN '진행중'
+		            ELSE '마감'
+		        END AS STATUS,
+		        T2.PROCESS_STATUS
+		  FROM K03_DOPING_INSPECT_REG T1
+		  LEFT OUTER JOIN K03_INSPECT_ORDER T2
+		    ON T1.IPNT_NO = T2.IPNT_NO
+		 WHERE T1.USE_YN = 'Y'   
+	]]>	  
+        <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+            AND   T1.IPNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="COND_CHARGER_ID != null and COND_CHARGER_ID != ''">
+            AND   T1.IPNT_CHARGER_ID = #{COND_CHARGER_ID}
+        </if>
+        <if test="COND_IPNT_TYPE != null and COND_IPNT_TYPE != ''">
+            AND   T1.IPNT_TYPE = #{COND_IPNT_TYPE}
+        </if>
+        <if test="COND_IPNT_KIND_CODE != null and COND_IPNT_KIND_CODE != ''">
+            AND   T1.IPNT_KIND_CODE = #{COND_IPNT_KIND_CODE}
+        </if>		 
+          ORDER BY T1.REG_DATE DESC, (CASE WHEN IPNT_NO LIKE 'K%' THEN 1 ELSE 0 END), T1.IPNT_UPPER_SEQ DESC
+    </select>
+    
+    <select id="selectDopingInspectRegByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectRegByPK 검사공지등록 master (old : selectIPNT01TBByPK) */
+        
+		SELECT T1.IPNT_UPPER_SEQ,
+		       T1.IPNT_NO,
+		       T1.IPNT_NAME,
+		       T1.IPNT_TYPE,
+		       F_CODE_NM('IPNT_TYPE',T1.IPNT_TYPE) AS IPNT_TYPE_NAME,       
+		       T1.IPNT_KIND_CODE,
+		       F_CODE_NM('IPNT_KIND_CODE',T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME,
+		       T1.IPNT_KIND_ETC,
+		       T1.IPNT_PERIOD_CODE,
+		       F_CODE_NM('IPNT_PERIOD_CODE',T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME,      
+		       T1.IPNT_SUPERVISOR,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME,      
+		       T1.IPNT_COLLECTOR,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME,        
+		       T1.IPNT_RESULT_MANAGER,
+		       F_CODE_NM('ORGANIZATION',T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME,
+		       T1.IPNT_DONE_DATE,
+		       T1.IPNT_CHARGER_ID,
+		       (SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '')
+		          FROM USER01TB
+		         WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME,
+		       TO_CHAR(T1.IPNT_INDICATION) AS IPNT_INDICATION,
+		       TO_CHAR(T1.IPNT_CHOOSE_METHOD) AS IPNT_CHOOSE_METHOD, 
+		       TO_CHAR(T1.IPNT_REMARK) AS IPNT_REMARK,
+		       T1.IPNT_EVENT_CODE,
+		       F_CODE_NM('EVENT_CODE',T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME,
+		       T1.IPNT_EVENT_DET_CODE,
+		       (SELECT CODE_NAME
+		          FROM K99_CODE_DTL
+		         WHERE MST_CODE = 'EVENT_DET_CODE'
+		           AND DTL_CODE = T1.IPNT_EVENT_DET_CODE
+		           AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME,
+		       T1.IPNT_DATE,
+		       T1.IPNT_TIME,
+		       T1.IPNT_PLACE_TYPE,
+		       F_CODE_NM('PLACE_TYPE',T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME,
+		       T1.IPNT_PROVINCE_CODE,
+		       F_CODE_NM('PROVINCE_CODE',T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME,
+		       T1.IPNT_PLACE_DETAIL,
+		       T1.IPNT_PLACE_ZIPCODE,
+		       T1.IPNT_PLACE_ADDRESS,
+		       T1.IPNT_PLACE_NEWADDRESS,
+		       T1.IPNT_PLACE_PHONE,
+		       T1.IPNT_PLACE_LATITUDE,
+		       T1.IPNT_PLACE_LONGITUDE,
+		       NVL(T13.IPNT_SEX_M, 0) AS IPNT_SEX_M,
+		       NVL(T13.IPNT_SEX_F, 0) AS IPNT_SEX_F,
+		       NVL(T13.IPNT_SEX_M, 0) + NVL(T13.IPNT_SEX_F, 0) AS SUM_A,
+		       NVL(T13.IPNT_SEX_MIX, 0) AS IPNT_SEX_MIX,
+		       T1.IPNT_DCO,
+		       T1.IPNT_DCO_F,
+		       T1.IPNT_BCO,
+		       TO_CHAR(T1.MEMO) AS MEMO,
+		       T1.CHOOSE_DONE_YN,
+		       T1.IP_ADDR,
+		       T1.USER_AGENT,
+		       T1.GAME_CODE,
+		       (SELECT GAME_NAME FROM K99_GAME WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME,
+		       (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER,
+		       TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE,
+		       (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER,
+		       TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE,
+		       NVL((SELECT COUNT(1)
+		             FROM K03_DOPING_INSPECT_HIST
+		            WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ),
+		           0) AS CNT_READ,
+		       (SELECT EMP_CODE FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS EMP_CODE,
+		       TO_CHAR(T1.LAB_BALANCE) AS LAB_BALANCE,
+		       (SELECT TT1.USER_NAME
+		          FROM USER01TB TT1
+		         WHERE TT1.USER_ID = (SELECT USER_ID
+		                                FROM K03_DOPING_INSPECT_DCO
+		                               WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		                                 AND PREDECESSOR_YN = 'Y'
+		                                 AND ROWNUM = 1)) USER_NAME,
+		       T1.FILE_SEQ,
+		       T1.LOCATION_CD,
+		       F_CODE_NM('LOCATION_CD',T1.location_cd) AS LOCATION_CD_NM                          
+		  FROM K03_DOPING_INSPECT_REG T1
+		  LEFT OUTER JOIN (SELECT C.IPNT_UPPER_SEQ,
+		                          SUM(DECODE(C.SEX, 'M', 1, 0)) AS IPNT_SEX_M,
+		                          SUM(DECODE(C.SEX, 'F', 1, 0)) AS IPNT_SEX_F,
+		                          SUM(DECODE(C.SEX, 'X', 1, 0)) AS IPNT_SEX_MIX
+		                     FROM (SELECT T1.IPNT_UPPER_SEQ, T2.IPNT_NO, T1.SEX
+		                             FROM K03_DOPING_INSPECT_DTL T1, K03_DOPING_INSPECT_REG T2
+		                            WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+		                              AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		                              AND T1.USE_YN = 'Y'
+		                              AND T2.USE_YN = 'Y'
+		                            GROUP BY T1.IPNT_UPPER_SEQ,
+		                                     T2.IPNT_NO,
+		                                     T1.PLAYER_NAME,
+		                                     T1.NATIONALITY,
+		                                     T1.SEX,
+		                                     T1.MINOR_TYPE,
+		                                     T1.EVENT_CODE,
+		                                     T1.EVENT_DET_CODE,
+		                                     T1.USE_YN,
+		                                     T1.SORT_NO,
+		                                     T1.PLAYER_NO) C
+		                    GROUP BY C.IPNT_UPPER_SEQ) T13
+		    ON T1.IPNT_UPPER_SEQ = T13.IPNT_UPPER_SEQ
+		 WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		   AND T1.USE_YN = 'Y'
+        ]]>
+    </select>
+    
+    <delete id="deleteK03_DOPING_INSPECT_REG" parameterType="HashMap">
+        /* k03.dopingInspectReg.deleteK03_DOPING_INSPECT_REG (DopingInspectRegMapper.xml) */
+        
+        DELETE FROM K03_DOPING_INSPECT_REG
+        WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+    </delete>
+    
+    <select id="selectDopingInspectSampleByPK" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectSampleByPK(DopingInspectRegMapper.xml) */
+        
+		SELECT IPNT_UPPER_SEQ,
+		       IPNT_NO,
+		       IPNT_SEQ,
+		       IPNT_FLAG,
+		       IPNT_FLAG_NAME,
+		       IPNT_SUB_FLAG,
+		       IPNT_SUB_FLAG_NAME,
+		       IPNT_FLAG_QTY,
+		       IPNT_FLAG_QTY_F,
+		       TO_NUMBER(ANALYSIS_PAY) AS ANALYSIS_PAY,
+		       TO_NUMBER(ANALYSIS_PAY) * IPNT_FLAG_QTY AS TOT_ANALYSIS_PAY
+		  FROM (SELECT T2.IPNT_NO,
+		               T1.IPNT_SEQ,
+		               T1.IPNT_FLAG,
+		               F_CODE_NM('IPNT_FLAG', T1.IPNT_FLAG) AS IPNT_FLAG_NAME,
+		               T1.IPNT_SUB_FLAG,
+		               (SELECT CODE_NAME
+		                  FROM K99_CODE_DTL
+		                 WHERE MST_CODE = 'IPNT_SUB_FLAG'
+		                   AND DTL_CODE = T1.IPNT_SUB_FLAG
+		                   AND OPTION1 = T1.IPNT_FLAG) AS IPNT_SUB_FLAG_NAME,
+		               T1.IPNT_FLAG_QTY,
+		               T1.IPNT_FLAG_QTY_F,
+		               CASE
+		                   WHEN T1.IPNT_FLAG = '1' THEN
+		                    CASE
+		                        WHEN T1.IPNT_SUB_FLAG = '11' THEN
+		                         CASE
+		                             WHEN T2.IPNT_PERIOD_CODE = '0' THEN
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE1', 'OPTION1')
+		                             ELSE
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE1_1','OPTION1')
+		                         END
+		                        ELSE
+		                         F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE2', 'OPTION1')
+		                    END
+		                   WHEN T1.IPNT_FLAG = '2' THEN
+		                    CASE
+		                        WHEN T1.IPNT_SUB_FLAG = '21' THEN
+		                         CASE
+		                             WHEN (NVL(T1.IPNT_FLAG_QTY, 0) +
+		                                  NVL(T1.IPNT_FLAG_QTY_F, 0)) > 10 THEN
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE4', 'OPTION1')
+		                             ELSE
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE4_1', 'OPTION1')
+		                         END
+		                        WHEN T1.IPNT_SUB_FLAG = '22' THEN
+		                         CASE
+		                             WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) > 10 THEN
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE3', 'OPTION1')
+		                             WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) >= 6 AND (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) <= 10 THEN
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE3_1', 'OPTION1')
+		                             WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) >= 1 AND (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) <= 5 THEN
+		                              F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE3_2', 'OPTION1')
+		                         END
+		                        WHEN T1.IPNT_SUB_FLAG = '23' THEN
+		                         F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE6', 'OPTION1')
+		                        WHEN T1.IPNT_SUB_FLAG = '24' THEN
+		                         F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE5', 'OPTION1')
+		                        WHEN T1.IPNT_SUB_FLAG = '25' THEN
+		                         F_CODE_OPTION('SAMPLE_ANALYSIS_PAY', 'SAMPLE7', 'OPTION1')
+		                    END
+		                   ELSE
+		                    '0'
+		               END AS ANALYSIS_PAY,
+		               T2.IPNT_UPPER_SEQ
+		          FROM K03_DOPING_INSPECT_SAMPLE T1
+		         INNER JOIN K03_DOPING_INSPECT_REG T2
+		            ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+		           AND T2.USE_YN = 'Y'
+		         WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		         ORDER BY T1.IPNT_SEQ )   
+    ]]>      
+    </select>
+    
+    <select id="selectDopingInspectLegendByPK"  parameterType="HashMap" resultType="HashMap">
+        /* k03.dopingInspectReg.selectDopingInspectLegendByPK (DopingInspectRegMapper.xml) */
+        
+	    SELECT T1.IPNT_UPPER_SEQ,
+		       T3.IPNT_NO,
+		       T1.LEGEND_CODE,
+		       T2.CODE_NAME AS LEGEND_NAME
+		  FROM K03_DOPING_INSPECT_LEGEND T1
+		  LEFT OUTER JOIN K99_CODE_DTL T2
+		    ON T2.MST_CODE = 'LEGEND_CODE'
+		   AND T1.LEGEND_CODE = T2.DTL_CODE
+		 INNER JOIN K03_DOPING_INSPECT_REG T3
+		    ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		   AND T3.USE_YN = 'Y'
+		 WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		 ORDER BY T2.SORT_ORDER
+    </select>
+    
+    <select id="selectDopingInspectDcoByPK" parameterType="HashMap" resultType="HashMap">
+    /* k03.dopingInspectReg.selectDopingInspectDcoByPK (old : selectIPNT07TBByPK) */
+
+      SELECT  *
+        FROM (  SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,T1.USER_ID
+                        ,U.USER_NAME
+                        ,U.USER_PHONE
+                        ,F_CODE_NM('SEX_CODE',U.USER_SEX) AS  USER_SEX
+                        ,T1.USE_POINT
+                        ,T1.USE_YN
+                        ,T1.IP_ADDR
+                        ,T1.USER_AGENT
+                        ,TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE
+                        ,T1.CHOOSE_BCO_YN
+                        ,T1.CHOOSE_DCO_YN
+                        ,T1.CHOOSE_DCOBCO_YN
+                        ,T1.PREDECESSOR_YN
+                        ,T1.USER_ADDRESS
+                        ,T1.USER_DETAIL_ADDRESS
+                        ,T1.USER_ADDRESS_LATITUDE
+                        ,T1.USER_ADDRESS_LONGITUDE
+                        ,T1.DISTANCE
+                        ,T1.DISTANCE_POINT
+                        ,T1.PERFORMANCE_POINT
+                        ,T1.SUBJECTIVE_POINT
+                        ,T1.SUPERVISOR_ID
+                        ,TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE
+                        ,NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY
+                        ,DENSE_RANK() OVER(ORDER BY T1.DISTANCE) AS RANK_DISTANCE
+                        ,TO_NUMBER(NVL(T1.PERFORMANCE_POINT, '0'))
+                        + (42 - DENSE_RANK() OVER(ORDER BY T1.DISTANCE) * 2)
+                        + TO_NUMBER(NVL(T1.USE_POINT, '0'))
+                        + TO_NUMBER(NVL(T1.SUBJECTIVE_POINT, '0')) AS TOTAL_POINT
+                        ,T1.SUBJECTIVE_POINT_REASON
+                        ,T1.CHAPERON_YN
+                        ,T1.CHAPERON_COUNT
+                        ,T1.CHOOSE_CHAPERON_YN
+                 FROM K03_DOPING_INSPECT_DCO T1, USER01TB U
+                WHERE T1.USE_YN = 'Y'
+                  AND T1.USER_ID = U.USER_ID
+                  <if test="IPNT_UPPER_SEQ != null and IPNT_UPPER_SEQ != ''">
+                  AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                 </if>
+                 <if test="USER_ID != null and USER_ID != ''">
+                  AND T1.USER_ID = #{USER_ID}
+                 </if>             
+                ) T
+        WHERE 1 = 1
+     ORDER BY T.PREDECESSOR_YN DESC, 
+              T.CHOOSE_DCO_YN DESC, 
+              T.CHOOSE_DCOBCO_YN DESC, 
+              T.CHOOSE_BCO_YN DESC ,
+              T.CHAPERON_YN DESC ,
+              T.USER_NAME    
+    
+    </select>
+    
+    <select id="selectDopingInspectDcoAllByPK" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectDcoAllByPK (DopingInspectRegMapper.xml) */
+		SELECT *
+		  FROM (SELECT T1.IPNT_UPPER_SEQ,
+		               T1.IPNT_NO,
+		               T1.USER_ID,
+		               (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME,
+		               (SELECT CODE_NAME
+		                  FROM K99_CODE_DTL
+		                 WHERE MST_CODE = 'SEX_CODE'
+		                   AND DTL_CODE = (SELECT USER_SEX
+		                                     FROM USER01TB
+		                                    WHERE USER_ID = T1.USER_ID)) AS USER_SEX,
+		               T1.USE_POINT,
+		               T1.USE_YN,
+		               T1.IP_ADDR,
+		               T1.USER_AGENT,
+		               TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE,
+		               T1.CHOOSE_BCO_YN,
+		               T1.CHOOSE_DCO_YN,
+		               T1.CHOOSE_DCOBCO_YN,
+		               T1.PREDECESSOR_YN,
+		               T1.USER_ADDRESS,
+		               T1.USER_DETAIL_ADDRESS,
+		               T1.USER_ADDRESS_LATITUDE,
+		               T1.USER_ADDRESS_LONGITUDE,
+		               T1.DISTANCE,
+		               (50 - ((DENSE_RANK() OVER(ORDER BY T1.DISTANCE)) - 1) * 2) DISTANCE_POINT,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end PERFORMANCE_POINT,
+		               T1.SUBJECTIVE_POINT,
+		               T1.SUPERVISOR_ID,
+		               TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE,
+		               NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY,
+		               DENSE_RANK() OVER(ORDER BY T1.DISTANCE) AS RANK_DISTANCE,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end +
+		               (50 - ((DENSE_RANK() OVER(ORDER BY T1.DISTANCE)) - 1) * 2) AS TOTAL_POINT,
+		               T1.SUBJECTIVE_POINT_REASON,
+		               T1.CHAPERON_YN, 
+		               T1.CHAPERON_COUNT,
+		               T1.SUBJECTIVE_SELECT,
+		               T1.SUBJECTIVE_SELECT_REASON
+		          FROM K03_DOPING_INSPECT_DCO T1
+		         WHERE T1.USE_YN = 'Y'
+		           AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ} ) T
+    ]]>      
+		 WHERE 1 = 1
+		   AND T.CHAPERON_YN != 'Y'
+		 <if test="USER_ID != null and USER_ID != ''">
+           AND T.USER_ID = #{USER_ID}
+         </if>
+		 ORDER BY T.REQUEST_DATE  
+    </select>
+    
+    <select id="selectDopingInspectDcoRankByPK" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectDcoRankByPK (DopingInspectRegMapper.xml) */
+		SELECT '(' || case
+		           when T.user_sex = 'M' then
+		            '남'
+		           else
+		            '여'
+		       end || ')' || ROWNUM RANK_ORDER,
+		       T.*
+		  FROM (SELECT T1.IPNT_UPPER_SEQ,
+		               T3.IPNT_NO,
+		               T1.USER_ID,
+		               T2.USER_NAME,
+		               T1.USE_POINT,
+		               T1.USE_YN,
+		               T1.IP_ADDR,
+		               T1.USER_AGENT,
+		               TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE,
+		               T1.CHOOSE_BCO_YN,
+		               T1.CHOOSE_DCO_YN,
+		               T1.CHOOSE_DCOBCO_YN,
+		               T1.PREDECESSOR_YN,
+		               T1.USER_ADDRESS,
+		               T1.USER_DETAIL_ADDRESS,
+		               T1.USER_ADDRESS_LATITUDE,
+		               T1.USER_ADDRESS_LONGITUDE,
+		               T1.DISTANCE,
+		               (DENSE_RANK() OVER(ORDER BY T1.DISTANCE)) RANK_DISTANCE,
+		               (50 - (DENSE_RANK() OVER(ORDER BY T1.DISTANCE) - 1) * 2) DISTANCE_POINT,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end PERFORMANCE_POINT,
+		               T1.SUBJECTIVE_POINT,
+		               T1.SUBJECTIVE_SELECT,
+		               T1.SUBJECTIVE_SELECT_REASON,
+		               T1.SUPERVISOR_ID,
+		               TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE,
+		               NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end +
+		               (50 - (DENSE_RANK() OVER(ORDER BY T1.DISTANCE) - 1) * 2) AS TOTAL_POINT,
+		               T2.USER_SEX,
+		               (select TT1.USE_YN
+		                  from K03_DOPING_INSPECT_HOPEUSE TT1
+		                 where TT1.IPNT_NO = T1.IPNT_NO
+		                   and TT1.USER_ID = T1.USER_ID
+		                   and TT1.YEAR = TO_CHAR(SYSDATE, 'YYYY')
+		                   and TT1.USE_YN = 'Y') AS HOPE
+		          FROM K03_DOPING_INSPECT_DCO T1,
+		               USER01TB               T2,
+		               K03_DOPING_INSPECT_REG T3
+		         WHERE T1.USER_ID = T2.USER_ID(+)
+		           AND T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		           AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		           AND T1.USE_YN = 'Y'
+		           AND T3.USE_YN = 'Y'
+		           AND T1.CHAPERON_YN != 'Y'
+		           AND T2.USER_SEX = 'M'
+		         ORDER BY TOTAL_POINT DESC) T
+		 WHERE 1 = 1
+		UNION ALL
+		SELECT '(' || case
+		           when T.user_sex = 'M' then
+		            '남'
+		           else
+		            '여'
+		       end || ')' || ROWNUM RANK_ORDER,
+		       T.*
+		  FROM (SELECT T1.IPNT_UPPER_SEQ,
+		               T3.IPNT_NO,
+		               T1.USER_ID, 
+		               T2.USER_NAME,
+		               T1.USE_POINT,
+		               T1.USE_YN,
+		               T1.IP_ADDR,
+		               T1.USER_AGENT,
+		               TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE,
+		               T1.CHOOSE_BCO_YN,
+		               T1.CHOOSE_DCO_YN,
+		               T1.CHOOSE_DCOBCO_YN,
+		               T1.PREDECESSOR_YN,
+		               T1.USER_ADDRESS,
+		               T1.USER_DETAIL_ADDRESS,
+		               T1.USER_ADDRESS_LATITUDE,
+		               T1.USER_ADDRESS_LONGITUDE,
+		               T1.DISTANCE,
+		               (DENSE_RANK() OVER(ORDER BY T1.DISTANCE)) RANK_DISTANCE,
+		               (50 - (DENSE_RANK() OVER(ORDER BY T1.DISTANCE) - 1) * 2) DISTANCE_POINT,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end PERFORMANCE_POINT,
+		               T1.SUBJECTIVE_POINT,
+		               T1.SUBJECTIVE_SELECT,
+		               T1.SUBJECTIVE_SELECT_REASON,
+		               T1.SUPERVISOR_ID,
+		               TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE,
+		               NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY,
+		               case
+		                   when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                    0
+		                   else
+		                    (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		               end +
+		               (50 - (DENSE_RANK() OVER(ORDER BY T1.DISTANCE) - 1) * 2) AS TOTAL_POINT,
+		               T2.USER_SEX,
+		               (select TT1.USE_YN
+		                  from K03_DOPING_INSPECT_HOPEUSE TT1
+		                 where TT1.IPNT_NO = T1.IPNT_NO
+		                   and TT1.USER_ID = T1.USER_ID
+		                   and TT1.YEAR = TO_CHAR(SYSDATE, 'YYYY')
+		                   and TT1.USE_YN = 'Y') AS HOPE
+		          FROM K03_DOPING_INSPECT_DCO T1,
+		               USER01TB               T2,
+		               K03_DOPING_INSPECT_REG T3
+		         WHERE T1.USER_ID = T2.USER_ID(+)
+		           AND T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		           AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		           AND T1.USE_YN = 'Y'
+		           AND T3.USE_YN = 'Y'
+		           AND T1.CHAPERON_YN != 'Y'
+		           AND T2.USER_SEX = 'F'
+		         ORDER BY TOTAL_POINT DESC) T
+		 WHERE 1 = 1        
+    ]]>      
+    </select>
+    
+    <select id="selectDopingInspectDcoBySex" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectDcoMaleByPK (DopingInspectRegMapper.xml) */
+		 SELECT T.*
+		   FROM (SELECT T1.IPNT_UPPER_SEQ,
+		                T3.IPNT_NO,
+		                T1.USER_ID,
+		                T2.USER_NAME,
+		                T1.USE_POINT,
+		                T1.USE_YN,
+		                T1.IP_ADDR,
+		                T1.USER_AGENT,
+		                TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE,
+		                T1.CHOOSE_BCO_YN,
+		                T1.CHOOSE_DCO_YN,
+		                T1.CHOOSE_DCOBCO_YN,
+		                T1.PREDECESSOR_YN,
+		                T1.USER_ADDRESS,
+		                T1.USER_DETAIL_ADDRESS,
+		                T1.USER_ADDRESS_LATITUDE,
+		                T1.USER_ADDRESS_LONGITUDE,
+		                T1.DISTANCE,
+		                T1.DISTANCE_POINT,
+		                case
+		                    when (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2) < 0 then
+		                     0
+		                    else
+		                     (50 - NVL(T1.PERFORMANCE_COUNT, '0') * 2)
+		                end PERFORMANCE_POINT,
+		                T1.SUBJECTIVE_POINT,
+		                T1.SUPERVISOR_ID,
+		                TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE,
+		                NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY,
+		                DENSE_RANK() OVER(ORDER BY T1.DISTANCE) AS RANK_DISTANCE,
+		                TO_NUMBER(NVL(T1.PERFORMANCE_POINT, '0')) +
+		                (50 - DENSE_RANK() OVER(ORDER BY T1.DISTANCE) * 2) +
+		                TO_NUMBER(NVL(T1.USE_POINT, '0')) +
+		                TO_NUMBER(NVL(T1.SUBJECTIVE_POINT, '0')) AS TOTAL_POINT,
+		                T2.USER_SEX
+		           FROM K03_DOPING_INSPECT_DCO T1,
+		                USER01TB               T2,
+		                K03_DOPING_INSPECT_REG T3
+		          WHERE T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		            AND T1.USER_ID = T2.USER_ID(+)
+		            AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		            AND T1.USE_YN = 'Y'
+		            AND T3.USE_YN = 'Y'
+		            AND T1.CHAPERON_YN != 'Y') T
+		  WHERE T.USER_SEX = #{USER_SEX}
+		  ORDER BY T.TOTAL_POINT DESC            
+    ]]>      
+    </select>
+    
+    <select id="selectDopingInspectDcoByChaperon" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k03.dopingInspectReg.selectDopingInspectDcoByChaperon (old : selectIPNT07TBChaperonByPK) */
+		 SELECT T.*
+		   FROM (SELECT T1.IPNT_UPPER_SEQ,
+		                T3.IPNT_NO,
+		                T1.USER_ID,
+		                T2.USER_NAME,
+		                T1.USE_POINT,
+		                T1.USE_YN,
+		                T1.IP_ADDR,
+		                T1.USER_AGENT,
+		                TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE,
+		                T1.CHOOSE_CHAPERON_YN,
+		                T1.USER_ADDRESS,
+		                T1.USER_DETAIL_ADDRESS,
+		                T1.USER_ADDRESS_LATITUDE,
+		                T1.USER_ADDRESS_LONGITUDE,
+		                T1.DISTANCE,
+		                T1.DISTANCE_POINT,
+		                T1.SUPERVISOR_ID,
+		                TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE,
+		                NVL(T1.CHAPERON_COUNT, '0') AS CNT_INSPECT_HISTORY,
+		                DENSE_RANK() OVER(ORDER BY T1.DISTANCE) AS RANK_DISTANCE,
+		                T1.CHAPERON_YN
+		           FROM K03_DOPING_INSPECT_DCO T1, USER01TB T2, K03_DOPING_INSPECT_REG T3
+		          WHERE T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		            AND T1.USER_ID = T2.USER_ID(+)
+		            AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		            AND T1.USE_YN = 'Y'
+		            AND T3.USE_YN = 'Y'
+		            AND T1.CHAPERON_YN = 'Y') T
+		  WHERE 1 = 1
+		  ]]>
+		  <if test="USER_ID != null and USER_ID != ''">
+            AND   T.USER_ID = #{USER_ID}
+          </if>
+        <![CDATA[
+		  ORDER BY T.RANK_DISTANCE ASC        
+        ]]>      
+    </select>
+    
+    <select id="selectPlayerInfo" parameterType="HashMap" resultType="HashMap">
+        /* k03.dopingInspectReg.selectPlayerInfo 선수목록 */
+        
+	    SELECT
+		    P2.*,
+		    F_CODE_NM('EVENT_CODE',P2.EVENT_CODE) AS EVENT_NAME,
+		    F_CODE_NM('EVENT_DET_CODE',P2.EVENT_DET_CODE) AS EVENT_DET_NAME
+		FROM
+		    (
+		        SELECT
+		            P.USER_ID,
+		            P.USER_NAME AS PLAYER_NAME,
+		            P.PLAYER_NO,
+		            P.USER_SEX AS PLAYER_SEX,
+		            F_CODE_NM('SEX_CODE2',P.USER_SEX) AS PLAYER_SEX_NAME,
+		            P.BIRTH_DT,
+		            F_CODE_OPTION('PRO_ORGZ', P.PRO_ORGZ, 'OPTION8') AS EVENT_CODE,
+		            F_CODE_OPTION('PRO_ORGZ', P.PRO_ORGZ, 'OPTION9') AS EVENT_DET_CODE,
+		            P.COUNTRY 
+		        FROM
+		            USER01TB P
+		        WHERE
+		            P.USER_FLAG = 'P'
+		    ) P2
+		 WHERE 1 = 1
+		 <if test="CODE_NAME != null and CODE_NAME != ''">
+		    AND  F_CODE_NM('EVENT_CODE',P2.EVENT_CODE) = #{CODE_NAME}
+		 </if>
+           
+		 <if test="PLAYER_NAME != null and PLAYER_NAME != ''">
+           AND  P2.PLAYER_NAME = #{PLAYER_NAME}
+         </if>
+         <if test="EVENT_CODE != null and EVENT_CODE != ''">
+           AND  P2.EVENT_CODE = #{EVENT_CODE}
+           AND  P2.EVENT_DET_CODE IN (SELECT T.DTL_CODE
+									    FROM K99_CODE_DTL T
+									   WHERE T.MST_CODE = 'EVENT_DET_CODE'
+										 AND T.OPTION6 = 'KADAMS'          
+										 AND T.OPTION2 = #{EVENT_CODE} )   
+         </if>         
+		 ORDER BY P2.PLAYER_NAME
+    </select>
+    
+    <select id="selectInspectTargetPlayer" parameterType="HashMap" resultType="HashMap">
+        /* k03.dopingInspectReg.selectInspectTargetPlayer 검사대상선수 (DopingInspectRegMapper.xml) */
+    
+		SELECT T1.IPNT_UPPER_SEQ,
+		        T2.IPNT_NO,
+		        TO_CHAR(WM_CONCAT(T1.IPNT_SEQ)) AS IPNT_SEQ,
+		        TO_CHAR(WM_CONCAT(T1.IPNT_SUB_SEQ)) AS IPNT_SUB_SEQ,
+		        TO_CHAR(WM_CONCAT(DISTINCT T1.IPNT_FLAG)) AS IPNT_FLAG,
+		        TO_CHAR(WM_CONCAT(DISTINCT F_CODE_NM('IPNT_FLAG',T1.IPNT_FLAG))) AS IPNT_FLAG_NAME,
+		        TO_CHAR(WM_CONCAT(DISTINCT T1.IPNT_SUB_FLAG)) AS IPNT_SUB_FLAG,
+		        TO_CHAR(WM_CONCAT(DISTINCT (SELECT CODE_NAME
+		                    FROM K99_CODE_DTL
+		                   WHERE MST_CODE = 'IPNT_SUB_FLAG'
+		                     AND DTL_CODE = T1.IPNT_SUB_FLAG
+		                     AND OPTION1 = T1.IPNT_FLAG))) AS IPNT_SUB_FLAG_NAME,
+		        T1.PLAYER_NAME,
+		        T1.NATIONALITY,
+		        T1.SEX,
+		        F_CODE_NM('SEX_CODE2',T1.SEX) AS SEX_NAME,        
+		        T1.MINOR_TYPE,
+		        F_CODE_NM('MINOR_TYPE',T1.MINOR_TYPE) AS MINOR_TYPE_NAME,                
+		        T1.EVENT_CODE,
+		        F_CODE_NM('EVENT_CODE',T1.EVENT_CODE) AS EVENT_NAME,                        
+		        T1.EVENT_DET_CODE,
+		        (SELECT CODE_NAME
+		           FROM K99_CODE_DTL
+		          WHERE MST_CODE = 'EVENT_DET_CODE'
+		            AND DTL_CODE = T1.EVENT_DET_CODE
+		            AND OPTION2 = T1.EVENT_CODE) AS EVENT_DET_NAME,
+		        T1.USE_YN,
+		        T1.SORT_NO,
+		        T1.PLAYER_NO,
+		        NVL2(T1.PLAYER_NO,'Y','N') AS TARGET_YN
+		   FROM K03_DOPING_INSPECT_DTL T1, K03_DOPING_INSPECT_REG T2
+		  WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+		    AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		    AND T1.USE_YN = 'Y'
+		    AND T2.USE_YN = 'Y'
+		  GROUP BY T1.IPNT_UPPER_SEQ,
+		           T2.IPNT_NO,
+		           T1.PLAYER_NAME,
+		           T1.NATIONALITY,
+		           T1.SEX,
+		           T1.MINOR_TYPE,
+		           T1.EVENT_CODE,
+		           T1.EVENT_DET_CODE,
+		           T1.USE_YN,
+		           T1.SORT_NO,
+		           T1.PLAYER_NO
+		  ORDER BY T1.SORT_NO    
+    </select>
+    
+    <select id="selectInspectLegend" parameterType="HashMap" resultType="HashMap">
+    /* k03.dopingInspectReg.selectInspectLegend 검사구분 (DopingInspectRegMapper.xml) */
+    
+		SELECT T1.IPNT_UPPER_SEQ,
+		       T3.IPNT_NO,
+		       T1.LEGEND_CODE AS DTL_CODE,
+		       T2.CODE_NAME
+		  FROM K03_DOPING_INSPECT_LEGEND T1
+		  LEFT OUTER JOIN K99_CODE_DTL T2
+		    ON T2.MST_CODE = 'LEGEND_CODE'
+		   AND T1.LEGEND_CODE = T2.DTL_CODE
+		 INNER JOIN K03_DOPING_INSPECT_REG T3
+		    ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+		   AND T3.USE_YN = 'Y'
+		 WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		 ORDER BY T2.SORT_ORDER    
+    </select>
+    
+    <select id="selectMaxIPNT_NO" parameterType="HashMap" resultType="String">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectMaxIPNT_NO 신규 검사고유번호 (DopingInspectRegMapper.xml) */
+        
+        SELECT  (CASE WHEN #{IPNT_TYPE} = '1' THEN 'A' ELSE 'K' END)
+                || SUBSTR(#{IPNT_DATE},1,4)
+                || DECODE(#{IPNT_EVENT_CODE},'E38','9','2')
+                || REPLACE(LPAD(TO_NUMBER(NVL(MAX(SUBSTR(IPNT_NO, 7,3)), '0')) + 1, 3), ' ', '0')
+        FROM    K03_DOPING_INSPECT_REG T1
+        WHERE   T1.IPNT_NO LIKE (CASE WHEN #{IPNT_TYPE} = '1' THEN 'A' ELSE 'K' END) || 
+                SUBSTR(#{IPNT_DATE},1,4) || DECODE(#{IPNT_EVENT_CODE},'E38','9','2') || '%'
+        ]]>
+    </select>
+    
+    <select id="selectIPNT_UPPER_SEQ" parameterType="HashMap" resultType="String">
+      /* k03.dopingInspectReg.selectIPNT_UPPER_SEQ 신규 검사번호 (adtis,kadams 공용) */
+      
+      SELECT SEQ_IPNT01TB.NEXTVAL AS IPNT_UPPER_SEQ 
+        FROM DUAL
+    </select>
+    
+    <insert id="insertDopingInspect" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.insertDopingInspect 검사공지 등록 (DopingInspectRegMapper.xml) */
+        
+        INSERT  INTO K03_DOPING_INSPECT_REG (
+                 IPNT_NO
+                ,IPNT_NAME
+                ,IPNT_TYPE
+                ,IPNT_KIND_CODE
+                ,IPNT_KIND_ETC
+                ,IPNT_PERIOD_CODE
+                ,IPNT_SUPERVISOR
+                ,IPNT_COLLECTOR
+                ,IPNT_RESULT_MANAGER
+                ,IPNT_DONE_DATE
+                ,IPNT_CHARGER_ID
+                ,IPNT_INDICATION
+                ,IPNT_CHOOSE_METHOD
+                ,IPNT_REMARK
+                ,IPNT_EVENT_CODE
+                ,IPNT_EVENT_DET_CODE
+                ,IPNT_DATE
+                ,IPNT_TIME
+                ,IPNT_PLACE_TYPE
+                ,IPNT_PROVINCE_CODE
+                ,IPNT_PLACE_DETAIL
+                ,IPNT_PLACE_ZIPCODE
+                ,IPNT_PLACE_ADDRESS
+                ,IPNT_PLACE_NEWADDRESS
+                ,IPNT_PLACE_PHONE
+                ,IPNT_PLACE_LATITUDE
+                ,IPNT_PLACE_LONGITUDE
+                ,IPNT_SEX_M
+                ,IPNT_SEX_F
+                ,IPNT_SEX_MIX
+                ,IPNT_DCO
+                ,IPNT_DCO_F
+                ,IPNT_BCO
+                ,MEMO
+                ,CHOOSE_DONE_YN
+                ,IP_ADDR
+                ,USER_AGENT
+                ,REG_USER
+                ,REG_DATE
+                ,GAME_CODE
+                ,IPNT_UPPER_SEQ
+                ,FILE_SEQ
+                ,LOCATION_CD
+        ) VALUES (
+                 #{IPNT_NO}
+                ,#{IPNT_NAME}
+                ,#{IPNT_TYPE}
+                ,#{IPNT_KIND_CODE}
+                ,#{IPNT_KIND_ETC}
+                ,#{IPNT_PERIOD_CODE}
+                ,#{IPNT_SUPERVISOR}
+                ,#{IPNT_COLLECTOR}
+                ,#{IPNT_RESULT_MANAGER}
+                ,#{IPNT_DONE_DATE}
+                ,#{IPNT_CHARGER_ID}
+                ,#{IPNT_INDICATION}
+                ,#{IPNT_CHOOSE_METHOD}
+                ,#{IPNT_REMARK}
+                ,#{IPNT_EVENT_CODE}
+                ,#{IPNT_EVENT_DET_CODE}
+                ,REPLACE(#{IPNT_DATE},'-','')
+                ,TO_CHAR(TO_DATE(#{IPNT_TIME},'HH24:MI:SS'),'HH24MI')
+                ,#{IPNT_PLACE_TYPE}
+                ,#{IPNT_PROVINCE_CODE}
+                ,#{IPNT_PLACE_DETAIL}
+                ,#{IPNT_PLACE_ZIPCODE}
+                ,#{IPNT_PLACE_ADDRESS}
+                ,#{IPNT_PLACE_NEWADDRESS}
+                ,#{IPNT_PLACE_PHONE}
+                ,#{IPNT_PLACE_LATITUDE}
+                ,#{IPNT_PLACE_LONGITUDE}
+                ,#{IPNT_SEX_M}
+                ,#{IPNT_SEX_F}
+                ,#{IPNT_SEX_MIX}
+                ,#{IPNT_DCO}
+                ,#{IPNT_DCO_F}
+                ,#{IPNT_BCO}
+                ,#{MEMO}
+                ,'N'
+                ,#{GSS.IP_ADDR}
+                ,#{GSS.USER_AGENT}
+                ,#{GSS.USER_ID}
+                ,SYSDATE
+                ,#{GAME_CODE}
+                ,#{IPNT_UPPER_SEQ}
+                ,#{FILE_SEQ}
+                ,#{LOCATION_CD}
+        )
+        ]]>
+    </insert>
+    
+    <update id="updateDopingInspect" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.updateDopingInspect 검사공지 수정 (DopingInspectRegMapper.xml) */
+        
+        UPDATE  K03_DOPING_INSPECT_REG
+        SET      IPNT_NAME = #{IPNT_NAME}
+                ,IPNT_TYPE = #{IPNT_TYPE}
+                ,IPNT_KIND_CODE = #{IPNT_KIND_CODE}
+                ,IPNT_KIND_ETC = #{IPNT_KIND_ETC}
+                ,IPNT_PERIOD_CODE = #{IPNT_PERIOD_CODE}
+                ,IPNT_SUPERVISOR = #{IPNT_SUPERVISOR}
+                ,IPNT_COLLECTOR = #{IPNT_COLLECTOR}
+                ,IPNT_RESULT_MANAGER = #{IPNT_RESULT_MANAGER}
+                ,IPNT_DONE_DATE = #{IPNT_DONE_DATE}
+                ,IPNT_CHARGER_ID = #{IPNT_CHARGER_ID}
+                ,IPNT_INDICATION = #{IPNT_INDICATION}
+                ,IPNT_CHOOSE_METHOD = #{IPNT_CHOOSE_METHOD}
+                ,IPNT_REMARK = #{IPNT_REMARK}
+                ,IPNT_EVENT_CODE = #{IPNT_EVENT_CODE}
+                ,IPNT_EVENT_DET_CODE = #{IPNT_EVENT_DET_CODE}
+                ,IPNT_DATE = REPLACE(#{IPNT_DATE},'-','')
+                ,IPNT_TIME = TO_CHAR(TO_DATE(#{IPNT_TIME},'HH24:MI:SS'),'HH24MI')
+                ,IPNT_PLACE_TYPE = #{IPNT_PLACE_TYPE}
+                ,IPNT_PROVINCE_CODE = #{IPNT_PROVINCE_CODE}
+                ,IPNT_PLACE_DETAIL = #{IPNT_PLACE_DETAIL}
+                ,IPNT_PLACE_ZIPCODE = #{IPNT_PLACE_ZIPCODE}
+                ,IPNT_PLACE_ADDRESS = #{IPNT_PLACE_ADDRESS}
+                ,IPNT_PLACE_NEWADDRESS = #{IPNT_PLACE_NEWADDRESS}
+                ,IPNT_PLACE_PHONE = #{IPNT_PLACE_PHONE}
+                ,IPNT_PLACE_LATITUDE = #{IPNT_PLACE_LATITUDE}
+                ,IPNT_PLACE_LONGITUDE = #{IPNT_PLACE_LONGITUDE}
+                ,IPNT_SEX_M = #{IPNT_SEX_M}
+                ,IPNT_SEX_F = #{IPNT_SEX_F}
+                ,IPNT_SEX_MIX = #{IPNT_SEX_MIX}
+                ,IPNT_DCO = #{IPNT_DCO}
+                ,IPNT_DCO_F = #{IPNT_DCO_F}
+                ,IPNT_BCO = #{IPNT_BCO}
+                ,MEMO = #{MEMO}
+                ,IP_ADDR = #{GSS.IP_ADDR}
+                ,USER_AGENT = #{GSS.USER_AGENT}
+                ,EDT_USER = #{GSS.USER_ID}
+                ,EDT_DATE = SYSDATE
+                ,GAME_CODE = #{GAME_CODE}
+                ,FILE_SEQ = #{FILE_SEQ}
+                ,LOCATION_CD = #{LOCATION_CD}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </update>
+    
+    <update id="saveK00_ZMISSIONS" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.saveK00_ZMISSIONS 검사공지 등록(2)  */
+        
+        MERGE INTO K00_ZMISSIONS
+              USING DUAL
+           ON (IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+        WHEN MATCHED THEN
+             UPDATE 
+                SET STATE = #{IPNT_PLACE_STATE},
+                    CITY  = #{IPNT_PLACE_CITY},
+                    STREET = #{IPNT_PLACE_STREET},
+		            ENGADDRESS = #{IPNT_PLACE_ENGADDRESS},
+		            ZIP = #{IPNT_PLACE_ZIPCODE}
+        WHEN NOT MATCHED THEN
+             INSERT (
+	            IPNT_NO,
+	            IPNT_UPPER_SEQ,
+	            STATE,
+	            CITY,
+	            STREET,
+	            ENGADDRESS,
+	            ZIP,
+	            TEST_NO
+             ) VALUES (
+	            #{IPNT_NO},
+	            #{IPNT_UPPER_SEQ},
+	            #{IPNT_PLACE_STATE},
+	            #{IPNT_PLACE_CITY},
+	            #{IPNT_PLACE_STREET},
+	            #{IPNT_PLACE_ENGADDRESS},
+	            #{IPNT_PLACE_ZIPCODE},
+	            TESTS_NO_SEQ.NEXTVAL
+             )
+        ]]>
+    </update>
+    
+    <insert id="insertK03_DOPING_INSPECT_LEGEND" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.insertK03_DOPING_INSPECT_LEGEND 검사공지 등록(범례) (DopingInspectRegMapper.xml) */
+        
+        INSERT  INTO K03_DOPING_INSPECT_LEGEND
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,LEGEND_CODE
+                )
+        VALUES  (
+                #{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{LEGEND_CODE}
+                )
+        ]]>
+    </insert>
+    
+    <delete id="deleteK03_DOPING_INSPECT_LEGEND" parameterType="HashMap">
+        /* k03.dopingInspectReg.deleteK03_DOPING_INSPECT_LEGEND 검사공지 등록(범례) (DopingInspectRegMapper.xml) */
+        
+        DELETE
+        FROM    K03_DOPING_INSPECT_LEGEND
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+    </delete>
+    
+    <update id="procK03_DOPING_INSPECT_DTL" parameterType="HashMap">
+        <![CDATA[
+        MERGE INTO K03_DOPING_INSPECT_DTL
+              USING DUAL
+           ON (
+                IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                AND IPNT_SEQ = #{IPNT_SEQ}
+                AND IPNT_SUB_SEQ = #{IPNT_SUB_SEQ}
+              )
+         WHEN MATCHED THEN
+              UPDATE
+                SET     PLAYER_NAME = #{PLAYER_NAME}
+                        ,NATIONALITY = #{NATIONALITY}
+                        ,SEX = #{SEX}
+                        ,MINOR_TYPE = #{MINOR_TYPE}
+                        ,IPNT_FLAG = #{IPNT_FLAG}
+                        ,IPNT_SUB_FLAG = #{IPNT_SUB_FLAG}
+                        ,EVENT_CODE = #{EVENT_CODE}
+                        ,EVENT_DET_CODE = #{EVENT_DET_CODE}
+                        ,EDT_USER = #{EDT_USER}
+                        ,EDT_DATE = SYSDATE
+                        ,SORT_NO = #{SORT_NO}
+                        ,PLAYER_NO = #{PLAYER_NO}
+                        ,USER_ID = #{USER_ID}
+         WHEN NOT MATCHED THEN
+              INSERT (
+                         IPNT_UPPER_SEQ
+                        ,IPNT_NO
+                        ,IPNT_SEQ
+                        ,IPNT_SUB_SEQ
+                        ,IPNT_FLAG
+                        ,IPNT_SUB_FLAG
+                        ,PLAYER_NAME
+                        ,NATIONALITY
+                        ,SEX
+                        ,MINOR_TYPE
+                        ,EVENT_CODE
+                        ,EVENT_DET_CODE
+                        ,USE_YN
+                        ,REG_USER
+                        ,REG_DATE
+                        ,SORT_NO
+                        ,PLAYER_NO
+                        ,USER_ID
+              ) VALUES (
+                        #{IPNT_UPPER_SEQ}
+                        ,#{IPNT_NO}
+                        ,#{IPNT_SEQ}
+                        ,#{IPNT_SUB_SEQ}
+                        ,#{IPNT_FLAG}
+                        ,#{IPNT_SUB_FLAG}
+                        ,#{PLAYER_NAME}
+                        ,#{NATIONALITY}
+                        ,#{SEX}
+                        ,#{MINOR_TYPE}
+                        ,#{EVENT_CODE}
+                        ,#{EVENT_DET_CODE}
+                        ,'Y'
+                        ,#{GSS.USER_ID}
+                        ,SYSDATE
+                        ,#{SORT_NO}
+                        ,#{PLAYER_NO}
+                        ,#{USER_ID}
+              )
+        ]]>
+    </update>
+    
+    <delete id="deleteK03_DOPING_INSPECT_DTL" parameterType="HashMap">
+        /* k03.dopingInspectReg.deleteK03_DOPING_INSPECT_DTL 검사공지 등록 (DopingInspectRegMapper.xml) */
+        DELETE
+        FROM    K03_DOPING_INSPECT_DTL
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+    </delete>
+    
+    <delete id="deleteK00_ZTESTSByPK" parameterType="HashMap">
+        <![CDATA[
+        DELETE
+        FROM    K00_ZTESTS
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </delete>
+
+    <insert id="insertK00_ZTESTS" parameterType="HashMap">
+        <selectKey resultType="string" keyProperty="NEW_TEST_NO" order="BEFORE">
+            SELECT TO_CHAR(MAX(TEST_NO)+1) AS NEW_TEST_NO FROM K00_ZTESTS        
+        </selectKey>  
+        <![CDATA[        
+        /* k03.dopingInspectReg.insertK00_ZTESTS (DopingInspectRegMapper.xml) */
+        
+        INSERT INTO K00_ZTESTS
+        (
+          IPNT_NO,
+          IPNT_SEQ,
+          IPNT_UPPER_SEQ,
+          PLAYER_NO,
+          TEST_NO,
+          SORT_NO
+        )
+        VALUES
+        (
+          #{IPNT_NO},
+          #{IPNT_SEQ},
+          #{IPNT_UPPER_SEQ},
+          #{PLAYER_NO},
+          #{NEW_TEST_NO},
+          #{SORT_NO}
+        )
+        ]]>
+    </insert>
+    
+    <delete id="deleteK03_DOPING_INSPECT_SAMPLE" parameterType="HashMap">
+    /* k03.dopingInspectReg.deleteK03_DOPING_INSPECT_SAMPLE (DopingInspectRegMapper.xml) */
+    
+        DELETE FROM K03_DOPING_INSPECT_SAMPLE
+         WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+    </delete>
+    
+    <update id="insertK03_DOPING_INSPECT_SAMPLE" parameterType="HashMap">
+    /* k03.dopingInspectReg.insertK03_DOPING_INSPECT_SAMPLE (DopingInspectRegMapper.xml) */
+    
+		INSERT INTO K03_DOPING_INSPECT_SAMPLE (
+		  IPNT_NO,
+		  IPNT_SEQ,
+		  IPNT_FLAG,
+		  IPNT_SUB_FLAG,
+		  IPNT_FLAG_QTY,
+		  IPNT_FLAG_QTY_M,
+		  IPNT_FLAG_QTY_F,
+		  IPNT_UPPER_SEQ 
+		  )
+		SELECT
+		    #{IPNT_NO},    
+		    ROWNUM,
+		    A.IPNT_FLAG,
+		    A.IPNT_SUB_FLAG,
+		    A.IPNT_FLAG_QTY,
+		    A.IPNT_FLAG_QTY_M,
+		    A.IPNT_FLAG_QTY_F,
+		    #{IPNT_UPPER_SEQ}
+		FROM
+		    (
+		        SELECT
+		            T.IPNT_FLAG,
+		            T.IPNT_SUB_FLAG,
+		            COUNT(*) AS IPNT_FLAG_QTY,
+		            COUNT(DECODE(T.SEX, 'M', 1, NULL)) AS IPNT_FLAG_QTY_M,
+		            COUNT(DECODE(T.SEX, 'F', 1, NULL)) AS IPNT_FLAG_QTY_F
+		        FROM
+		            K03_DOPING_INSPECT_DTL T
+		        WHERE
+		            T.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+		        GROUP BY
+		            T.IPNT_FLAG,
+		            T.IPNT_SUB_FLAG
+		    ) A    
+    </update>
+    
+    <insert id="insertK03_DOPING_INSPECT_HIST" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.insertK03_DOPING_INSPECT_HIST 검사공지 조회내역 등록 (DopingInspectRegMapper.xml) */
+        
+        INSERT  INTO K03_DOPING_INSPECT_HIST
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,USER_ID
+                ,IP_ADDR
+                ,USER_AGENT
+                ,READ_DATE
+                )
+        VALUES  (
+                 #{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{GSS.USER_ID}
+                ,#{GSS.IP_ADDR}
+                ,#{GSS.USER_AGENT}
+                ,SYSDATE
+                )
+        ]]>
+    </insert>
+    
+    <select id="selectErrorReportByUser" parameterType="HashMap" resultType="HashMap">
+    /* k03.dopingInspectReg.selectErrorReportByUser 오류보고서 (DopingInspectRegMapper.xml) */
+    
+         SELECT  T1.IPER_SEQ
+                ,T1.MISTAKE_UPPER_CODE
+                ,F_CODE_NM('MISTAKE_UPPER_CODE',T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                ,T1.MISTAKE_CODE
+                ,F_CODE_NM('MISTAKE_CODE',T1.MISTAKE_CODE) AS MISTAKE_NAME
+                ,T1.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T1.USER_ID
+                ,TO_CHAR(T1.MEMO) AS MEMO
+                ,TO_CHAR(T1.REMARK) AS REMARK
+                ,T1.USE_YN
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,T1.EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+                ,T1.MISTAKE_PRIORITY
+                ,T1.IPNT_UPPER_SEQ
+                ,CASE WHEN TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN T1.IPNT_START_DATE AND T1.IPNT_END_DATE THEN 'Y' ELSE 'N' END AS STOP_YN
+        FROM    K03_ERROR_REPORT T1
+                ,K03_DOPING_INSPECT_REG T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        ORDER BY T1.REG_DATE DESC    
+    </select>
+    
+    <select id="selectDcoSelectEval" parameterType="HashMap" resultType="HashMap">
+        /* k03.dopingInspectReg.selectDcoSelectEval 선정시 평가 (DopingInspectRegMapper.xml) */
+    
+         SELECT  T1.MEMO_SEQ
+                ,T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.USER_ID
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME
+                ,TO_CHAR(T1.MEMO) AS MEMO
+                ,T1.USE_YN
+                ,T1.REG_USER
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER_NAME
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD') AS EDT_DATE
+        FROM    K03_DCO_SELECT_EVAL T1
+                ,K03_DOPING_INSPECT_REG T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USE_YN = 'Y'
+        AND     T2.USE_YN = 'Y'
+        AND     T1.USER_ID = #{USER_ID}
+        ORDER BY T1.REG_DATE DESC    
+    </select>
+    
+    <update id="insertDcoSelectEval" parameterType="HashMap">
+        <![CDATA[
+        INSERT  INTO K03_DCO_SELECT_EVAL
+                (
+                 MEMO_SEQ
+                ,IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,USER_ID
+                ,MEMO
+                ,USE_YN
+                ,REG_USER
+                ,REG_DATE
+                )
+        SELECT  NVL(MAX(MEMO_SEQ), 0) + 1 AS MEMO_SEQ
+                ,#{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{USER_ID}
+                ,#{MEMO}
+                ,#{USE_YN}
+                ,#{GSS.USER_ID}
+                ,SYSDATE
+        FROM    K03_DCO_SELECT_EVAL
+        ]]>
+    </update>
+    
+    <delete id="deleteDcoSelectEval" parameterType="HashMap">
+        DELETE FROM K03_DCO_SELECT_EVAL
+         WHERE MEMO_SEQ = #{MEMO_SEQ}
+    </delete>
+    
+    <select id="selectInspectHistory" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[        
+        /* k03.dopingInspectReg.selectInspectHistory 검사이력 (DopingInspectRegMapper.xml) */
+    
+         SELECT  T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_TYPE
+                ,T2.IPNT_KIND_CODE
+                ,T2.IPNT_PERIOD_CODE
+                ,T2.IPNT_SUPERVISOR
+                ,T2.IPNT_COLLECTOR
+                ,T2.IPNT_RESULT_MANAGER
+                ,T2.IPNT_DONE_DATE
+                ,T2.IPNT_CHARGER_ID
+                ,TO_CHAR(T2.IPNT_INDICATION) AS IPNT_INDICATION
+                ,TO_CHAR(T2.IPNT_CHOOSE_METHOD) AS IPNT_CHOOSE_METHOD
+                ,TO_CHAR(T2.IPNT_REMARK) AS IPNT_REMARK
+                ,T2.IPNT_EVENT_CODE
+                ,T2.IPNT_EVENT_DET_CODE
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_PLACE_TYPE
+                ,T2.IPNT_PROVINCE_CODE
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_PLACE_ZIPCODE
+                ,T2.IPNT_PLACE_ADDRESS
+                ,T2.IPNT_PLACE_NEWADDRESS
+                ,T2.IPNT_PLACE_PHONE
+                ,T2.IPNT_PLACE_LATITUDE
+                ,T2.IPNT_PLACE_LONGITUDE
+                ,T2.IPNT_SEX_M
+                ,T2.IPNT_SEX_F
+                ,T2.IPNT_SEX_MIX
+                ,T2.IPNT_DCO
+                ,T2.IPNT_DCO_F
+                ,T2.IPNT_BCO
+                ,T2.MEMO
+                ,T2.CHOOSE_DONE_YN
+                ,T2.IP_ADDR
+                ,T2.USER_AGENT
+                ,T2.GAME_CODE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T2.REG_USER) AS REG_USER
+                ,TO_CHAR(T2.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T2.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T2.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+        FROM    K03_DOPING_INSPECT_REG T2
+                ,K03_DOPING_INSPECT_ING_MST T3
+                ,K03_DOPING_INSPECT_PAY  T4
+        WHERE   T4.USER_ID = #{USER_ID}
+        AND     T2.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+        AND     T2.IPNT_UPPER_SEQ = T4.IPNT_UPPER_SEQ
+        AND     T2.IPNT_DATE <= (SELECT IPNT_DATE FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+        ORDER BY T2.IPNT_DATE || T2.IPNT_TIME DESC         
+    ]]>
+    </select>
+    
+    <update id="initChooseDco" parameterType="HashMap">
+    /* k03.dopingInspectReg.updateChooseDco 선정해제 (old : delete0302IPNT07TBByPK) */
+        UPDATE  K03_DOPING_INSPECT_DCO
+        SET     CHOOSE_BCO_YN = 'N'
+                ,CHOOSE_DCO_YN = 'N'
+                ,CHOOSE_DCOBCO_YN = 'N'
+                ,CHOOSE_CHAPERON_YN = 'N'
+                ,PREDECESSOR_YN = 'N'
+                ,DISTANCE_POINT = NULL
+                ,PERFORMANCE_POINT = NULL
+                ,SUBJECTIVE_POINT = NULL
+                ,SUPERVISOR_ID = NULL
+                ,SUPERVISOR_DATE = NULL
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     USER_ID = #{USER_ID}
+    </update>
+    
+    <delete id="deleteChooseDcoPay" parameterType="HashMap">
+    /* k03.dopingInspectReg.deleteChooseDco 선정내역(비용)삭제 (old : delete0302IPCF01TBByPK) */
+      DELETE
+        FROM    K03_DOPING_INSPECT_PAY 
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     USER_ID = #{USER_ID}
+    </delete>
+    
+    <select id="selectInspectChooseCount" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectInspectChooseCount  */
+        
+        SELECT  SUM(CASE WHEN T1.CHOOSE_BCO_YN = 'Y' THEN 1 ELSE 0 END) AS BCO_COUNT
+                ,SUM(CASE WHEN T1.CHOOSE_DCO_YN = 'Y' THEN 1 ELSE 0 END) AS DCO_COUNT
+                ,SUM(CASE WHEN T1.CHOOSE_DCOBCO_YN = 'Y' THEN 1 ELSE 0 END) AS DCOBCO_COUNT
+                ,SUM(CASE WHEN T2.USER_SEX = 'M' THEN 1 ELSE 0 END) AS MALE_COUNT
+                ,SUM(CASE WHEN T2.USER_SEX = 'F' THEN 1 ELSE 0 END) AS FEMALE_COUNT
+        FROM    K03_DOPING_INSPECT_DCO T1
+                ,USER01TB T2
+        WHERE   T1.USER_ID = T2.USER_ID
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </select>
+    
+    <update id="updateChooseDco" parameterType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.updateChooseDco (old : update0302SaveIPNT07TB)  */
+        
+        UPDATE  K03_DOPING_INSPECT_DCO
+        SET     CHOOSE_DCO_YN = #{CHOOSE_DCO_YN}
+                ,CHOOSE_BCO_YN = #{CHOOSE_BCO_YN}
+                ,CHOOSE_DCOBCO_YN = #{CHOOSE_DCOBCO_YN}
+                ,PREDECESSOR_YN = #{PREDECESSOR_YN}
+                ,CHOOSE_CHAPERON_YN = #{CHOOSE_CHAPERON_YN}
+                ,DISTANCE_POINT = #{DISTANCE_POINT}
+                ,PERFORMANCE_POINT = #{PERFORMANCE_POINT}
+                ,SUBJECTIVE_SELECT = #{SUBJECTIVE_SELECT}
+                ,SUBJECTIVE_SELECT_REASON = #{SUBJECTIVE_SELECT_REASON}
+                ,SUPERVISOR_ID = #{SUPERVISOR_ID}
+                ,SUPERVISOR_DATE = SYSDATE
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     USER_ID = #{USER_ID}
+        ]]>
+    </update>
+    
+    <select id="selectInspectDCOSame" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectInspectDCOSame (같은날에 검사건이 있는지 체크) */
+        
+        SELECT  T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+        FROM    K03_DOPING_INSPECT_DCO T1
+                ,K03_DOPING_INSPECT_REG T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND     (T1.CHOOSE_DCO_YN = 'Y' OR T1.CHOOSE_DCOBCO_YN = 'Y')
+        AND     T2.USE_YN = 'Y'
+        AND     EXISTS  (
+                        SELECT  1
+                        FROM    K03_DOPING_INSPECT_DCO A
+                                ,K03_DOPING_INSPECT_REG B
+                        WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                        AND     A.IPNT_UPPER_SEQ <> #{IPNT_UPPER_SEQ}
+                        AND     A.USER_ID = T1.USER_ID
+                        AND     B.IPNT_DATE = T2.IPNT_DATE
+                        AND     (A.CHOOSE_DCO_YN = 'Y' OR A.CHOOSE_DCOBCO_YN = 'Y')
+                        AND     B.USE_YN = 'Y'
+                        )
+        AND     T2.IPNT_DATE IN (SELECT IPNT_DATE 
+                                   FROM K03_DOPING_INSPECT_REG 
+                                  WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+        ]]>
+    </select>
+    
+    <select id="selectRELATED_EVENT_DCO" parameterType="HashMap" resultType="HashMap">
+       /* k03.dopingInspectReg.selectRELATED_EVENT_DCO (유관종목 체크리스트) */
+    
+        SELECT A2.IPNT_EVENT_CODE,
+               A2.USER_ID,       
+               U1.USER_NAME,
+               B2.EVENT_CODE,
+               B2.EVENT_NAME,
+               CASE
+                   WHEN A2.IPNT_EVENT_CODE = B2.EVENT_CODE THEN
+                    'Y'
+                   ELSE
+                    'N'
+               END AS CHK
+          FROM (SELECT A.IPNT_EVENT_CODE, B.USER_ID
+                  FROM K03_DOPING_INSPECT_REG A
+                  LEFT OUTER JOIN K03_DOPING_INSPECT_DCO B
+                    ON A.IPNT_NO = B.IPNT_NO
+                 WHERE A.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ} ) A2
+          LEFT OUTER JOIN USER01TB U1 ON A2.USER_ID = U1.USER_ID          
+          LEFT OUTER JOIN (SELECT T1.USER_ID,
+                                  T1.EVENT_SEQ,
+                                  T1.EVENT_CODE,
+                                  F_CODE_NM('EVENT_CODE',T1.EVENT_CODE) AS EVENT_NAME
+                             FROM USER13TB T1) B2
+            ON A2.USER_ID = B2.USER_ID    
+    </select>
+    
+    <select id="selectEduBySameDate" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectRELATED_EVENT_DCO (검사와 동일날짜에 있는 교육리스트) */
+        
+        SELECT  T2.EDNT_NO
+                ,T2.EDNT_NAME
+                ,T2.EDNT_DATE
+                ,T2.EDNT_TIME
+                ,T2.EDNT_PLACE_DETAIL
+        FROM    EDNT02TB T1
+                ,EDNT01TB T2
+        WHERE   T1.EDNT_NO = T2.EDNT_NO
+        AND     T1.USER_ID = #{USER_ID}
+        AND     'Y' IN (T1.CHOOSE_YN, T1.PREDECESSOR_YN)
+        AND     T2.EDNT_DATE IN (SELECT IPNT_DATE FROM K03_DOPING_INSPECT_REG WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+        ORDER BY T2.EDNT_DATE
+        ]]>
+    </select>
+
+    <select id="selectInspectBySameDate" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.dopingInspectReg.selectRELATED_EVENT_DCO (검사와 동일날짜에 있는 검사리스트) */
+        
+        SELECT  T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+        FROM    K03_DOPING_INSPECT_DCO T1
+                ,K03_DOPING_INSPECT_REG T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND     T2.IPNT_DATE IN (SELECT IPNT_DATE FROM K03_DOPING_INSPECT_REG WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+        AND     T2.IPNT_UPPER_SEQ <> #{IPNT_UPPER_SEQ}
+        AND     'Y' IN (T1.CHOOSE_DCO_YN, T1.CHOOSE_BCO_YN, T1.CHOOSE_DCOBCO_YN, T1.PREDECESSOR_YN, T1.CHOOSE_CHAPERON_YN)
+        AND     T2.USE_YN = 'Y'
+        ORDER BY T2.IPNT_DATE
+        ]]>
+    </select>
+    
+    <update id="updateChooseDoneYn" parameterType="HashMap">
+      /* k03.dopingInspectReg.updateChooseDoneYn */
+      
+      UPDATE K03_DOPING_INSPECT_REG
+         SET CHOOSE_DONE_YN = NVL(#{CHOOSE_DONE_YN}, 'Y')
+       WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+    </update>
+    
+    <select id="selectPaymentPopup" parameterType="HashMap" resultType="HashMap">
+    /* k03.dopingInspectReg.selectPaymentPopup (검사용품수불확인서 테이블) */
+        <![CDATA[
+        SELECT	T1.DTL_CODE AS MASTER_CODE
+                ,T1.CODE_NAME AS MASTER_NAME
+                ,T2.DTL_CODE AS DETAIL_CODE
+                ,T2.CODE_NAME AS DETAIL_NAME
+                ,CASE T2.DTL_CODE
+                    WHEN '10010' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 2)+2)
+                    WHEN '10020' THEN '3'
+                    WHEN '10030' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '1' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '1' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 1) END
+                    || ' / ' || CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('21') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('21') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 1) END
+                    WHEN '10040' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE '4' END
+                    WHEN '10050' THEN TO_CHAR((FLOOR(((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) - 1) / 8)+1) * 2 + 2)
+                    WHEN '10060' THEN '-'
+                    WHEN '10070' THEN '-'
+                    WHEN '10080' THEN '2'
+                    WHEN '10090' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 0.1))
+                    WHEN '10100' THEN '1 / 1'
+                    WHEN '10110' THEN '직접출력'
+
+                    WHEN '20010' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 2)+2)
+                    WHEN '20020' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 2)+2)
+                    WHEN '20030' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) + 3))
+                    WHEN '20040' THEN TO_CHAR((SELECT NVL(IPNT_DCO, 0) + NVL(IPNT_DCO_F, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}))
+                    WHEN '20050' THEN '1'
+                    WHEN '20060' THEN TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 1.5)) || ' / ' || TO_CHAR(CEIL((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 1.5))
+
+                    WHEN '30010' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('21') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('21') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 1) END
+                    WHEN '30020' THEN '-'
+                    WHEN '30030' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('22','23','25') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('22','23','25') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 3) END
+                    WHEN '30040' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0 / 0' ELSE TO_CHAR((SELECT NVL(IPNT_BCO, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})) || ' / ' || TO_CHAR((SELECT NVL(IPNT_BCO, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})) END
+                    WHEN '30050' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE TO_CHAR((SELECT NVL(IPNT_BCO, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}))  END
+                    WHEN '30060' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0 / 0' ELSE TO_CHAR(FLOOR((TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 1) - 1) / 4)+1) || ' / ' || TO_CHAR((FLOOR((TO_CHAR(NVL((SELECT SUM(IPNT_FLAG_QTY) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}),0) + 1) - 1) / 4)+1)*4) END
+                    WHEN '30070' THEN CASE WHEN (SELECT COUNT(1) FROM IPNT02TB WHERE IPNT_FLAG = '2' AND IPNT_SUB_FLAG IN ('21') AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) <= 0 THEN '0' ELSE '2' END
+
+                    WHEN '40010' THEN TO_CHAR((FLOOR(((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) - 1) / 8)+1) * 2 + 2)
+                    WHEN '40020' THEN TO_CHAR(FLOOR(((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) - 1) / 8)+1)
+                    WHEN '40030' THEN TO_CHAR((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})) || ' / 1 / ' || TO_CHAR(CEIL((SELECT NVL(IPNT_DCO, 0) + NVL(IPNT_DCO_F, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) * 2.0))
+                    WHEN '40040' THEN '1'
+                    WHEN '40050' THEN TO_CHAR(FLOOR(((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) - 1) / 8)+1)
+
+                    WHEN '50010' THEN NVL(TO_CHAR((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})), '0') || ' / ' || NVL(TO_CHAR((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})), '0')
+                    WHEN '50020' THEN NVL(TO_CHAR((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})), '0')
+                    WHEN '50030' THEN TO_CHAR(FLOOR(((SELECT NVL(IPNT_SEX_M, 0) + NVL(IPNT_SEX_F, 0) + NVL(IPNT_SEX_MIX, 0) FROM IPNT01TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}) - 1) / 4)+1)
+                    ELSE NULL
+                END AS IPNT_VALUE
+        FROM	CODE01TB T1
+                ,CODE01TB T2
+        WHERE	T1.DTL_CODE = T2.OPTION1
+        AND		T1.MST_CODE = 'INOUT_MASTER_CODE'
+        AND		T2.MST_CODE = 'INOUT_DETAIL_CODE'
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.SORT_ORDER
+                ,T2.SORT_ORDER
+        ]]>
+    </select>
+    
+    <select id="selectLocationAddress" parameterType="HashMap" resultType="HashMap">
+       /* k03.dopingInspectReg.selectLocationAddress (소재지검색 팝업) */
+    
+		SELECT
+		 DISTINCT A.*
+		 FROM (SELECT   
+		 T.LOCATION_CD,
+		 F_CODE_NM('LOCATION_CD',T.location_cd) AS LOCATION_CD_NM,
+		 T.LOCATION_NM,
+		 T.LOCATION_ADDRESS,
+		 T.LOCATION_X,
+		 T.LOCATION_Y, 
+		 T.PRO_ORGZ,
+		 T.CLUB_CODE 
+		FROM K03_PLAYER_LOC_SCHEDULE t
+		WHERE T.LOCATION_X IS NOT NULL
+		 AND T.LOCATION_Y IS NOT NULL
+		 <if test="LOCATION_CD != null and LOCATION_CD != ''">
+           AND  T.LOCATION_CD = #{LOCATION_CD}
+         </if>
+		 <if test="LOCATION != null and LOCATION != ''">
+           AND  (T.LOCATION_NM LIKE '%'||#{LOCATION}||'%' OR T.LOCATION_ADDRESS LIKE '%'||#{LOCATION}||'%')
+         </if>
+		)A    
+    </select>
+    
+</mapper>

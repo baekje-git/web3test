@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgq.fc">
+   	<select id="selectFdgqFcList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgq.fc.selectFdgqFcList (fc.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    		AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               		AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(L.PROD_MANAGER_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,L.PROD_MANAGER_ID   AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgq-fc' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+      FROM T_FDGP_BPR A
+      JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_PACK E
+        ON E.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNINS G
+        ON G.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREC H
+        ON H.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREP I
+        ON I.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_CS J
+        ON J.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_ST K
+        ON K.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FC L
+        ON L.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND K.A08 IS NOT NULL
+	   <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+       AND A.PROD_DT between REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND L.PROD_MANAGER_ID LIKE CONCAT('%',#{CONFIRM_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgqFc" parameterType="HashMap">
+    /* fdgq.fc.insertFdgqFc */
+
+                INSERT INTO T_FDGQ_FC
+                SET PROD_NO = #{eData.PROD_NO}
+					,A0302 = #{eData.A0302}
+					,A0402 = #{eData.A0402}
+					,A0502 = #{eData.A0502}
+					,A0602 = #{eData.A0602}
+					,PROD_MANAGER_ID = #{eData.PROD_MANAGER_ID}
+					,PROD_MANAGER_DT = #{eData.PROD_MANAGER_DT}
+					,A0802 = #{eData.A0802}
+				    ,REG_ID = #{userData.USER_ID}
+				    ,REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+					 A0302 = #{eData.A0302}
+					,A0402 = #{eData.A0402}
+					,A0502 = #{eData.A0502}
+					,A0602 = #{eData.A0602}
+					,PROD_MANAGER_ID = #{eData.PROD_MANAGER_ID}
+					,PROD_MANAGER_DT = #{eData.PROD_MANAGER_DT}
+					,A0802 = #{eData.A0802}
+			    ,EDT_ID = #{userData.USER_ID}
+			    ,EDT_DTM = NOW()
+    </insert>
+</mapper>

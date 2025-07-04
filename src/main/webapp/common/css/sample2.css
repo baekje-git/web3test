@@ -1,0 +1,11 @@
+@charset "UTF-8";
+
+body {
+    margin-left:10px; 
+}
+
+.button{
+    margin-left:5px;
+}
+
+/* bulma 속성이 ibsheet에 적용되는거 방지 */

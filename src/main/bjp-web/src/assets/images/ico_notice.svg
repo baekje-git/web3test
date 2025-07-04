@@ -1,0 +1,12 @@
+<svg id="ico_notice" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <rect id="아이콘_Frame_Background_" data-name="아이콘 [Frame Background]" width="16" height="16" fill="none"/>
+  <path id="Vector" d="M0,0H16V16H0Z" fill="none"/>
+  <g id="Group">
+    <g id="Group-2" data-name="Group">
+      <path id="Vector-2" data-name="Vector" d="M0,0H2.47V.8H0Z" transform="translate(12.431 4.761) rotate(-21.91)" fill="#39549e"/>
+      <path id="Vector-3" data-name="Vector" d="M0,0H2.41V.8H0Z" transform="translate(12.52 7.6)" fill="#39549e"/>
+      <path id="Vector-4" data-name="Vector" d="M0,0H.8V2.47H0Z" transform="translate(12.434 11.235) rotate(-68.1)" fill="#39549e"/>
+    </g>
+    <path id="Vector-5" data-name="Vector" d="M.54,2.247,8.69.027a.732.732,0,0,1,.93.71v10.34a.737.737,0,0,1-.93.71L.54,9.567A.729.729,0,0,1,0,8.857v-5.9a.738.738,0,0,1,.54-.71Z" transform="translate(0.98 2.093)" fill="#39549e"/>
+  </g>
+</svg>

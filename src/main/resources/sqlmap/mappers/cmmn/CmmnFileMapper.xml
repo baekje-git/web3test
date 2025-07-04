@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cmmnFile">
+    
+    <!-- ###############################################################################################
+    // 게시판용 공통첨부파일 
+    // selectBoardFileList : 파일조회
+    // insertBoardFileInfo : 파일등록
+    // updateBoardFileInfo : 파일수정
+    // deleteBoardFilInfo  : 파일삭제
+    ################################################################################################ -->
+    <!-- 게시판 첨부파일 목록 -->
+    <select id="selectBoardFileList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectBoardFileList.(게시판)공통첨부파일목록.강민석 */
+        SELECT A.FILE_SEQ         /* 파일번호 */
+             , A.SEQ_NO           /* 일련번호 */
+             , A.FILE_NM          /* 파일 명 */
+             , A.ORG_FILE_NM      /* 원파일명 */
+             , A.FILE_PATH        /* 파일경로 */
+             , A.FILE_SIZE        /* 파일크기 */
+             , A.FILE_EXT         /* 파일확장자명 */
+             , A.DEL_YN           /* 삭제여부 */
+             , A.INS_DTM          /* 생성일시 */
+             , A.INS_ID           /* 생성자 */
+             , A.MOD_DTM          /* 수정일시 */
+             , A.MOD_ID           /* 수정자 */
+          FROM T_BOARD_FILE A
+         WHERE 1=1
+           AND A.DEL_YN = 'N'
+           AND A.SEQ_NO = #{SEQ_NO}
+    ]]>
+    </select>
+    
+    <!-- 게시판 첨부파일 단건정보 -->
+    <select id="selectBoardFileInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectBoardFileInfo.(게시판)공통첨부파일단건정보.강민석 */
+        SELECT A.FILE_SEQ         /* 파일번호 */
+             , A.SEQ_NO           /* 일련번호 */
+             , A.FILE_NM          /* 파일 명 */
+             , A.ORG_FILE_NM      /* 원파일명 */
+             , A.FILE_PATH        /* 파일경로 */
+             , A.FILE_SIZE        /* 파일크기 */
+             , A.FILE_EXT         /* 파일확장자명 */
+             , A.DEL_YN           /* 삭제여부 */
+             , A.INS_DTM          /* 생성일시 */
+             , A.INS_ID           /* 생성자 */
+             , A.MOD_DTM          /* 수정일시 */
+             , A.MOD_ID           /* 수정자 */
+          FROM T_BOARD_FILE A
+         WHERE 1=1
+           AND A.FILE_SEQ = #{FILE_SEQ}
+    ]]>
+    </select>
+    
+    <!-- 게시판 첨부파일정보 저장 -->
+    <insert id="insertBoardFileInfo" parameterType="java.util.HashMap">
+    <selectKey keyProperty="NEW_FILE_SEQ" resultType="int" order="BEFORE">
+    SELECT S_BOARD_FILESEQ.NEXTVAL AS NEW_FILE_SEQ FROM DUAL
+    </selectKey>
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.insertBoardFileInfo.(게시판)공통첨부파일등록.강민석 */
+        INSERT INTO T_BOARD_FILE (
+               FILE_SEQ         /* 파일번호 */
+             , SEQ_NO           /* 일련번호 */
+             , FILE_NM          /* 파일 명 */
+             , ORG_FILE_NM      /* 원파일명 */
+             , FILE_PATH        /* 파일경로 */
+             , FILE_SIZE        /* 파일크기 */
+             , FILE_EXT         /* 파일확장자명 */
+             , DEL_YN           /* 삭제여부 */
+             , INS_DTM          /* 생성일시 */
+             , INS_ID           /* 생성자 */
+        ) VALUES (
+               #{NEW_FILE_SEQ} 
+             , #{SEQ_NO}       
+             , #{FILE_NM}      
+             , #{ORG_FILE_NM}  
+             , #{FILE_PATH}    
+             , #{FILE_SIZE}    
+             , #{FILE_EXT}     
+             , #{DEL_YN}       
+             , SYSDATE          
+             , #{GSS.USER_ID}   
+        )
+    ]]>
+    </insert>
+    
+    <!-- 게시판 첨부파일 수정 -->
+    <update id="updateBoardFileInfo" parameterType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.updateBoardFileInfo.(게시판)공통첨부파일수정.강민석 */
+        UPDATE T_BOARD_FILE
+           SET A.MOD_DTM = SYSDATE          /* 수정일시 */
+             , A.MOD_ID  = #{GSS.USER_ID}   /* 수정자 */
+         WHERE 1=1
+           AND SEQ_NO   = #{SEQ_NO}
+           AND FILE_SEQ = #{FILE_SEQ}
+    ]]>
+    </update>
+    
+    <!-- 게시판첨부파일 삭제 -->
+    <delete id="deleteBoardFilInfo" parameterType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.deleteBoardFilInfo.(게시판)공통첨부파일삭제.강민석 */
+        DELETE FROM T_BOARD_FILE 
+         WHERE 1=1
+           AND SEQ_NO   = #{SEQ_NO}
+           AND FILE_SEQ = #{FILE_SEQ}
+    ]]>
+    </delete>
+    
+    <!-- ###############################################################################################
+    // 게시판용 공통첨부파일 
+    // selectAttachFileList : 파일조회
+    // insertAttachFileInfo : 파일등록
+    // updateAttachFileInfo : 파일수정
+    // deleteAttachFilInfo  : 파일삭제
+    ################################################################################################ -->
+    <!-- 공통 첨부파일 목록 -->
+    <select id="selectAttachFileList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectAttachFileList.공통첨부파일목록.강민석 */
+        SELECT A.FILE_NO        /* 파일 번호 */
+             , A.FILE_NM        /* 파일 명 */
+             , A.ORG_FILE_NM    /* 원파일명 */
+             , A.FILE_PATH      /* 파일 경로 */
+             , A.FILE_SIZE      /* 파일 크기 */
+             , A.FILE_EXT       /* 파일 확장자명 */
+             , A.ETC            /* 기타 */
+             , A.INS_DTM        /* 생성일시 */
+             , A.INS_ID         /* 생성자 */
+             , A.MOD_DTM        /* 수정일시 */
+             , A.MOD_ID         /* 수정자 */
+          FROM T_FILE_UPLOAD_INFO A
+         WHERE 1=1
+           AND A.FILE_NO = #{FILE_NO}
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일 신규파일번호 -->
+    <select id="selectAttachNewFileNo" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+    <![CDATA[
+        SELECT S_UPLOAD_FILESNO.NEXTVAL AS NEW_FILE_NO FROM DUAL
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일정보 저장 -->
+    <insert id="insertAttachFileInfo" parameterType="java.util.HashMap">
+    <!-- 
+    <selectKey keyProperty="NEW_FILE_NO" resultType="int" order="BEFORE">
+    SELECT S_UPLOAD_FILESNO.NEXTVAL AS NEW_FILE_NO FROM DUAL
+    </selectKey>
+     -->
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.insertAttachFileInfo.공통첨부파일등록.강민석 */
+        INSERT INTO T_FILE_UPLOAD_INFO (
+               FILE_NO        /* 파일 번호 */
+             , FILE_NM        /* 파일 명 */
+             , ORG_FILE_NM    /* 원파일명 */
+             , FILE_PATH      /* 파일 경로 */
+             , FILE_SIZE      /* 파일 크기 */
+             , FILE_EXT       /* 파일 확장자명 */
+             , INS_DTM        /* 생성일시 */
+             , INS_ID         /* 생성자 */
+        ) VALUES (
+               #{NEW_FILE_NO}   
+             , #{FILE_NM}       
+             , #{ORG_FILE_NM}   
+             , #{FILE_PATH}     
+             , #{FILE_SIZE}     
+             , #{FILE_EXT}      
+             , SYSDATE          
+             , #{GSS.USER_ID}   
+        )
+    ]]>
+    </insert>
+    
+    <select id="selectAttachFileInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectAttachFileInfo.공통첨부파일단건정보.강민석 */
+        SELECT A.FILE_NO        /* 파일 번호 */
+             , A.FILE_NM        /* 파일 명 */
+             , A.ORG_FILE_NM    /* 원파일명 */
+             , A.FILE_PATH      /* 파일 경로 */
+             , A.FILE_SIZE      /* 파일 크기 */
+             , A.FILE_EXT       /* 파일 확장자명 */
+             , A.ETC            /* 기타 */
+             , A.INS_DTM        /* 생성일시 */
+             , A.INS_ID         /* 생성자 */
+             , A.MOD_DTM        /* 수정일시 */
+             , A.MOD_ID         /* 수정자 */
+          FROM T_FILE_UPLOAD_INFO A
+         WHERE 1=1
+           AND A.FILE_NO = #{FILE_NO}
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일 삭제 -->
+    <delete id="deleteAttachFilInfo" parameterType="java.util.HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.deleteAttachFilInfo.공통첨부파일삭제.강민석 */
+        DELETE FROM T_FILE_UPLOAD_INFO 
+         WHERE 1=1
+           AND FILE_NO = #{FILE_NO}
+    ]]>
+    </delete>
+ 
+   <!-- ###############################################################################################
+    // 공통첨부파일(멀티)
+    ################################################################################################ -->
+    
+    <!-- 공통 첨부파일 신규파일번호 -->
+    <select id="selectCmmnNewFileSeq" parameterType="HashMap" resultType="java.lang.Integer">
+    <![CDATA[
+        SELECT IFNULL(MAX(FILE_SEQ),0)+1 AS NEW_FILE_SEQ FROM T_CMMN_FILE
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일 마지막 순번 -->
+    <select id="selectCmmnMaxSeqNo" parameterType="HashMap" resultType="java.lang.Integer">
+		SELECT IFNULL(MAX(A.SEQ_NO),0)+1
+		FROM T_CMMN_FILE A
+		WHERE A.FILE_SEQ = #{FILE_SEQ}    
+    </select>
+    
+    <!-- 공통 첨부파일 목록 -->
+    <select id="selectCmmnFileList" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectCmmnFileList.공통첨부파일목록 */
+        SELECT A.FILE_SEQ,
+		       A.SEQ_NO,
+		       A.FILE_PATH,
+		       A.FILE_NAME,
+		       A.FILE_ORIGIN_NAME,
+		       A.FILE_EXT,
+		       A.FILE_SIZE,
+		       A.USE_YN,
+		       A.REG_USER,
+		       A.REG_DATE,
+		       A.OPTION1
+		  FROM T_CMMN_FILE A
+         WHERE 1=1
+           AND A.FILE_SEQ = #{FILE_SEQ}
+         ORDER BY SEQ_NO 
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일 개별파일 -->
+    <select id="selectCmmnFile" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.selectCmmnFile.공통첨부파일목록 */
+        SELECT A.FILE_SEQ,
+               A.SEQ_NO,
+               A.FILE_PATH,
+               A.FILE_NAME,
+               A.FILE_ORIGIN_NAME,
+               A.FILE_EXT,
+               A.FILE_SIZE,
+               A.USE_YN,
+               A.REG_USER,
+               A.REG_DATE
+          FROM T_CMMN_FILE A
+         WHERE 1=1
+           AND A.FILE_SEQ = #{FILE_SEQ}
+           AND A.SEQ_NO = #{SEQ_NO} 
+          
+    ]]>
+    </select>
+    
+    <!-- 공통 첨부파일정보 저장 -->
+    <insert id="insertCmmnFileInfo" parameterType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.insertCmmnFileInfo.공통첨부파일등록 */
+        INSERT INTO T_CMMN_FILE (
+               FILE_SEQ,
+               SEQ_NO,
+               FILE_PATH,
+               FILE_NAME,
+               FILE_ORIGIN_NAME,
+               FILE_EXT,
+               FILE_SIZE,
+               USE_YN,
+               REG_USER,
+               REG_DATE   
+        ) VALUES (
+               #{FILE_SEQ},
+               #{SEQ_NO},
+               #{FILE_PATH},
+               #{FILE_NAME},
+               #{FILE_ORIGIN_NAME},
+               #{FILE_EXT},
+               #{FILE_SIZE},
+               #{USE_YN},
+               #{REG_USER},
+               DEFAULT   
+        )
+    ]]>
+    </insert>
+    
+    <!-- 공통 첨부파일 삭제 -->
+    <delete id="deleteCmmnFilInfo" parameterType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.deleteCmmnFilInfo.공통첨부파일삭제 */
+        DELETE FROM T_CMMN_FILE 
+         WHERE FILE_SEQ = #{FILE_SEQ}
+           AND SEQ_NO = #{SEQ_NO}
+    ]]>
+    </delete>
+    
+    <update id="copyCmmnFilInfo" parameterType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.copyCmmnFilInfo.공통 첨부파일 복사 */
+        INSERT INTO  T_CMMN_FILE (
+               FILE_SEQ,
+               SEQ_NO,
+               FILE_PATH,
+               FILE_NAME,
+               FILE_ORIGIN_NAME,
+               FILE_EXT,
+               FILE_SIZE,
+               USE_YN,
+               REG_USER,
+               REG_DATE  
+        )
+        SELECT #{NEW_FILE_SEQ},
+               SEQ_NO,
+               FILE_PATH,
+               FILE_NAME,
+               FILE_ORIGIN_NAME,
+               FILE_EXT,
+               FILE_SIZE,
+               USE_YN,
+               #{GSS.USER_ID},
+               SYSDATE   
+        FROM T_CMMN_FILE
+       WHERE FILE_SEQ = #{FILE_SEQ} 
+    ]]>
+    </update>
+    
+    <update id="updateFile" parameterType="HashMap">
+    <![CDATA[ 
+        /* (CmmnFileMapper.xml) - cmmnFile.updateFile.공통 첨부파일명 업데이트 */
+        
+        UPDATE T_CMMN_FILE
+           SET FILE_NAME = #{FILE_NAME}                         
+         WHERE FILE_SEQ = #{FILE_SEQ} 
+    ]]>
+    </update>
+    
+</mapper>

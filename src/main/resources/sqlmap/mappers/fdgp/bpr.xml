@@ -1,0 +1,912 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgp.bpr">
+  
+	<select id="PROD_NO_NEW" parameterType="HashMap" resultType="HashMap" >
+	    /* PROD_NO_NEW 테이블 */
+	    SELECT 
+	    FN_PROD_NO(#{PROD_DT}) AS PROD_NO_NEW
+	    </select>
+	<update id="PROD_NO_CHANGE" parameterType="hashMap">
+	    /* 제조번호 변경 쿼리(PROD_NO_CHANGE) */
+	    UPDATE T_FDG_BPR
+	    SET PROD_NO = #{PROD_NO_NEW}
+	    WHERE PROD_NO = #{PROD_NO}
+	</update>
+    
+   	<select id="selectFdgpBprList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgp.bpr.selectFdgpBprList (bpr.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,B.USER_NM               AS CHARGE_NM  /* 담당자 */
+	      ,C.USER_NM               AS CONFIRM_NM /* 확인자 */
+	      ,D.USER_NM               AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgp-bpr' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+	  FROM T_FDGP_BPR A
+	  LEFT JOIN Z_USER B
+	    ON B.USER_ID = A.CHARGE_ID
+	  LEFT JOIN Z_USER C
+	    ON C.USER_ID = A.CONFIRM_ID
+	  LEFT JOIN Z_USER D
+	    ON D.USER_ID = A.MANDATE_ID
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+       AND A.PROD_DT between REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="CHARGE_NM != null and CHARGE_NM != ''">
+       AND B.USER_NM LIKE CONCAT('%',#{CHARGE_NM},'%')
+       </if>
+       <if test="CONFIRM_NM != null and CONFIRM_NM != ''">
+       AND C.USER_NM LIKE CONCAT('%',#{CONFIRM_NM},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND D.USER_NM LIKE CONCAT('%',#{MANDATE_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+    <select id="selectFdgpBprData" parameterType="HashMap" resultType="HashMap" >
+     /* fdgp.bpr.selectFdgpBprData (bpr.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,B.USER_NM               AS MANDATE_NM /* 지시자 */
+	  FROM T_FDGP_BPR A
+	  LEFT JOIN Z_USER B
+	    ON B.USER_ID = A.MANDATE_ID
+	 WHERE 1=1
+       AND A.PROD_NO = #{PROD_NO}
+    </select>
+    
+    <select id="selectFdgBprDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgBprDetail (chem.xml) */
+     SELECT A.PROD_NO,
+	        A.Z01, 
+	        A.Z02, 
+	        A.Z03, 
+	        A.Z04, 
+	        A.Z05, 
+	        A.Z06, 
+	        A.Z07,  
+	        A.A0101,  	        
+	        A.A0102, 
+	        A.A0103,  
+	        A.A0104, 
+	        A.A0105, 
+	        A.A0201, 
+	        A.A0202, 
+	        A.A0203, 
+	        A.A0204, 
+	        A.A0205, 
+	        A.B0101, 
+	        A.B0102, 
+	        A.B0103, 
+	        A.B0104, 
+	        A.B0105, 
+	        A.B0201, 
+	        A.B0202, 
+	        A.B0203, 
+	        A.B0204, 
+	        A.B0205, 
+	        A.B0301, 
+	        A.B0302, 
+	        A.B0303, 
+	        A.B0304, 
+	        A.B0305, 
+	        A.C0101, 
+	        A.C0102, 
+	        A.C0103, 
+	        A.C0104, 
+	        A.C0105, 
+	        A.C0201, 
+	        A.C0202, 
+	        A.C0203, 
+	        A.C0204, 
+	        A.C0205, 
+	        A.C0301, 
+	        A.C0302, 
+	        A.C0303, 
+	        A.C0304, 
+	        A.C0305, 
+	        A.D01, 
+	        A.D02, 
+	        A.D03, 
+	        A.D04, 
+	        A.D05, 
+	        A.E01, 
+	        A.E02, 
+	        A.E03, 
+	        A.F0101, 
+	        A.F0102, 
+	        A.F0103, 
+	        A.F0104, 
+	        A.F0105, 
+	        A.F0106, 
+	        A.F0201, 
+	        A.F0202, 
+	        A.F0203, 
+	        A.F0204, 
+	        A.F0205, 
+	        A.F0206, 
+	        A.F0301, 
+	        A.F0302, 
+	        A.F0303, 
+	        A.F0304, 
+	        A.F0305, 
+	        A.F0306, 
+	        A.F0401, 
+	        A.F0402, 
+	        A.F0403, 
+	        A.F0404, 
+	        A.F0405, 
+	        A.F0406, 
+	        A.F0501, 
+	        A.F0502, 
+	        A.F0503, 
+	        A.F0504, 
+	        A.F0505, 
+	        A.F0506, 
+	        A.F0601, 
+	        A.F0602, 
+	        A.F0603, 
+	        A.F0604, 
+	        A.F0605, 
+	        A.F0606,
+	        FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT,  /* 담당자확인일 */
+            FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT, /* 확인자확인일 */
+            FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT, /* 지시자확인일 */
+            A.CHARGE_ID,
+            A.CONFIRM_ID,
+            A.MANDATE_ID,
+            A.CHARGE_NM,
+            A.CONFIRM_NM,
+            A.MANDATE_NM,
+            A.INS_NM,
+            A.INS_DTM,
+            A.MODE_NM,
+            A.MODE_DTM
+       FROM T_FDG_BPR A
+       LEFT JOIN Z_USER B
+              ON B.USER_ID = A.CHARGE_ID
+       LEFT JOIN Z_USER C
+              ON C.USER_ID = A.CONFIRM_ID
+       LEFT JOIN Z_USER D
+              ON D.USER_ID = A.MANDATE_ID
+       WHERE 1=1
+       AND PROD_NO = #{PROD_NO}
+    </select>
+    
+    <insert id="changeFdgBpr" parameterType="HashMap">
+    /* k99.code.updateFdgBpr (chem.xml) */
+    <selectKey keyProperty="PROD_NO" resultType="String" order="BEFORE">
+    SELECT CASE WHEN TRIM(#{PROD_NO}) = NULL OR TRIM(#{PROD_NO}) = '' THEN FN_PROD_NO('') ELSE TRIM(#{PROD_NO}) END
+    </selectKey>
+    INSERT INTO t_fdg_bpr
+    SET PROD_NO = #{PROD_NO},
+                Z01 =#{Z01},
+				Z02 =#{Z02},
+				Z03 =#{Z03},
+				Z04 =#{Z04},
+				Z05 =#{Z05},
+				Z06 = REPLACE(#{Z06},'-',''),
+				Z07 =#{Z07},
+				A0101 =#{A0101},
+				A0102 =#{A0102},
+				A0103 =#{A0103},
+				A0104 =#{A0104},
+				A0105 =#{A0105},
+				A0201 =#{A0201},
+				A0202 =#{A0202},
+				A0203 =#{A0203},
+				A0204 =#{A0204},
+				A0205 =#{A0205},
+				B0101 =#{B0101},
+				B0102 =#{B0102},
+				B0103 =#{B0103}, 
+				B0104 =#{B0104},
+				B0105 =#{B0105},
+                B0201 =#{B0201},
+				B0202 =#{B0202},
+				B0203 =#{B0203},
+				B0204 =#{B0204},
+				B0205 =#{B0205},
+				B0301 =#{B0301},
+				B0302 =#{B0302},
+				B0303 =#{B0303},
+				B0304 =#{B0304},
+				B0305 =#{B0305},
+				C0101 =#{C0101},
+				C0102 =#{C0102},
+				C0103 =#{C0103},
+				C0104 =#{C0104},
+				C0105 =#{C0105},
+				C0201 =#{C0201},
+				C0202 =#{C0202},
+				C0203 =#{C0203},
+				C0204 =#{C0204},
+				C0205 =#{C0205},
+				C0301 =#{C0301},
+				C0302 =#{C0302},
+				C0303 =#{C0303},
+				C0304 =#{C0304},
+				C0305 =#{C0305},
+				D01 =#{D01},
+				D02 =#{D02},
+				D03 =#{D03},
+				D04 =#{D04},
+				D05 =#{D05},
+				E01 =#{E01},
+				E02 =#{E02},
+				E03 =#{E03},
+				F0101 =#{F0101},
+				F0102 =#{F0102},
+				F0103 =#{F0103},
+				F0104 =#{F0104},
+				F0105 =#{F0105},
+				F0106 =#{F0106},
+				F0201 =#{F0201},
+				F0202 =#{F0202},
+				F0203 =#{F0203},
+				F0204 =#{F0204},
+				F0205 =#{F0205},
+				F0206 =#{F0206},
+				F0301 =#{F0301},
+				F0302 =#{F0302},
+				F0303 =#{F0303},
+				F0304 =#{F0304},
+				F0305 =#{F0305},
+				F0306 =#{F0306},
+				F0401 =#{F0401},
+				F0402 =#{F0402},
+				F0403 =#{F0403},
+				F0404 =#{F0404},
+				F0405 =#{F0405},
+				F0406 =#{F0406},
+				F0501 =#{F0501},
+				F0502 =#{F0502},
+				F0503 =#{F0503},
+				F0504 =#{F0504},
+				F0505 =#{F0505},
+				F0506 =#{F0506},
+				F0601 =#{F0601},
+				F0602 =#{F0602},
+				F0603 =#{F0603},
+				F0604 =#{F0604},
+				F0605 =#{F0605},
+				F0606 =#{F0606},
+				CHARGE_DT = REPLACE(#{CHARGE_DT},'-',''),
+				CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-',''),
+				MANDATE_DT = REPLACE(#{MANDATE_DT},'-',''),
+				CHARGE_ID = #{CHARGE_ID},
+				CONFIRM_ID =#{CONFIRM_ID},
+				MANDATE_ID =#{MANDATE_ID},
+				CHARGE_NM = #{CHARGE_NM},
+				CONFIRM_NM =#{CONFIRM_NM},
+				MANDATE_NM =#{MANDATE_NM},
+				INS_DTM = DEFAULT,
+				INS_NM = #{INS_NM},
+				MODE_DTM = DEFAULT,
+				MODE_NM = #{MODE_NM}
+               ON DUPLICATE KEY UPDATE
+                Z01 =#{Z01},
+				Z02 =#{Z02},
+				Z03 =#{Z03},
+				Z04 =#{Z04},
+				Z05 =#{Z05},
+				Z06 = REPLACE(#{Z06},'-',''),
+				Z07 =#{Z07},
+				A0101 =#{A0101},
+				A0102 =#{A0102},
+				A0103 =#{A0103},
+				A0104 =#{A0104},
+				A0105 =#{A0105},
+				A0201 =#{A0201},
+				A0202 =#{A0202},
+				A0203 =#{A0203},
+				A0204 =#{A0204},
+				A0205 =#{A0205},
+				B0101 =#{B0101},
+				B0102 =#{B0102},
+				B0103 =#{B0103},
+				B0104 =#{B0104},
+				B0105 =#{B0105},
+                B0201 =#{B0201},
+				B0202 =#{B0202},
+				B0203 =#{B0203},
+				B0204 =#{B0204},
+				B0205 =#{B0205},
+				B0301 =#{B0301},
+				B0302 =#{B0302},
+				B0303 =#{B0303},
+				B0304 =#{B0304},
+				B0305 =#{B0305},
+				C0101 =#{C0101},
+				C0102 =#{C0102},
+				C0103 =#{C0103},
+				C0104 =#{C0104},
+				C0105 =#{C0105},
+				C0201 =#{C0201},
+				C0202 =#{C0202},
+				C0203 =#{C0203},
+				C0204 =#{C0204},
+				C0205 =#{C0205},
+				C0301 =#{C0301},
+				C0302 =#{C0302},
+				C0303 =#{C0303},
+				C0304 =#{C0304},
+				C0305 =#{C0305},
+				D01 =#{D01},
+				D02 =#{D02},
+				D03 =#{D03},
+				D04 =#{D04},
+				D05 =#{D05},
+				E01 =#{E01},
+				E02 =#{E02},
+				E03 =#{E03},
+				F0101 =#{F0101},
+				F0102 =#{F0102},
+				F0103 =#{F0103},
+				F0104 =#{F0104},
+				F0105 =#{F0105},
+				F0106 =#{F0106},
+				F0201 =#{F0201},
+				F0202 =#{F0202},
+				F0203 =#{F0203},
+				F0204 =#{F0204},
+				F0205 =#{F0205},
+				F0206 =#{F0206},
+				F0301 =#{F0301},
+				F0302 =#{F0302},
+				F0303 =#{F0303},
+				F0304 =#{F0304},
+				F0305 =#{F0305},
+				F0306 =#{F0306},
+				F0401 =#{F0401},
+				F0402 =#{F0402},
+				F0403 =#{F0403},
+				F0404 =#{F0404},
+				F0405 =#{F0405},
+				F0406 =#{F0406},
+				F0501 =#{F0501},
+				F0502 =#{F0502},
+				F0503 =#{F0503},
+				F0504 =#{F0504},
+				F0505 =#{F0505},
+				F0506 =#{F0506},
+				F0601 =#{F0601},
+				F0602 =#{F0602},
+				F0603 =#{F0603},
+				F0604 =#{F0604},
+				F0605 =#{F0605},
+				F0606 =#{F0606},
+				CHARGE_DT = REPLACE(#{CHARGE_DT},'-',''),
+				CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-',''),
+				MANDATE_DT = REPLACE(#{MANDATE_DT},'-',''),
+				CHARGE_ID = #{CHARGE_ID},
+				CONFIRM_ID =#{CONFIRM_ID},
+				MANDATE_ID =#{MANDATE_ID},
+				CHARGE_NM = #{CHARGE_NM},
+				CONFIRM_NM =#{CONFIRM_NM},
+				MANDATE_NM =#{MANDATE_NM},
+				MODE_DTM = DEFAULT,
+				MODE_NM = #{MODE_NM}
+    </insert>
+    
+    <sql id="ref_pagingHeader">
+        SELECT Y.*
+            FROM (
+                SELECT
+                    X.*
+                    , @rownum := @rownum + 1 AS RNUM
+                FROM (
+    </sql>
+    
+    <sql id="ref_pagingFooter">                    
+            )X 
+        )Y
+		<if test="sortBy != null and sortBy != ''">
+	    ORDER BY ${sortBy} ${descending}, LENGTH(PROD_NO) DESC, PROD_NO DESC, FINAL_PROC_SORT
+	    </if>
+        LIMIT ${firstNum}, ${once_display_count}            
+    </sql>
+    
+    <insert id="insertFdgpBpr" parameterType="HashMap">
+    /* fdgp.bpr.insertFdgpBpr */
+    <selectKey keyProperty="PROD_NO" resultType="String" order="BEFORE">
+    	SELECT (CASE WHEN #{eData.PROD_NO} IS NULL OR TRIM(#{eData.PROD_NO}) = '' THEN FN_PROD_NO('') ELSE TRIM(#{eData.PROD_NO}) END) AS PROD_NO FROM DUAL
+    </selectKey>
+		INSERT 
+		  INTO t_fdgp_bpr
+    	   SET PROD_NO = #{PROD_NO}
+    	     , PROD_DT = #{eData.PROD_DT}
+			 , Z03 = #{eData.Z03}
+			 , B0101 = #{eData1.B0101}
+			 , B0103 = #{eData1.B0103}
+			 , B0104 = #{eData1.B0104}
+			 , B0105 = #{eData1.B0105}
+			 , B0201 = #{eData2.B0201}
+			 , B0203 = #{eData2.B0203}
+			 , B0204 = #{eData2.B0204}
+			 , B0205 = #{eData2.B0205}
+			 , B0301 = #{eData3.B0301}
+			 , B0303 = #{eData3.B0303}
+			 , B0304 = #{eData3.B0304}
+			 , B0305 = #{eData3.B0305} 
+			 , C0101 = #{eData4.C0101}
+			 , C0103 = #{eData4.C0103}
+			 , C0104 = #{eData4.C0104}
+			 , C0105 = #{eData4.C0105}
+			 , C0201 = #{eData5.C0201}
+			 , C0203 = #{eData5.C0203}
+			 , C0204 = #{eData5.C0204}
+			 , C0205 = #{eData5.C0205}
+			 , C0301 = #{eData6.C0301}
+			 , C0303 = #{eData6.C0303}
+			 , C0304 = #{eData6.C0304}
+			 , C0305 = #{eData6.C0305}
+			 , REG_ID = #{userData.USER_ID}
+			 , REG_DTM = NOW()
+            ON DUPLICATE KEY UPDATE
+               PROD_DT = #{eData.PROD_DT}
+             , Z03 = #{eData.Z03}
+			 , B0101 = #{eData1.B0101}
+			 , B0103 = #{eData1.B0103}
+			 , B0104 = #{eData1.B0104}
+			 , B0105 = #{eData1.B0105}
+			 , B0201 = #{eData2.B0201}
+			 , B0203 = #{eData2.B0203}
+			 , B0204 = #{eData2.B0204}
+			 , B0205 = #{eData2.B0205}
+			 , B0301 = #{eData3.B0301}
+			 , B0303 = #{eData3.B0303}
+			 , B0304 = #{eData3.B0304}
+			 , B0305 = #{eData3.B0305} 
+			 , C0101 = #{eData4.C0101}
+			 , C0103 = #{eData4.C0103}
+			 , C0104 = #{eData4.C0104}
+			 , C0105 = #{eData4.C0105}
+			 , C0201 = #{eData5.C0201}
+			 , C0203 = #{eData5.C0203}
+			 , C0204 = #{eData5.C0204}
+			 , C0205 = #{eData5.C0205}
+			 , C0301 = #{eData6.C0301}
+			 , C0303 = #{eData6.C0303}
+			 , C0304 = #{eData6.C0304}
+			 , C0305 = #{eData6.C0305}
+			 <if test='userData.USER_LVL.equals("1")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("2")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("3")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 <if test='userData.USER_LVL.equals("4")'>
+			 <if test='eData.CHARGE_SIGN != ""'>
+			 , CHARGE_ID = #{userData.USER_ID}
+			 , CHARGE_SIGN = #{eData.CHARGE_SIGN}
+			 , CHARGE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.CONFIRM_SIGN != ""'>
+			 , CONFIRM_ID = #{userData.USER_ID}
+			 , CONFIRM_SIGN = #{eData.CONFIRM_SIGN}
+			 , CONFIRM_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 <if test='eData.MANDATE_SIGN != ""'>
+			 , MANDATE_ID = #{userData.USER_ID}
+			 , MANDATE_SIGN = #{eData.MANDATE_SIGN}
+			 , MANDATE_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+			 </if>
+			 </if>
+			 , EDT_ID = #{userData.USER_ID}
+			 , EDT_DTM = NOW()
+    </insert>
+    
+    <select id="selectFdgpBprDisposeList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgp.bpr.selectFdgpBprDisposeList (bpr.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,CASE
+	      	WHEN A.PROD_NO IS NULL THEN '미진행'
+	      	WHEN B.PROD_NO IS NULL THEN '제조지시 및 기록서'
+	      	WHEN C.PROD_NO IS NULL THEN '작업 전 점검기록서'
+	      	WHEN D.PROD_NO IS NULL THEN '합성 작업기록서'
+	      	WHEN E.PROD_NO IS NULL THEN '분주 작업기록서'
+	      	WHEN F.PROD_NO IS NULL THEN '포장 작업기록서'
+	      	WHEN G.PROD_NO IS NULL THEN '완제품 시험의뢰서'
+	      	WHEN H.PROD_NO IS NULL THEN '완제품 시험지시서'
+	      	WHEN I.PROD_NO IS NULL THEN '완제품 시험기록서'
+	      	WHEN J.PROD_NO IS NULL THEN '완제품 시험성적서'
+	      	WHEN K.PROD_NO IS NULL THEN '완제품 조건부출하승인서'
+	      	WHEN L.PROD_NO IS NULL THEN '무균 시험성적서'
+	      	ELSE '완제품 최종출하승인서'
+	       END AS FINAL_PROC 					 /* 최종진행문서 */
+	      ,FN_FMT_DT(A.DEL_DT)	   AS DEL_DT 	 /* 폐기여부 */
+	      ,A.DEL_REASON 		   AS DEL_REASON /* 폐기사유 */
+	  FROM T_FDGP_BPR A
+      LEFT JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGP_PACK E
+        ON E.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNINS G
+        ON G.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNREC H
+        ON H.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNREP I
+        ON I.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_CS J
+        ON J.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_ST K
+        ON K.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FC L
+        ON L.PROD_NO = A.PROD_NO
+     WHERE A.DEL_NY = #{DEL_NY}
+     <if test="START_PROD_DT != null and START_PROD_DT != '' and END_PROD_DT != null and END_PROD_DT != ''">
+       AND A.PROD_DT between REPLACE(#{START_PROD_DT},'-','') AND REPLACE(#{END_PROD_DT},'-','')
+     </if>
+	 <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+     </if>
+     <if test="START_DEL_DT != null and START_DEL_DT != '' and END_DEL_DT != null and END_DEL_DT != ''">
+       AND A.DEL_DT between REPLACE(#{START_DEL_DT},'-','') AND REPLACE(#{END_DEL_DT},'-','')
+     </if>
+     ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+    <update id="updateFdgpBprDispose" parameterType="hashMap">
+    /* fdgp.bpr.updateFdgpBprDispose (bpr.xml) */
+    UPDATE T_FDGP_BPR
+       SET DEL_NY = 'Y'
+       	  ,DEL_DT = DATE_FORMAT(NOW(), '%Y%m%d')
+          ,DEL_REASON = #{DEL_REASON}
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+     WHERE PROD_NO = #{PROD_NO}
+	</update>
+	
+	<select id="selectMainContentsList" parameterType="HashMap" resultType="HashMap">
+	<include refid="fdgp.bpr.ref_pagingHeader"/>
+	SELECT FN_FMT_DT(A.PROD_DT) AS PROD_DT  
+		  ,'fdgp-bpr' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgp-bpr') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgp-bpr') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.CHARGE_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.CHARGE_DT) AS CHARGE_DT
+		  ,FN_USER(A.CONFIRM_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT
+	  FROM T_FDGP_BPR A
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND A.DEL_NY = 'N'
+	   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL 
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT 
+		  ,'fdgp-csfm' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgp-csfm') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgp-csfm') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.CHARGE_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.CHARGE_DT) AS CHARGE_DT
+		  ,FN_USER(A.CONFIRM_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT
+	  FROM T_FDGP_CSFM A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL 
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT 
+		  ,'fdgp-cmps' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgp-cmps') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgp-cmps') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.CHARGE_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.CHARGE_DT) AS CHARGE_DT
+		  ,FN_USER(A.CONFIRM_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT
+	  FROM T_FDGP_CMPS A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL 
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT   
+		  ,'fdgp-dsps' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgp-dsps') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgp-dsps') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.CHARGE_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.CHARGE_DT) AS CHARGE_DT
+		  ,FN_USER(A.CONFIRM_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT
+	  FROM T_FDGP_DSPS A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL 
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT   
+		  ,'fdgp-pack' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgp-pack') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgp-pack') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.CHARGE_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.CHARGE_DT) AS CHARGE_DT
+		  ,FN_USER(A.CONFIRM_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT
+	  FROM T_FDGP_PACK A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-fnreq' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-fnreq') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-fnreq') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.TEST_REQ_ID) AS CHARGE_NM
+		  ,FN_FMT_DT(A.TEST_REQ_DT) AS CHARGE_DT
+		  ,FN_USER(A.QUL_MANAGER_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.QUL_MANAGER_DT) AS CONFIRM_DT
+	  FROM T_FDGQ_FNREQ A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.PROD_MANAGER_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.TEST_REQ_SIGN IS NULL,1,IF(A.QUL_MANAGER_SIGN IS NULL,2,IF(A.PROD_MANAGER_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-fnins' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-fnins') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-fnins') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,'해당 없음' AS CHARGE_NM
+		  ,'해당 없음' AS CHARGE_DT
+		  ,'해당 없음' AS CONFIRM_NM
+		  ,'해당 없음' AS CONFIRM_DT
+	  FROM T_FDGQ_FNINS A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANDATE_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.MANDATE_SIGN,3,4) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT   
+		  ,'fdgq-fnrec' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-fnrec') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-fnrec') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.TESTER) AS CHARGE_NM
+		  ,FN_FMT_DT(A.TESTER_DT) AS CHARGE_DT
+		  ,'해당 없음' AS CONFIRM_NM
+		  ,'해당 없음' AS CONFIRM_DT
+	  FROM T_FDGQ_FNREC A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.CONFIRM_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.TESTER_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,3,4)) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-fnrep' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-fnrep') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-fnrep') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.WRITER) AS CHARGE_NM
+		  ,FN_FMT_DT(A.WRITER_DT) AS CHARGE_DT
+		  ,FN_USER(A.VIEWER) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.VIEWER_DT) AS CONFIRM_DT
+	  FROM T_FDGQ_FNREP A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.MANAGER_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.WRITER_SIGN IS NULL,1,IF(A.VIEWER_SIGN IS NULL,2,IF(A.MANAGER_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-cs' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-cs') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-cs') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,'해당 없음' AS CHARGE_NM
+		  ,'해당 없음' AS CHARGE_DT
+		  ,FN_USER(A.PROD_DIRECTOR_ID) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.PROD_DIRECTOR_DT) AS CONFIRM_DT
+	  FROM T_FDGQ_CS A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.PROD_MANAGER_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.PROD_DIRECTOR_SIGN IS NULL,2,IF(A.PROD_MANAGER_SIGN IS NULL,3,4)) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL
+	<!-- SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-st' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-st') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-st') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,FN_USER(A.A06) AS CHARGE_NM
+		  ,FN_FMT_DT(A.A06_DT) AS CHARGE_DT
+		  ,FN_USER(A.A07) AS CONFIRM_NM
+		  ,FN_FMT_DT(A.A07_DT) AS CONFIRM_DT
+	  FROM T_FDGQ_ST A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.A08_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.A06_SIGN IS NULL,1,IF(A.A07_SIGN IS NULL,2,IF(A.A08_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	 UNION ALL -->
+	SELECT FN_FMT_DT(B.PROD_DT) AS PROD_DT    
+		  ,'fdgq-fc' AS PROCESS
+		  ,FN_CODE('PROCESS','fdgq-fc') AS FINAL_PROC
+		  ,FN_CODE_SORT('PROCESS','fdgq-fc') AS FINAL_PROC_SORT
+		  ,A.PROD_NO 
+		  ,'해당 없음' AS CHARGE_NM
+		  ,'해당 없음' AS CHARGE_DT
+		  ,'해당 없음' AS CONFIRM_NM
+		  ,'해당 없음' AS CONFIRM_DT
+	  FROM T_FDGQ_FC A
+	  JOIN T_FDGP_BPR B
+	    ON B.PROD_NO = A.PROD_NO
+	 WHERE A.PROD_MANAGER_SIGN IS NULL
+	   AND B.DEL_NY = 'N'
+	   AND IF(A.PROD_MANAGER_SIGN IS NULL,3,4) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	<include refid="fdgp.bpr.ref_pagingFooter"/>
+	</select>
+	
+	<select id="selectMainContentsCnt" parameterType="HashMap" resultType="HashMap">
+	SELECT COUNT(*) AS TOTAL
+		  ,PROD_NO
+	FROM (
+		SELECT A.PROD_NO 
+		  FROM T_FDGP_BPR A
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND A.DEL_NY = 'N'
+		   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL 
+		SELECT A.PROD_NO 
+		  FROM T_FDGP_CSFM A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL 
+		SELECT A.PROD_NO 
+		  FROM T_FDGP_CMPS A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL 
+		SELECT A.PROD_NO 
+		  FROM T_FDGP_DSPS A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL 
+		SELECT A.PROD_NO 
+		  FROM T_FDGP_PACK A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.CHARGE_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,2,IF(A.MANDATE_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		SELECT A.PROD_NO 
+		  FROM T_FDGQ_FNREQ A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.PROD_MANAGER_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.TEST_REQ_SIGN IS NULL,1,IF(A.QUL_MANAGER_SIGN IS NULL,2,IF(A.PROD_MANAGER_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		SELECT A.PROD_NO 
+		  FROM T_FDGQ_FNINS A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANDATE_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.MANDATE_SIGN,3,4) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		SELECT A.PROD_NO 
+		  FROM T_FDGQ_FNREC A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.CONFIRM_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.TESTER_SIGN IS NULL,1,IF(A.CONFIRM_SIGN IS NULL,3,4)) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		SELECT A.PROD_NO 
+		  FROM T_FDGQ_FNREP A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.MANAGER_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.WRITER_SIGN IS NULL,1,IF(A.VIEWER_SIGN IS NULL,2,IF(A.MANAGER_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		SELECT A.PROD_NO 
+		  FROM T_FDGQ_CS A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.PROD_MANAGER_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.PROD_DIRECTOR_SIGN IS NULL,2,IF(A.PROD_MANAGER_SIGN IS NULL,3,4)) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL
+		<!-- SELECT A.PROD_NO 
+		  FROM T_FDGQ_ST A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.A08_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.A06_SIGN IS NULL,1,IF(A.A07_SIGN IS NULL,2,IF(A.A08_SIGN IS NULL,3,4))) <![CDATA[ <= ]]> #{userData.USER_LVL}
+		 UNION ALL -->
+		SELECT A.PROD_NO
+		  FROM T_FDGQ_FC A
+		  JOIN T_FDGP_BPR B
+		    ON B.PROD_NO = A.PROD_NO
+		 WHERE A.PROD_MANAGER_SIGN IS NULL
+		   AND B.DEL_NY = 'N'
+		   AND IF(A.PROD_MANAGER_SIGN IS NULL,3,4) <![CDATA[ <= ]]> #{userData.USER_LVL}
+	) A
+	WHERE 1=1
+	</select>
+</mapper>

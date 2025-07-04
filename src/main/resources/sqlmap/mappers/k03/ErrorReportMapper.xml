@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.error">
+    <select id="select0306IPER01TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+            /* k03.error.select0306IPER01TB - 오류보고(관리, 마이페이지)*/
+            SELECT  T1.IPER_SEQ
+                    ,F_CODE_NM('MISTAKE_UPPER_CODE',T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                    ,T1.MISTAKE_CODE
+                    ,F_CODE_NM('MISTAKE_CODE',T1.MISTAKE_CODE) AS MISTAKE_NAME
+                    ,T1.IPNT_UPPER_SEQ
+                    ,T2.IPNT_NO
+                    ,T1.USER_ID
+                    ,T3.USER_NAME                    
+                    ,t2.IPNT_DATE
+                    ,t2.IPNT_TIME
+                    ,t2.IPNT_PLACE_DETAIL
+                    ,F_CODE_NM('EVENT_CODE',T2.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                    ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T2.IPNT_EVENT_DET_CODE AND OPTION2 = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                    ,T1.USE_YN
+                    ,T1.IP_ADDR
+                    ,T1.USER_AGENT
+                    ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                    ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                    ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                    ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                    ,T1.IPNT_START_DATE
+                    ,T1.IPNT_END_DATE
+                    ,T1.MISTAKE_MEMO
+                    ,T1.MISTAKE_PRIORITY
+                    ,F_CODE_NM('MISTAKE_PRIORITY',T1.MISTAKE_PRIORITY) AS MISTAKE_PRIORITY_NAME
+                    ,COUNT(1) OVER() AS ALL_COUNT
+            FROM    K03_ERROR_REPORT T1
+                    ,K03_DOPING_INSPECT_REG T2
+                    ,USER01TB T3
+                    ,USER01TB T4
+            WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+            AND     T1.USER_ID = T3.USER_ID
+            AND     T2.IPNT_CHARGER_ID = T4.USER_ID
+            AND     T1.USE_YN = 'Y'
+            AND     T2.USE_YN = 'Y'
+        ]]>
+        <if test="STOP_YN != null and STOP_YN != '' ">
+            AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN T1.IPNT_START_DATE AND T1.IPNT_END_DATE
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND UPPER(T2.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+            AND T3.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND T2.IPNT_PLACE_DETAIL LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        
+        <if test="CONDITION_DETAIL_CODE != null and CONDITION_DETAIL_CODE != '' and CONDITION_DETAIL_CODE == 'IPNT_CHARGER_ID'">
+            AND T4.USER_NAME LIKE '%' || #{CONDITION_DETAIL_TEXT} || '%' /* 담당자 */
+        </if>
+        <if test="CONDITION_DETAIL_CODE != null and CONDITION_DETAIL_CODE != '' and CONDITION_DETAIL_CODE == 'IPNT_DATE'">
+            AND T2.IPNT_DATE =  #{CONDITION_DETAIL_TEXT} /* 검사일 */
+        </if>
+        <if test="CONDITION_DETAIL_CODE != null and CONDITION_DETAIL_CODE != '' and CONDITION_DETAIL_CODE == 'PREDECESSOR'">
+            AND T1.IPNT_NO IN    /* 선임검사관 */
+	           (SELECT T.IPNT_NO 
+	              FROM K03_DOPING_INSPECT_DCO T 
+	              JOIN USER01TB UT 
+	                ON T.USER_ID = UT.USER_ID
+	             WHERE T.PREDECESSOR_YN = 'Y'
+	               AND ut.USER_NAME LIKE '%' || #{CONDITION_DETAIL_TEXT} || '%' )
+        </if>
+        
+        <if test="USER_ID != null and USER_ID != ''">
+            AND T1.USER_ID = #{USER_ID}
+        </if>
+        <if test="IPNT_YEAR != null and IPNT_YEAR != ''">
+            AND T2.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+        </if>
+        <![CDATA[
+           ORDER BY IPER_SEQ DESC
+        ]]>
+    </select>
+    
+    <select id="select0306IPER01TBByPK" parameterType="HashMap" resultType="HashMap">
+        /* k03.error.select0306IPER01TBByPK - 오류보고상세(관리, 마이페이지)*/
+         SELECT  T1.IPER_SEQ
+                ,T1.MISTAKE_UPPER_CODE
+                ,F_CODE_NM('MISTAKE_UPPER_CODE',T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                ,T1.MISTAKE_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS MISTAKE_NAME
+                ,T1.IPNT_UPPER_SEQ
+                ,T3.IPNT_NO
+                ,T1.USER_ID
+                ,T2.USER_NAME
+                ,TO_CHAR(T1.MEMO) AS MEMO
+                ,TO_CHAR(T1.REMARK) AS REMARK
+                ,T1.USE_YN
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+                ,T1.MISTAKE_PRIORITY                
+                ,F_CODE_NM('MISTAKE_PRIORITY',T1.MISTAKE_PRIORITY) AS MISTAKE_PRIORITY_NAME
+                ,F_CODE_NM('EVENT_CODE',T3.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                ,T3.IPNT_DATE
+                ,T3.IPNT_TIME
+                ,T3.IPNT_NAME
+                ,T3.IPNT_PLACE_DETAIL
+                ,F_CODE_NM('IPNT_PERIOD_CODE',T3.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME                 
+                ,T4.USER_NAME AS CHARGER_NAME
+        FROM K03_ERROR_REPORT T1 
+        LEFT OUTER JOIN USER01TB T2 ON T1.USER_ID = T2.USER_ID        
+        JOIN K03_DOPING_INSPECT_REG T3 ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+        LEFT OUTER JOIN USER01TB T4 ON T3.IPNT_CHARGER_ID = T4.USER_ID
+       WHERE T1.IPER_SEQ = #{IPER_SEQ}        
+    </select>
+    
+    <update id="insertIPER01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k03.error.insertIPER01TB - 오류보고저장(관리)*/
+        
+        INSERT  INTO K03_ERROR_REPORT
+                (
+                IPER_SEQ
+                ,MISTAKE_UPPER_CODE
+                ,MISTAKE_CODE
+                ,IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,USER_ID
+                ,MEMO
+                ,REMARK
+                ,USE_YN
+                ,IP_ADDR
+                ,USER_AGENT
+                ,REG_USER
+                ,REG_DATE
+                ,IPNT_START_DATE
+                ,IPNT_END_DATE
+                ,MISTAKE_MEMO
+                ,MISTAKE_PRIORITY
+                )
+        SELECT  NVL(MAX(IPER_SEQ), 0) + 1 AS IPER_SEQ
+                ,#{MISTAKE_UPPER_CODE}
+                ,#{MISTAKE_CODE}
+                ,#{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{USER_ID}
+                ,#{MEMO}
+                ,#{REMARK}
+                ,'Y'
+                ,#{IP_ADDR}
+                ,#{USER_AGENT}
+                ,#{GSS.USER_ID}
+                ,SYSDATE
+                ,#{IPNT_START_DATE}
+                ,#{IPNT_END_DATE}
+                ,#{MISTAKE_MEMO}
+                ,#{MISTAKE_PRIORITY}
+        FROM    K03_ERROR_REPORT
+        ]]>
+    </update>
+    
+    <update id="update0306IPCF01TB" parameterType="HashMap">
+        <![CDATA[
+        UPDATE  K03_DOPING_INSPECT_ING_MST
+        SET     CONFIRM_STATUS = #{CONFIRM_STATUS}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </update>
+
+    <update id="updateIPER01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k03.error.updateIPER01TB - 오류보고저장(관리)*/
+        
+        UPDATE  K03_ERROR_REPORT
+        SET     MISTAKE_UPPER_CODE = #{MISTAKE_UPPER_CODE}
+                ,MISTAKE_CODE = #{MISTAKE_CODE}
+                ,IPNT_NO = #{IPNT_NO}
+                ,USER_ID = #{USER_ID}
+                ,MEMO = #{MEMO}
+                ,REMARK = #{REMARK}
+                ,EDT_USER = #{GSS.USER_ID}
+                ,EDT_DATE = SYSDATE
+                ,IPNT_START_DATE = #{IPNT_START_DATE}
+                ,IPNT_END_DATE = #{IPNT_END_DATE}
+                ,MISTAKE_MEMO = #{MISTAKE_MEMO}
+                ,MISTAKE_PRIORITY = #{MISTAKE_PRIORITY}
+        WHERE   IPER_SEQ = #{IPER_SEQ}
+        ]]>
+    </update>
+    
+    <update id="deleteIPER01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k03.error.deleteIPER01TB - 오류보고삭제(관리)*/
+        
+        UPDATE  K03_ERROR_REPORT
+        SET     USE_YN = 'N'
+                ,EDT_USER = #{GSS.USER_ID}
+                ,EDT_DATE = SYSDATE
+        WHERE   IPER_SEQ = #{IPER_SEQ}
+        ]]>
+    </update>
+    
+    <select id="selectDopingPopup" parameterType="HashMap" resultType="HashMap">
+        /* k03.error.selectDopingPopup - 오류보고 등록대상(관리)*/
+    
+         SELECT  T3.IPNT_UPPER_SEQ  
+                ,T3.IPNT_NO
+                ,T3.IPNT_NAME                                
+                ,T3.IPNT_DATE
+                ,T3.IPNT_TIME                
+                ,T3.IPNT_PLACE_DETAIL
+                ,F_CODE_NM('IPNT_PERIOD_CODE',T3.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME                 
+                ,T4.USER_NAME AS CHARGER_NAME
+                ,T4.USER_PHONE AS CHARGER_PHONE
+        FROM K03_DOPING_INSPECT_REG T3         
+        LEFT OUTER JOIN USER01TB T4 ON T3.IPNT_CHARGER_ID = T4.USER_ID
+       WHERE 1=1      
+       <choose>
+            <when test="SEARCH_TYPE != null and SEARCH_TYPE != '' and SEARCH_TYPE == 'IPNT_DATE'">
+                    AND T3.IPNT_DATE = #{IPNT_DATE}
+            </when>
+            <otherwise>
+                    AND T3.IPNT_NAME LIKE '%'||#{IPNT_NAME}||'%'
+            </otherwise>
+        </choose>
+    </select>
+    
+    <select id="selectDcos" parameterType="HashMap" resultType="HashMap">
+        /* k03.error.selectDcos - 오류보고 등록대상DCO (관리)*/
+    
+		SELECT T.USER_ID,
+		       U.USER_NAME
+		  FROM K03_DOPING_INSPECT_DCO T 
+		  LEFT OUTER JOIN USER01TB U ON T.USER_ID = U.USER_ID
+		 WHERE T.USE_YN = 'Y'
+		   AND T.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}    
+    </select>
+    
+</mapper>

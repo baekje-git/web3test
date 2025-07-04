@@ -1,0 +1,1 @@
+import{n as o}from"./index.23979a80.js";function s(t){return o.post("/jwt/login",t)}function r(t){return console.log("jwtLoginCust data",t),o.post("/jwt/login-cust",t)}function e(t){return o.post("/jwt/refresh-token",t)}export{s as a,r as b,e as j};

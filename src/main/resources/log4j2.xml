@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info">
+  <Appenders>
+    <!-- 콘솔 출력용 -->
+    <Console name="console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%-5p: [%tid] %c - %m%n"/>
+    </Console>
+
+    <!-- DEBUG 로그 (debug만 저장) -->
+    <RollingFile name="debugFile" fileName="/log/web3_debug.log"
+                 filePattern="/log/%d{yyyy-MM-dd}/web3_debug-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <Pattern>%d{yy-MM-dd HH:mm:ss} # %c{1} # %L # %p %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <Filters>
+        <!-- debug만 저장 -->
+        <LevelRangeFilter minLevel="debug" maxLevel="debug" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+    </RollingFile>
+
+    <!-- INFO 로그 (info만 저장) -->
+    <RollingFile name="infoFile" fileName="/log/web3_info.log"
+                 filePattern="/log/%d{yyyy-MM-dd}/web3_info-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <Pattern>%d{yy-MM-dd HH:mm:ss} # %c{1} # %L # %p %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <Filters>
+        <!-- info만 저장 -->
+        <LevelRangeFilter minLevel="info" maxLevel="info" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+    </RollingFile>
+
+    <!-- WARN 로그 (warn만 저장) -->
+    <RollingFile name="warnFile" fileName="/log/web3_warn.log"
+                 filePattern="/log/%d{yyyy-MM-dd}/web3_warn-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <Pattern>%d{yy-MM-dd HH:mm:ss} # %c{1} # %L # %p %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <Filters>
+        <!-- warn만 저장 -->
+        <LevelRangeFilter minLevel="warn" maxLevel="warn" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+    </RollingFile>
+
+    <!-- ERROR 로그 (error만 저장) -->
+    <RollingFile name="errorFile" fileName="/log/web3_error.log"
+                 filePattern="/log/%d{yyyy-MM-dd}/web3_error-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <Pattern>%d{yy-MM-dd HH:mm:ss} # %c{1} # %L # %p %m%n</Pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <Filters>
+        <!-- error만 저장 -->
+        <LevelRangeFilter minLevel="error" maxLevel="error" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <!-- ✅ DEBUG 로그 ON: level="debug" -->
+    <!-- ❌ DEBUG 로그 OFF: level="info" (debugFile에는 아무 것도 안 찍힘) -->
+    <!--
+    <Logger name="ever.support.interceptor.JwtInterceptor" level="debug" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="debugFile"/>
+    </Logger>
+    -->
+
+    <!-- JwtInterceptor만 DEBUG -->
+    <!--
+    <logger name="ever.support.interceptor.JwtInterceptor" additivity="false" level="debug">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="debugFile"/>
+    </logger>
+    -->
+
+    <!-- ever 패키지는 info로 제한 -->
+    <!--
+    <logger name="ever" additivity="false" level="info">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="infoFile"/>
+    </logger>
+    -->
+
+    <!-- 잡다한 로그 OFF 처리 -->
+    <logger name="ever.support.aop.AspectMessageAdvice" level="off" additivity="false"/>
+    <!-- <logger name="jdbc.sqlonly" level="off" additivity="false"/> -->
+    <!-- <logger name="jdbc.sqltiming" level="off" additivity="false"/> -->
+    <logger name="jdbc.sqltiming" level="off" additivity="false"/>
+    <logger name="jdbc.resultset" level="off" additivity="false"/>
+    <logger name="jdbc.resultsettable" level="off" additivity="false"/>
+    <logger name="jdbc.connection" level="off" additivity="false"/>
+    <logger name="jdbc.audit" level="off" additivity="false"/>
+
+    <!-- SQL 로그는 debugFile로 -->
+    <logger name="jdbc.sqlonly" level="debug" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="debugFile"/>
+    </logger>
+
+    <!-- Spring 로그는 infoFile로 -->
+    <logger name="org.springframework" level="info" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="infoFile"/>
+    </logger>
+
+    <!-- MyBatis 경고 로그는 warnFile로 -->
+    <logger name="org.mybatis.spring" level="warn" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="warnFile"/>
+    </logger>
+
+    <!-- Hikari 경고 로그도 warnFile로 -->
+    <logger name="com.zaxxer.hikari" level="warn" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="warnFile"/>
+    </logger>
+
+    <!-- 전역 DEBUG 로그 -->
+    <logger name="debugLogger" level="debug" additivity="false">
+      <AppenderRef ref="debugFile"/>
+    </logger>
+
+    <!-- 전역 INFO 로그 -->
+    <logger name="infoLogger" level="info" additivity="false">
+      <AppenderRef ref="infoFile"/>
+    </logger>
+
+    <!-- 전역 WARN 로그 -->
+    <logger name="warnLogger" level="warn" additivity="false">
+      <AppenderRef ref="warnFile"/>
+    </logger>
+
+    <!-- 전역 ERROR 로그 -->
+    <logger name="errorLogger" level="error" additivity="false">
+      <AppenderRef ref="errorFile"/>
+    </logger>
+
+    <!-- Root Logger: console만 출력 -->
+    <Root level="info">
+      <AppenderRef ref="console"/>
+    </Root>
+  </Loggers>
+</configuration>

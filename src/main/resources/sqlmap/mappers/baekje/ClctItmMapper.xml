@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="clctItm">
+    <select id="selectNtfctInfoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* clctItm.selectNtfctInfoList 회수품목 고시정보 */
+        SELECT ROW_NUMBER() OVER(ORDER BY A.COLL_DT DESC, A.MAKER_NM, B.ITEM_NM) ROW_NUM
+             , A.ITEM_CD
+             , COALESCE(B.ITEM_NM,'')||' '||COALESCE(B.UNIT,'') AS ITEM_NM_UNIT
+             , A.ITEM_PYOJUN_CD
+             , A.ITEM_GIJUN_CD
+             , A.MAKER_CD
+             , A.MAKER_NM
+             , A.COLL_DT
+             , A.PROD_NO
+             , A.PROD_DT
+             , IFNULL(A.NOTE,'') NOTE
+             , A.GRADE_CD
+             , SUBSTRING(COALESCE(C.CD_NM,''), 1, 1) AS MED_NM
+             , SUBSTRING(CASE WHEN B.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+             , A.ITEM_CD || A.COLL_DT || A.PROD_NO || A.PROD_DT AS SEQ
+          FROM T_ITEM_HAZARD A
+          JOIN T_ITEM B
+            ON A.ITEM_CD = B.ITEM_CD
+          LEFT OUTER JOIN T_CODE C
+            ON C.P_CODE = '101'
+           AND C.CODE = B.MED_CD
+         WHERE 1 = 1
+        <if test="itemNm != null and itemNm != ''">
+           <bind name="itemNm" value='"%" + itemNm + "%"'/>
+           AND B.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test='makerNm != null and makerNm != ""'>
+           <bind name="makerNm" value='"%" + makerNm + "%"'/>
+           AND A.MAKER_NM LIKE #{makerNm}
+        </if>
+        <if test='outTm == "N"' >
+	        <if test="startDt != null and startDt != '' and endDt != null and endDt != '' ">
+	           AND A.COLL_DT BETWEEN #{startDt}  AND #{endDt}
+	        </if>
+        </if>
+         ORDER BY A.COLL_DT DESC, A.MAKER_NM, B.ITEM_NM
+    </select>
+
+    <select id="selectShpmntItemList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* clctItm.selectShpmntItemList 회수품목 출하내역 */
+        SELECT A.ORD_DT
+             , C.MAKER_NM
+             , A.APRV_DT
+             , C.COLL_DT 
+             , D.PROD_NO
+             , E.ITEM_CD
+             , D.ITEM_GB_CD
+             , A.CUST_CD
+             , D.BRCH_CD
+             , D.EXP_DT
+             , IFNULL(SUM(D.ITEM_QTY), 0) AS REQ_QTY
+             , COALESCE(E.ITEM_NM,'')||' '||COALESCE(E.UNIT,'') AS ITEM_NM_UNIT
+             , F.TAX_YN
+             , F.SUBDIV_YN
+             , SUBSTRING(COALESCE(G.CD_NM,''), 1, 1) AS MED_NM
+             , SUBSTRING(CASE WHEN E.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+             , F_S_BACKABLE_QTY(A.CUST_CD, E.ITEM_CD) AS LIMIT_QTY
+             , E.ITEM_CD || A.ORD_DT || A.APRV_DT || D.PROD_NO AS SEQ
+          FROM T_SALE A
+          JOIN T_SALE_DTL B
+            ON B.SN = A.SN
+          JOIN T_ITEM_HAZARD C
+            ON C.ITEM_CD = B.ITEM_CD
+          JOIN T_SALE_SERIAL D
+            ON D.SN = B.SN
+           AND D.SNO = B.SNO
+           AND D.PROD_NO = F_S_EMPTY(C.PROD_NO,D.PROD_NO)
+          JOIN T_ITEM E
+            ON E.ITEM_CD = A.ITEM_CD
+          JOIN V_ITEM_BACK F
+            ON F.CUST_CD = A.CUST_CD
+           AND F.ITEM_CD = B.ITEM_CD
+          LEFT OUTER JOIN T_CODE G
+            ON G.P_CODE = '101'
+           AND G.CODE = E.MED_CD
+         WHERE A.CUST_CD = #{custCd}
+        <if test="itemNm != null and itemNm != ''">
+           <bind name="itemNm" value='"%" + itemNm + "%"'/>
+           AND E.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test="bohumCd != null and bohumCd !=''">
+            <bind name="bohumCd" value='"%" + bohumCd + "%"'/>
+            AND E.BOHUM_CD LIKE #{bohumCd}
+        </if>
+        <if test='makerNm != null and makerNm != ""'>
+           <bind name="makerNm" value='"%" + makerNm + "%"'/>
+           AND C.MAKER_NM LIKE #{makerNm}
+        </if>
+        <if test="startDt != null and startDt != '' and endDt != null and endDt != '' ">
+           AND A.APRV_DT BETWEEN #{startDt} AND #{endDt}
+        </if>
+         GROUP BY A.ORD_DT, C.MAKER_NM, A.APRV_DT, C.COLL_DT, D.PROD_NO, E.ITEM_CD, D.ITEM_GB_CD,
+                  A.CUST_CD, D.BRCH_CD, D.EXP_DT, E.ITEM_NM, E.UNIT, F.TAX_YN, F.SUBDIV_YN,
+                  E.PAY_ITEM_YN, G.CD_NM
+         ORDER BY A.APRV_DT DESC, A.ORD_DT DESC, C.MAKER_NM, E.ITEM_NM
+    </select>
+
+    <select id="selectBakRcptBasketCount" resultType="int">
+        /* clctItm.selectBakRcptBasketCount 반품 장바구니 count조회 */
+        SELECT COUNT(1)
+          FROM T_WEB_BASKET A
+          JOIN T_ITEM B
+            ON B.ITEM_CD = A.ITEM_CD
+          JOIN T_MAKER C
+            ON B.MAKER_CD = C.MAKER_CD
+          JOIN T_CUST D
+            ON D.CUST_CD  = A.CUST_CD
+          JOIN V_ITEM_BACK E
+            ON E.CUST_CD = A.CUST_CD
+           AND E.ITEM_CD = A.ITEM_CD
+         WHERE A.CUST_CD = #{custCd}
+           AND A.BASKET_GB_CD IN ('02', '03')
+           AND A.DEL_YN = 'N'
+           AND A.ITEM_CD = #{itemCd}
+    </select>
+</mapper>

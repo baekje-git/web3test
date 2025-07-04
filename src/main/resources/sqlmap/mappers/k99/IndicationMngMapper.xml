@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.indication">
+    
+    <select id="selectIndication" parameterType="HashMap" resultType="HashMap" >
+         /* k99.indication.selectIndication - 지시사항 조회 */
+     
+         SELECT A.CODE,
+                A.CODE_NAME,
+                NVL2(B.CODE,'UPDATE','ADD') AS ROW_STATUS,
+		        B.INDICATION,
+		        B.REG_USER,
+		        B.REG_NAME,
+		        TO_CHAR(B.REG_DATE,'YYYY-MM-DD HH24:MI') AS REG_DATE,
+		        B.EDT_USER,
+		        B.EDT_NAME,
+		        TO_CHAR(B.EDT_DATE,'YYYY-MM-DD HH24:MI') AS EDT_DATE,
+		        DECODE(B.USE_YN,'Y','Y','N') AS USE_YN
+          FROM  ( SELECT 0 AS CODE, '선택' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 1 AS CODE, 'ICT' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 2 AS CODE, 'OOCT' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 3 AS CODE, 'RTP' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 4 AS CODE, '프로' AS CODE_NAME
+		           FROM DUAL
+		         UNION ALL
+		         SELECT 5 AS CODE, '표적' AS CODE_NAME
+		           FROM DUAL) A
+          LEFT OUTER JOIN (  SELECT T.CODE,
+							        TO_CHAR(T.INDICATION) AS INDICATION,
+							        T.REG_USER,
+							        U1.USER_NAME AS REG_NAME,
+							        T.REG_DATE,
+							        T.EDT_USER ,
+							        U2.USER_NAME AS EDT_NAME,
+							        T.EDT_DATE,
+							        T.USE_YN
+							   FROM K99_INDICATION T
+							   LEFT OUTER JOIN USER01TB U1 ON U1.USER_ID = T.REG_USER
+							   LEFT OUTER JOIN USER01TB U2 ON U2.USER_ID = T.EDT_USER) B ON A.CODE = B.CODE
+		  ORDER BY A.CODE 
+    </select>
+    
+    <insert id="insertIndication" parameterType="HashMap">
+	    	    
+        /* k99.indication.insertIndication - 지시사항 입력 */
+        
+        INSERT INTO K99_INDICATION (
+            CODE,
+            INDICATION,
+            USE_YN,
+            REG_DATE,
+            REG_USER
+        ) VALUES (
+            #{CODE},
+            #{INDICATION},
+            #{USE_YN},            
+            SYSDATE,
+            #{GSS.USER_ID}
+        )
+    </insert>
+    
+    <update id="updateIndication" parameterType="HashMap">
+        /* k99.indication.updateIndication - 지시사항 수정 */
+        
+        UPDATE K99_INDICATION
+          SET  INDICATION = #{INDICATION},          
+               USE_YN = #{USE_YN},           
+               EDT_DATE = SYSDATE,
+               EDT_USER = #{GSS.USER_ID}
+         WHERE CODE = #{CODE}    
+    </update>
+    
+   
+    
+</mapper>

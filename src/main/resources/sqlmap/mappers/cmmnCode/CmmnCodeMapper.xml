@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cmmnCode">
+    
+    
+    
+    <sql id="ref_pagingHeader">
+        SELECT Y.*
+            FROM (
+                SELECT
+                    X.*
+                    , @rownum := @rownum + 1 AS RNUM
+                FROM (
+    </sql>
+    <sql id="ref_pagingFooter">                    
+            )X 
+        )Y
+        LIMIT ${firstNum}, ${once_display_count}            
+    </sql>    
+    
+    
+    
+    
+    
+    
+    
+    <sql id="reg_getCodeGroupListSearch">
+        <if test = "searchKeyword != NULL"> AND GROUP_TXT like '%' #{searchKeyword} '%' </if> 
+        <if test = 'search_is_del != NULL and search_is_del != "" '>AND IS_DEL = #{search_is_del} </if>
+        <if test = "GROUP_TXT != NULL"> AND GROUP_TXT = #{GROUP_TXT} </if>
+        <if test = "GROUP_IDX_FOR_UPDATE != NULL">  
+            <![CDATA[
+                AND GROUP_IDX <> #{GROUP_IDX_FOR_UPDATE} 
+            ]]>
+        </if>
+    </sql>
+    
+    <select id="getCodeGroupList"   parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT 
+            GROUP_IDX, GROUP_TXT, REG_DATE, IS_DEL   
+        FROM TBL_CODE_GROUP 
+        WHERE 1 = 1
+        <include refid="reg_getCodeGroupListSearch"/>
+        ORDER BY GROUP_IDX DESC             
+    </select>       
+    
+    
+    
+    
+    
+    
+    
+    <sql id="reg_getCodeListSearch">
+    <!--    <if test = "CODE_IDX != null">AND A.CODE_IDX = #{CODE_IDX} </if> -->
+        <if test = "searchKeywordCode != NULL"> AND A.CODE_TXT like '%' #{searchKeywordCode} '%' </if>
+        <if test = 'search_is_del_code != NULL and search_is_del_code != "" '> AND A.IS_DEL = #{search_is_del_code} </if>
+        <if test = "GROUP_IDX != NULL"> AND A.GROUP_IDX = #{GROUP_IDX} </if>
+        <if test = "CODE_VALUE != NULL"> AND A.CODE_VALUE = #{CODE_VALUE} </if>
+        <if test = "CODE_IDX_FOR_UPDATE != NULL"> 
+            <![CDATA[
+                AND CODE_IDX <> #{CODE_IDX_FOR_UPDATE} 
+            ]]>
+        </if>  
+    </sql>
+    
+    
+    
+    <select id="getCodeList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <include refid="cmmnCode.ref_pagingHeader"/>
+            SELECT 
+                A.CODE_IDX, 
+                A.GROUP_IDX, 
+                (SELECT GROUP_TXT FROM TBL_CODE_GROUP WHERE GROUP_IDX = A.GROUP_IDX) AS GROUP_TXT,
+                A.CODE_VALUE, 
+                A.CODE_TXT, 
+                A.REG_DATE,
+                A.IS_DEL   
+            FROM TBL_CODE A 
+            WHERE 1 = 1
+            <include refid="reg_getCodeListSearch"/>
+            ORDER BY CODE_IDX DESC 
+        <include refid="cmmnCode.ref_pagingFooter"/>
+                    
+    </select>    
+    
+    <select id="getCodeListCount" parameterType="java.util.HashMap" resultType="int">
+        SELECT 
+            count(*) AS cnt
+        FROM TBL_CODE A 
+        WHERE 1 = 1
+            <include refid="reg_getCodeListSearch"/>
+    </select>    
+
+
+    <select id="getCodeListGroupCount" parameterType="java.util.HashMap" resultType="int">
+        SELECT 
+            COUNT(*) cnt
+        FROM TBL_CODE_GROUP 
+        WHERE 1 = 1
+            <include refid="reg_getCodeListSearch"/>
+    </select>
+    
+    
+    
+    <insert id="insertCodeGroup" parameterType="java.util.HashMap">
+        INSERT INTO 
+        TBL_CODE_GROUP ( GROUP_TXT ) 
+        VALUES ( #{GROUP_TXT} ) 
+    </insert>
+    
+    
+    
+    <update id="updateCodeGroup" parameterType="java.util.HashMap">
+        UPDATE TBL_CODE_GROUP 
+            <set> 
+                <if test = "GROUP_TXT != NULL"> GROUP_TXT = #{GROUP_TXT}, </if>
+                <if test = "modify_is_del_group != null"> IS_DEL = #{modify_is_del_group} </if>
+            </set>
+        WHERE GROUP_IDX = #{GROUP_IDX}
+    </update>
+
+
+
+    <update id="deleteCodeGroup" parameterType="java.util.HashMap">
+        DELETE FROM TBL_CODE_GROUP 
+        WHERE GROUP_IDX = #{GROUP_IDX}
+    </update>
+
+    
+    <select id="getCodeCountForDelete" parameterType="java.util.HashMap" resultType="int">
+        SELECT COUNT(*)
+        FROM TBL_CODE
+        WHERE GROUP_IDX = #{GROUP_IDX}
+    </select>
+    
+        
+    <update id="deleteCodeGroupAndCode" parameterType="java.util.HashMap">
+        DELETE FROM TBL_CODE 
+        WHERE GROUP_IDX = #{GROUP_IDX}
+    </update>   
+        
+        
+
+    <update id="insertCode" parameterType="java.util.HashMap">
+        INSERT INTO 
+        TBL_CODE (
+                  GROUP_IDX,
+                  CODE_VALUE,
+                  CODE_TXT
+                  ) 
+        VALUES (
+                #{GROUP_IDX},
+                #{code_value},
+                #{code_txt}
+                )
+    </update>
+    
+    
+    <update id="updateCode" parameterType="java.util.HashMap">
+        UPDATE TBL_CODE 
+            <set>
+                <if test = "GROUP_IDX != null"> GROUP_IDX = #{GROUP_IDX}, </if> 
+                <if test = "modify_group_idx != null"> GROUP_IDX = #{modify_group_idx}, </if>
+                <if test = "code_value != null"> CODE_VALUE = #{code_value}, </if>
+                <if test = "code_txt != null"> CODE_TXT = #{code_txt}, </if>
+                <if test = "modify_is_del_code != null"> IS_DEL = #{modify_is_del_code}, </if>
+            </set>
+        WHERE CODE_IDX = #{CODE_IDX}
+    </update>
+    
+    
+    <update id="deleteCode" parameterType="java.util.HashMap">
+        DELETE FROM TBL_CODE
+        WHERE CODE_IDX = #{CODE_IDX}
+    </update>
+
+
+
+</mapper>

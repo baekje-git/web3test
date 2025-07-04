@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k01.main.player">
+
+    <select id="selectScheduleMonth" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k01.main.player.selectScheduleMonth - 구단,선수일정 */
+       SELECT *
+	    FROM    (SELECT T.PLAYER_ID,
+				        T.START_DT,
+				        T.END_DT,
+				        T.LOCATION_CD,
+				        F_CODE_NM('LOCATION_CD',T.LOCATION_CD) AS LOCATION_CD_NM,
+				        T.LOCATION_NM,
+				        T.LOCATION_ADDRESS,
+				        T.LOCATION_X,
+						T.LOCATION_Y,
+						T.LOCATION_ADDRESS2,
+						T.LOCATION_X2,
+						T.LOCATION_Y2,
+				        T.SCHEDULE_MEMO,
+				        T.SEQ,
+				        T.CLUB_CODE,
+				        F_CODE_NM(U3.PRO_ORGZ,T.CLUB_CODE) AS CLUB_NAME,
+				        U1.USER_NAME AS REG_USER_NAME,
+				        U2.USER_NAME AS EDT_USER_NAME,
+				        TO_CHAR(T.REG_DATE,'YYYY-MM-DD HH24:mi:ss') AS REG_DATE,
+                        TO_CHAR(T.EDT_DATE,'YYYY-MM-DD HH24:mi:ss') AS EDT_DATE,
+                        DECODE(T.SPECIFIC_60MIN,'Y','Y','N') AS SPECIFIC_60MIN,
+                        SUBSTR(T.START_DT,1,8) AS START_DT2,
+                        SUBSTR(T.START_DT,9) AS START_TIME,
+                        SUBSTR(T.END_DT,1,8) AS END_DT2,
+                        SUBSTR(T.END_DT,9) AS END_TIME,
+                        T.CLUB_GROUP,
+                        F_CODE_NM('CLUB_GROUP', T.CLUB_GROUP) AS CLUB_GROUP_NAME     
+				 FROM K03_PLAYER_LOC_SCHEDULE T
+				 LEFT OUTER JOIN USER01TB U3 ON T.PLAYER_ID = U3.USER_ID
+				 LEFT OUTER JOIN USER01TB U1 ON T.REG_USER = U1.USER_ID
+				 LEFT OUTER JOIN USER01TB U2 ON T.EDT_USER = U2.USER_ID
+				 WHERE (
+				        T.PLAYER_ID = #{PLAYER_ID} /* 선수일정 */ 
+				        OR  
+				        (T.PLAYER_ID IS NULL AND T.CLUB_CODE = (SELECT CLUB_CODE FROM USER01TB WHERE USER_ID = #{PLAYER_ID} )) /* 구단일정 */
+				       )
+				 ) A          
+	   WHERE 1=1
+    ]]>      
+        <if test=" !LOCATION_CD_NM.isEmpty() ">
+            AND A.LOCATION_CD_NM IN <foreach collection="LOCATION_CD_NM" item="item"  open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test=" LOCATION_CD_NM.isEmpty() ">
+            AND 1=2 /* LOCATION_CD_NM 가 비었을 경우 강제로 결과가 없도록 처리 */
+        </if>
+        <if test=' USER_FLAG=="R" '>
+	        <if test=" !CLUB_GROUP.isEmpty() ">
+	            AND (A.PLAYER_ID IS NULL AND A.CLUB_GROUP IN <foreach collection="CLUB_GROUP" item="item"  open="(" close=")" separator=",">#{item}</foreach>)
+	        </if>
+	        <if test=" CLUB_GROUP.isEmpty() ">
+	            AND 1=2 /* CLUB_GROUP 가 비었을 경우 결과가 없도록 */
+	        </if>
+        </if>
+        <if test=' USER_FLAG=="P" '>
+           AND (  (A.PLAYER_ID IS NOT NULL) /* 본인일정 */           
+            <if test=' IS_DISPLAY_CLUB == "Y" '>
+	            <if test=" !CLUB_GROUP.isEmpty() ">
+	                OR (A.PLAYER_ID IS NULL AND A.CLUB_GROUP IN <foreach collection="CLUB_GROUP" item="item"  open="(" close=")" separator=",">#{item}</foreach>)
+	            </if>	            
+            </if>
+            )            
+        </if>
+    </select>
+    
+    <select id="selectTermCheckByPlayer" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+      /* k01.main.player.selectTermCheckByPlayer - 저장할 선수일정의 중복체크  */
+      
+		 SELECT A.PLAYER_ID,
+		        SUBSTR(A.START_DT,1,8) AS START_DT,
+		        SUBSTR(A.START_DT,9) AS START_DT2,
+		        SUBSTR(A.END_DT,1,8) AS END_DT,
+		        SUBSTR(A.END_DT,9) AS END_DT2,
+		        A.LOCATION_CD,
+		        F_CODE_NM('LOCATION_CD',A.LOCATION_CD) AS LOCATION_CD_NM,
+		        A.LOCATION_NM,
+		        A.LOCATION_ADDRESS,
+		        A.SCHEDULE_MEMO
+		 FROM K03_PLAYER_LOC_SCHEDULE A
+		 WHERE A.START_DT <= #{END_DT} 
+		 AND A.END_DT >= #{START_DT}
+	]]>	 
+	  <if test="MODE=='UPDATE'">
+	     AND A.SEQ != #{SEQ}
+	  </if>
+	  <choose>
+        <when test="PLAYER_ID != null and PLAYER_ID != ''">
+            AND A.PLAYER_ID = #{PLAYER_ID}  /* 선수일정  */
+        </when>
+        <otherwise>
+            AND A.PLAYER_ID IS NULL
+            AND A.CLUB_CODE = #{CLUB_CODE}  /* 구단일정 */
+        </otherwise>
+     </choose> 
+    </select>
+    
+    <insert id="insertSchedule" parameterType="HashMap">
+        /* k01.main.player.insertSchedule - 선수일정 등록 */
+    
+        INSERT INTO K03_PLAYER_LOC_SCHEDULE (
+            SEQ,
+            PLAYER_ID,
+            START_DT,
+            END_DT,
+            LOCATION_CD,
+            LOCATION_NM,
+            LOCATION_ADDRESS,
+            LOCATION_X,
+            LOCATION_Y,
+            LOCATION_ADDRESS2,
+            LOCATION_X2,
+            LOCATION_Y2,
+            SCHEDULE_MEMO,
+            REG_USER,
+            REG_DATE,
+            PRO_ORGZ,
+            CLUB_CODE,
+            SPECIFIC_60MIN,
+            CLUB_GROUP
+        ) VALUES (
+            SEQ_SCHEDULE.NEXTVAL,
+            #{PLAYER_ID},
+            #{START_DT},
+            #{END_DT},
+            #{LOCATION_CD},
+            #{LOCATION_NM},
+            #{LOCATION_ADDRESS},
+            #{LOCATION_X},
+            #{LOCATION_Y},
+            #{LOCATION_ADDRESS2},
+            #{LOCATION_X2},
+            #{LOCATION_Y2},
+            #{SCHEDULE_MEMO},
+            #{GSS.USER_ID},
+            SYSDATE,
+            #{PRO_ORGZ},
+            #{CLUB_CODE},
+            #{SPECIFIC_60MIN},
+            #{CLUB_GROUP}
+        )
+    </insert>
+    
+    <update id="updateSchedule" parameterType="HashMap">
+        /* k01.main.player.updateSchedule - 선수일정 수정 */
+        
+        UPDATE K03_PLAYER_LOC_SCHEDULE
+           SET START_DT = #{START_DT}
+             , END_DT = #{END_DT}       
+             , LOCATION_CD = #{LOCATION_CD} 
+             , LOCATION_NM = #{LOCATION_NM} 
+             , LOCATION_ADDRESS = #{LOCATION_ADDRESS}
+             , LOCATION_X = #{LOCATION_X}
+             , LOCATION_Y = #{LOCATION_Y}
+             , LOCATION_ADDRESS2 = #{LOCATION_ADDRESS2}
+             , LOCATION_X2 = #{LOCATION_X2}
+             , LOCATION_Y2 = #{LOCATION_Y2}
+             , SCHEDULE_MEMO = #{SCHEDULE_MEMO}
+             , PRO_ORGZ = #{PRO_ORGZ}
+             , CLUB_CODE = #{CLUB_CODE}
+             , SPECIFIC_60MIN = #{SPECIFIC_60MIN}
+             , CLUB_GROUP = #{CLUB_GROUP}
+             , EDT_USER = #{GSS.USER_ID}
+             , EDT_DATE = SYSDATE
+         WHERE SEQ = #{SEQ}                     
+    </update>
+    
+    <delete id="deleteSchedule" parameterType="HashMap">
+        /* k01.main.player.deleteSchedule - 선수일정 삭제 */
+        
+        DELETE 
+          FROM K03_PLAYER_LOC_SCHEDULE
+         WHERE SEQ = #{SEQ} 
+    </delete>
+    
+    <delete id="deleteCheckedSchedule" parameterType="HashMap">
+        /* k01.main.player.deleteCheckedSchedule - 선택된 선수일정 삭제 */
+        
+        DELETE 
+          FROM K03_PLAYER_LOC_SCHEDULE
+         WHERE 1=1 
+         <if test="CHECKED_SEQ!=null  and !CHECKED_SEQ.isEmpty()">
+           AND SEQ IN <foreach collection="CHECKED_SEQ" item="item"  open="(" close=")" separator=",">TRIM(#{item})</foreach>
+         </if> 
+    </delete>
+    
+    <select id="selectRepeatScheduleCheck" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+      /* k01.main.player.selectRepeatScheduleCheck - 반복일정 오류 체크 */
+      
+        SELECT M.START_DT,
+               M.END_DT,
+               N.DT_START,
+               N.DT_END,
+               SUBSTR(N.DT_START,1,8) AS ERR_DT
+        FROM (SELECT A.START_DT,
+                     A.END_DT
+               FROM K03_PLAYER_LOC_SCHEDULE A
+              WHERE 1=1
+     ]]>           
+     <choose>
+        <when test="PLAYER_ID != null and PLAYER_ID != ''">
+            AND A.PLAYER_ID = #{PLAYER_ID}  /* 선수일정  */
+        </when>
+        <otherwise>
+            AND A.PLAYER_ID IS NULL
+            AND A.CLUB_CODE = #{CLUB_CODE}  /* 구단일정 */
+        </otherwise>
+     </choose>
+     <![CDATA[  
+              ) M,               
+             (SELECT A.*
+                FROM (  SELECT TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1),'YYYYMMDD')||#{REPEAT_START_TIME} AS DT_START,
+                               TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1*DECODE(#{LOCATION_CD},'HM',0,1)),'YYYYMMDD')||#{REPEAT_END_TIME} AS DT_END
+                          FROM DUAL
+                       CONNECT BY LEVEL <= TO_DATE(#{REPEAT_END_DT},'YYYYMMDD') - TO_DATE(#{REPEAT_START_DT},'YYYYMMDD') + 1*DECODE(#{LOCATION_CD},'HM',0,1) ) A                          
+                    WHERE 1=1
+    ]]>                          
+                    <if test="EXCEPT_DT!=null  and !EXCEPT_DT.isEmpty()">
+                    AND SUBSTR(A.DT_START,1,8) != ALL <foreach collection="EXCEPT_DT" item="item"  open="(" close=")" separator=",">TRIM(#{item})</foreach>
+                   </if> 
+    <![CDATA[               
+             ) N
+        WHERE M.START_DT < N.DT_END
+          AND M.END_DT > N.DT_START                  
+    ]]>
+    </select>    
+    
+    <update id="insertRepeatSchedule" parameterType="HashMap">
+    <![CDATA[
+      /* k01.main.player.insertRepeatSchedule - 반복일정 입력 */
+      
+      INSERT INTO K03_PLAYER_LOC_SCHEDULE ( 
+               SEQ      
+             , START_DT
+             , END_DT   
+             , PLAYER_ID     
+             , LOCATION_CD
+             , CLUB_GROUP
+             , LOCATION_NM
+             , LOCATION_ADDRESS
+             , LOCATION_X
+             , LOCATION_Y
+             , SCHEDULE_MEMO
+             , PRO_ORGZ
+             , CLUB_CODE             
+             , REG_USER
+             , REG_DATE
+      )  
+      SELECT SEQ_SCHEDULE.NEXTVAL, A.*
+      FROM (  SELECT TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1),'YYYYMMDD')||#{REPEAT_START_TIME} AS DT_START,
+                     TO_CHAR(TO_DATE(#{REPEAT_START_DT},'YYYYMMDD')+(LEVEL-1*DECODE(#{LOCATION_CD},'HM',0,1)),'YYYYMMDD')||#{REPEAT_END_TIME} AS DT_END,
+                     #{PLAYER_ID} AS PLAYER_ID, 
+                     #{LOCATION_CD} AS LOCATION_CD,
+                     #{CLUB_GROUP} AS CLUB_GROUP,
+                     #{LOCATION_NM}  AS LOCATION_NM,
+                     #{LOCATION_ADDRESS} AS LOCATION_ADDRESS,
+                     #{LOCATION_X} AS LOCATION_X,
+                     #{LOCATION_Y} AS LOCATION_Y,
+                     #{SCHEDULE_MEMO} AS SCHEDULE_MEMO,
+                     #{PRO_ORGZ} PRO_ORGZ,
+                     #{CLUB_CODE} AS CLUB_CODE,                     
+                     #{GSS.USER_ID} AS REG_USER,
+                     SYSDATE AS REG_DATE
+               FROM DUAL
+               CONNECT BY LEVEL <= TO_DATE(#{REPEAT_END_DT},'YYYYMMDD') - TO_DATE(#{REPEAT_START_DT},'YYYYMMDD') + 1*DECODE(#{LOCATION_CD},'HM',0,1) ) A               
+    ]]>
+        WHERE 1=1
+	    <if test="EXCEPT_DT!=null  and !EXCEPT_DT.isEmpty()">
+	    AND SUBSTR(A.DT_START,1,8) != ALL <foreach collection="EXCEPT_DT" item="item"  open="(" close=")" separator=",">TRIM(#{item})</foreach>
+	    </if>    
+    </update>
+    
+</mapper>
+ 

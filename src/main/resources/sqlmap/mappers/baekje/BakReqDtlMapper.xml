@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="bakReqDtl">
+    <select id="selectBakReqDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* bakReqDtl.selectBakReqDtlList 반품상세 리스트조회 */
+        SELECT M.*
+             , M.ORD_WP2_AMT * M.ITEM_QTY_REQ AS PRICE
+          FROM (SELECT A.CUST_CD
+                     , A.SN
+                     , A.SNO
+                     , F_S_FORMAT(A.BACK_DT,'YYYY-MM-DD') AS BACK_DT
+                     , F_S_FORMAT(A.BACK_TM,'HH24:MI:SS') AS BACK_TM
+                     , IFNULL(F_S_FORMAT(A.EXAM_DT, 'YYYY-MM-DD'), '') AS EXAM_DT      -- 승인일자
+                     , A.BACK_EXAM_NM
+                     , A.MAKER_NM
+                     , A.ITEM_NM_UNIT
+                     , A.BOHUM_CD
+                     , A.ITEM_QTY_REQ
+                     , A.ITEM_QTY
+                     , A.ITEM_QTY_NO
+                     , A.EXAM_RSLT_NM
+                     , CASE WHEN B.ORD_WP2_AMT IS NULL THEN C.ORD_WP2_AMT
+                            ELSE B.ORD_WP2_AMT
+                       END AS ORD_WP2_AMT
+                     , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+                     , SUBSTRING(A.MED_NM, 1,1) AS MED_NM
+                  FROM V_WEB_BACK_D A
+                  LEFT OUTER JOIN T_SALEBACKRCPT_DTL B
+                    ON B.SN = A.SN
+                   AND B.SNO = A.SNO
+                  LEFT OUTER JOIN T_SALEBACKRCPTMOVE_DTL C
+                    ON C.SN = A.SN
+                   AND C.SNO = A.SNO
+                 WHERE CUST_CD = #{custCd}
+                   AND A.BACK_DT BETWEEN #{startDt} AND #{endDt}
+                 <if test="itemNm != null and itemNm !=''">
+                    <bind name="itemNm" value='"%" + itemNm + "%"'/>
+                    AND A.ITEM_NM LIKE #{itemNm}
+                 </if>
+                 <if test="makerNm != null and makerNm !=''">
+                    <bind name="makerNm" value='"%" + makerNm + "%"'/>
+                    AND A.MAKER_NM LIKE #{makerNm}
+                 </if>
+                 <if test="subdivYn != null and subdivYn !=''">
+                    AND A.SUBDIV_YN = #{subdivYn}
+                 </if>
+               ) M
+         ORDER BY M.SN DESC, M.SNO
+        <!-- LIMIT #{PAGE_PER_CNT} OFFSET #{PAGE_OFFSET_CNT} -->
+    </select>
+</mapper>

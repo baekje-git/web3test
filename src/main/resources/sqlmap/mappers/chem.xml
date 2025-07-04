@@ -1,0 +1,1837 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="chem">
+  
+<select id="PROD_NO_NEW" parameterType="HashMap" resultType="HashMap" >
+    /* PROD_NO_NEW 테이블 */
+    SELECT 
+    FN_PROD_NO(#{PROD_DT}) AS PROD_NO_NEW
+    </select>
+<update id="PROD_NO_CHANGE" parameterType="hashMap">
+    /* 제조번호 변경 쿼리(PROD_NO_CHANGE) */
+    UPDATE T_FDG_BPR
+    SET PROD_NO = #{PROD_NO_NEW}
+    WHERE PROD_NO = #{PROD_NO}
+</update>
+    <select id="USER" parameterType="HashMap" resultType="HashMap" >
+    /* 권한 테이블 */
+    SELECT USER_ID
+          ,USER_NM
+          ,USER_PWD
+    FROM Z_USER
+    WHERE 1=1
+    AND  USE_YN = 'Y'
+    </select>
+    <delete id="DELETE_USER"  parameterType="hashMap">
+    DELETE FROM Z_USER
+    WHERE USER_ID = #{USER_ID}
+    </delete>
+    <insert id="INSERT_USER" parameterType="hashMap">
+    INSERT INTO T_USER_DEL_HIST(
+    SEQ
+    ,USER_NM
+    ,USER_ID
+    ,INS_ID
+    ,INS_NM
+    ,INS_DTM
+    )
+    VALUES(
+    #{SEQ}
+   ,#{USER_NM}
+   ,#{USER_ID}
+   ,#{INS_ID}
+   ,#{INS_NM}
+   ,DEFAULT
+        )
+    </insert>
+    <select id="USER_POPUP" parameterType="HashMap" resultType="HashMap" >
+    /* 권한 테이블 */
+    SELECT USER_ID
+          ,USER_NM
+          ,USER_PWD
+    FROM Z_USER
+    WHERE 1=1
+    AND  USE_YN = 'Y'
+    AND  USER_LVL = #{USER_LVL}
+    </select>
+    <select id="Z_USER" parameterType="HashMap" resultType="HashMap">
+    <include refid="chem.ref_pagingHeader"/>
+    SELECT USER_ID
+          ,USER_NM
+          ,USER_LVL
+          ,USE_YN
+          ,USER_PWD 
+    FROM Z_USER
+    WHERE 1=1
+    <include refid="chem.ref_search"/>
+    <include refid="chem.ref_pagingFooter"/>
+    </select>
+    <select id="T_USER_CNT" parameterType="HashMap" resultType="HashMap">
+    SELECT COUNT(*) AS TOTAL 
+    FROM Z_USER
+    WHERE 1=1
+    <include refid="chem.ref_search"/> 
+    </select>
+    
+    
+    <select id="selectUseHisList" parameterType="HashMap" resultType="HashMap">
+	<include refid="chem.ref_pagingHeader"/>
+	SELECT CONCAT(DATE_FORMAT(LOG_DT, '%Y.%m.%d.'), ' ', STR_TO_DATE(LOG_TM, '%H%i%s')) AS LOG_DTM
+	,C.URL_NM										AS URL_NM
+	,A.REG_ID										AS USER_ID
+	,B.USER_NM									AS USER_NM
+	FROM Z_HISTORY A
+	LEFT JOIN Z_USER B
+	ON B.USER_ID = A.REG_ID
+	LEFT JOIN Z_PGM_URL C
+	ON C.PGM_URL = A.PGM_URL
+	WHERE 1=1
+	ORDER BY LOG_DTM DESC
+	<include refid="chem.ref_search"/>
+	<include refid="chem.ref_pagingFooter"/>
+	</select>
+	
+	<select id="selectUseHisCnt" parameterType="HashMap" resultType="HashMap">
+	SELECT COUNT(*) AS TOTAL
+	FROM Z_HISTORY
+	WHERE 1=1
+	<include refid="chem.ref_search"/>
+	</select>
+    
+    
+    <select id="T_USER_DETAIL" parameterType="HashMap" resultType="HashMap">
+    SELECT USER_ID
+          ,USER_NM
+          ,USER_LVL
+          ,USE_YN
+          ,USER_PWD 
+    FROM Z_USER
+    WHERE 1=1
+    AND USER_ID = #{USER_ID}
+    </select>
+    <select id="selectFdgBprList" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgBprList (chem.xml) */
+
+	SELECT FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+	      ,B.USER_NM               AS CHARGE_NM  /* 담당자 */
+	      ,C.USER_NM               AS CONFIRM_NM /* 확인자 */
+	      ,D.USER_NM               AS MANDATE_NM /* 지시자 */
+	      ,A.DEL_NY
+	  FROM T_FDG_BPR A
+	  LEFT JOIN Z_USER B
+	    ON B.USER_ID = A.CHARGE_ID
+	  LEFT JOIN Z_USER C
+	    ON C.USER_ID = A.CONFIRM_ID
+	  LEFT JOIN Z_USER D
+	    ON D.USER_ID = A.MANDATE_ID
+	 WHERE 1=1
+	   AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+	   AND A.DEL_NY = 'N'
+	 ORDER BY A.Z06 DESC, A.PROD_NO DESC
+    </select>
+    
+    <select id="selectFdgBprDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgBprDetail (chem.xml) */
+     SELECT A.PROD_NO,
+	        A.Z01, 
+	        A.Z02, 
+	        A.Z03, 
+	        A.Z04, 
+	        A.Z05, 
+	        A.Z06, 
+	        A.Z07,  
+	        A.A0101,  
+	        A.A0102, 
+	        A.A0103,  
+	        A.A0104, 
+	        A.A0105, 
+	        A.A0201, 
+	        A.A0202, 
+	        A.A0203, 
+	        A.A0204, 
+	        A.A0205, 
+	        A.B0101, 
+	        A.B0102, 
+	        A.B0103, 
+	        A.B0104, 
+	        A.B0105, 
+	        A.B0201, 
+	        A.B0202, 
+	        A.B0203, 
+	        A.B0204, 
+	        A.B0205, 
+	        A.B0301, 
+	        A.B0302, 
+	        A.B0303, 
+	        A.B0304, 
+	        A.B0305, 
+	        A.C0101, 
+	        A.C0102, 
+	        A.C0103, 
+	        A.C0104, 
+	        A.C0105, 
+	        A.C0201, 
+	        A.C0202, 
+	        A.C0203, 
+	        A.C0204, 
+	        A.C0205, 
+	        A.C0301, 
+	        A.C0302, 
+	        A.C0303, 
+	        A.C0304, 
+	        A.C0305, 
+	        A.D01, 
+	        A.D02, 
+	        A.D03, 
+	        A.D04, 
+	        A.D05, 
+	        A.E01, 
+	        A.E02, 
+	        A.E03, 
+	        A.F0101, 
+	        A.F0102, 
+	        A.F0103, 
+	        A.F0104, 
+	        A.F0105, 
+	        A.F0106, 
+	        A.F0201, 
+	        A.F0202, 
+	        A.F0203, 
+	        A.F0204, 
+	        A.F0205, 
+	        A.F0206, 
+	        A.F0301, 
+	        A.F0302, 
+	        A.F0303, 
+	        A.F0304, 
+	        A.F0305, 
+	        A.F0306, 
+	        A.F0401, 
+	        A.F0402, 
+	        A.F0403, 
+	        A.F0404, 
+	        A.F0405, 
+	        A.F0406, 
+	        A.F0501, 
+	        A.F0502, 
+	        A.F0503, 
+	        A.F0504, 
+	        A.F0505, 
+	        A.F0506, 
+	        A.F0601, 
+	        A.F0602, 
+	        A.F0603, 
+	        A.F0604, 
+	        A.F0605, 
+	        A.F0606,
+	        FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT,  /* 담당자확인일 */
+            FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT, /* 확인자확인일 */
+            FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT, /* 지시자확인일 */
+            A.CHARGE_ID,
+            A.CONFIRM_ID,
+            A.MANDATE_ID,
+            A.CHARGE_NM,
+            A.CONFIRM_NM,
+            A.MANDATE_NM,
+            A.INS_NM,
+            A.INS_DTM,
+            A.MODE_NM,
+            A.MODE_DTM
+       FROM T_FDG_BPR A
+       LEFT JOIN Z_USER B
+              ON B.USER_ID = A.CHARGE_ID
+       LEFT JOIN Z_USER C
+              ON C.USER_ID = A.CONFIRM_ID
+       LEFT JOIN Z_USER D
+              ON D.USER_ID = A.MANDATE_ID
+       WHERE 1=1
+       AND PROD_NO = #{PROD_NO}
+    </select>
+    
+    <insert id="changeFdgBpr" parameterType="HashMap">
+    /* k99.code.updateFdgBpr (chem.xml) */
+    <selectKey keyProperty="PROD_NO" resultType="String" order="BEFORE">
+    SELECT CASE WHEN TRIM(#{PROD_NO}) = NULL OR TRIM(#{PROD_NO}) = '' THEN FN_PROD_NO('') ELSE TRIM(#{PROD_NO}) END
+    </selectKey>
+    INSERT INTO t_fdg_bpr
+    SET PROD_NO = #{PROD_NO},
+                Z01 =#{Z01},
+				Z02 =#{Z02},
+				Z03 =#{Z03},
+				Z04 =#{Z04},
+				Z05 =#{Z05},
+				Z06 = REPLACE(#{Z06},'-',''),
+				Z07 =#{Z07},
+				A0101 =#{A0101},
+				A0102 =#{A0102},
+				A0103 =#{A0103},
+				A0104 =#{A0104},
+				A0105 =#{A0105},
+				A0201 =#{A0201},
+				A0202 =#{A0202},
+				A0203 =#{A0203},
+				A0204 =#{A0204},
+				A0205 =#{A0205},
+				B0101 =#{B0101},
+				B0102 =#{B0102},
+				B0103 =#{B0103}, 
+				B0104 =#{B0104},
+				B0105 =#{B0105},
+                B0201 =#{B0201},
+				B0202 =#{B0202},
+				B0203 =#{B0203},
+				B0204 =#{B0204},
+				B0205 =#{B0205},
+				B0301 =#{B0301},
+				B0302 =#{B0302},
+				B0303 =#{B0303},
+				B0304 =#{B0304},
+				B0305 =#{B0305},
+				C0101 =#{C0101},
+				C0102 =#{C0102},
+				C0103 =#{C0103},
+				C0104 =#{C0104},
+				C0105 =#{C0105},
+				C0201 =#{C0201},
+				C0202 =#{C0202},
+				C0203 =#{C0203},
+				C0204 =#{C0204},
+				C0205 =#{C0205},
+				C0301 =#{C0301},
+				C0302 =#{C0302},
+				C0303 =#{C0303},
+				C0304 =#{C0304},
+				C0305 =#{C0305},
+				D01 =#{D01},
+				D02 =#{D02},
+				D03 =#{D03},
+				D04 =#{D04},
+				D05 =#{D05},
+				E01 =#{E01},
+				E02 =#{E02},
+				E03 =#{E03},
+				F0101 =#{F0101},
+				F0102 =#{F0102},
+				F0103 =#{F0103},
+				F0104 =#{F0104},
+				F0105 =#{F0105},
+				F0106 =#{F0106},
+				F0201 =#{F0201},
+				F0202 =#{F0202},
+				F0203 =#{F0203},
+				F0204 =#{F0204},
+				F0205 =#{F0205},
+				F0206 =#{F0206},
+				F0301 =#{F0301},
+				F0302 =#{F0302},
+				F0303 =#{F0303},
+				F0304 =#{F0304},
+				F0305 =#{F0305},
+				F0306 =#{F0306},
+				F0401 =#{F0401},
+				F0402 =#{F0402},
+				F0403 =#{F0403},
+				F0404 =#{F0404},
+				F0405 =#{F0405},
+				F0406 =#{F0406},
+				F0501 =#{F0501},
+				F0502 =#{F0502},
+				F0503 =#{F0503},
+				F0504 =#{F0504},
+				F0505 =#{F0505},
+				F0506 =#{F0506},
+				F0601 =#{F0601},
+				F0602 =#{F0602},
+				F0603 =#{F0603},
+				F0604 =#{F0604},
+				F0605 =#{F0605},
+				F0606 =#{F0606},
+				CHARGE_DT = REPLACE(#{CHARGE_DT},'-',''),
+				CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-',''),
+				MANDATE_DT = REPLACE(#{MANDATE_DT},'-',''),
+				CHARGE_ID = #{CHARGE_ID},
+				CONFIRM_ID =#{CONFIRM_ID},
+				MANDATE_ID =#{MANDATE_ID},
+				CHARGE_NM = #{CHARGE_NM},
+				CONFIRM_NM =#{CONFIRM_NM},
+				MANDATE_NM =#{MANDATE_NM},
+				INS_DTM = DEFAULT,
+				INS_NM = #{INS_NM},
+				MODE_DTM = DEFAULT,
+				MODE_NM = #{MODE_NM}
+               ON DUPLICATE KEY UPDATE
+                Z01 =#{Z01},
+				Z02 =#{Z02},
+				Z03 =#{Z03},
+				Z04 =#{Z04},
+				Z05 =#{Z05},
+				Z06 = REPLACE(#{Z06},'-',''),
+				Z07 =#{Z07},
+				A0101 =#{A0101},
+				A0102 =#{A0102},
+				A0103 =#{A0103},
+				A0104 =#{A0104},
+				A0105 =#{A0105},
+				A0201 =#{A0201},
+				A0202 =#{A0202},
+				A0203 =#{A0203},
+				A0204 =#{A0204},
+				A0205 =#{A0205},
+				B0101 =#{B0101},
+				B0102 =#{B0102},
+				B0103 =#{B0103},
+				B0104 =#{B0104},
+				B0105 =#{B0105},
+                B0201 =#{B0201},
+				B0202 =#{B0202},
+				B0203 =#{B0203},
+				B0204 =#{B0204},
+				B0205 =#{B0205},
+				B0301 =#{B0301},
+				B0302 =#{B0302},
+				B0303 =#{B0303},
+				B0304 =#{B0304},
+				B0305 =#{B0305},
+				C0101 =#{C0101},
+				C0102 =#{C0102},
+				C0103 =#{C0103},
+				C0104 =#{C0104},
+				C0105 =#{C0105},
+				C0201 =#{C0201},
+				C0202 =#{C0202},
+				C0203 =#{C0203},
+				C0204 =#{C0204},
+				C0205 =#{C0205},
+				C0301 =#{C0301},
+				C0302 =#{C0302},
+				C0303 =#{C0303},
+				C0304 =#{C0304},
+				C0305 =#{C0305},
+				D01 =#{D01},
+				D02 =#{D02},
+				D03 =#{D03},
+				D04 =#{D04},
+				D05 =#{D05},
+				E01 =#{E01},
+				E02 =#{E02},
+				E03 =#{E03},
+				F0101 =#{F0101},
+				F0102 =#{F0102},
+				F0103 =#{F0103},
+				F0104 =#{F0104},
+				F0105 =#{F0105},
+				F0106 =#{F0106},
+				F0201 =#{F0201},
+				F0202 =#{F0202},
+				F0203 =#{F0203},
+				F0204 =#{F0204},
+				F0205 =#{F0205},
+				F0206 =#{F0206},
+				F0301 =#{F0301},
+				F0302 =#{F0302},
+				F0303 =#{F0303},
+				F0304 =#{F0304},
+				F0305 =#{F0305},
+				F0306 =#{F0306},
+				F0401 =#{F0401},
+				F0402 =#{F0402},
+				F0403 =#{F0403},
+				F0404 =#{F0404},
+				F0405 =#{F0405},
+				F0406 =#{F0406},
+				F0501 =#{F0501},
+				F0502 =#{F0502},
+				F0503 =#{F0503},
+				F0504 =#{F0504},
+				F0505 =#{F0505},
+				F0506 =#{F0506},
+				F0601 =#{F0601},
+				F0602 =#{F0602},
+				F0603 =#{F0603},
+				F0604 =#{F0604},
+				F0605 =#{F0605},
+				F0606 =#{F0606},
+				CHARGE_DT = REPLACE(#{CHARGE_DT},'-',''),
+				CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-',''),
+				MANDATE_DT = REPLACE(#{MANDATE_DT},'-',''),
+				CHARGE_ID = #{CHARGE_ID},
+				CONFIRM_ID =#{CONFIRM_ID},
+				MANDATE_ID =#{MANDATE_ID},
+				CHARGE_NM = #{CHARGE_NM},
+				CONFIRM_NM =#{CONFIRM_NM},
+				MANDATE_NM =#{MANDATE_NM},
+				MODE_DTM = DEFAULT,
+				MODE_NM = #{MODE_NM}
+    </insert>
+    <update id="deleteFdgBpr" parameterType="hashMap">
+    UPDATE T_FDG_BPR
+    SET DEL_NY = 'Y'
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <select id="selectFdgCsfmList" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgCsfmList (chem.xml) */
+	SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+	      ,FN_FMT_DT(B.WORK_DT)    AS WORK_DT    /* 작업일 */
+	      ,FN_FMT_DT(B.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(B.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(B.MANDATE_DT) AS MANDATE_DT /* 관리자확인일 */
+	      ,Z.USER_NM               AS CHARGE_NM  /* 담당자 */
+	      ,Y.USER_NM               AS CONFIRM_NM /* 확인자 */
+	      ,X.USER_NM               AS MANDATE_NM /* 지시자 */
+	      ,(CASE WHEN B.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS CSFM_YN
+	 FROM T_FDG_BPR A
+	 LEFT JOIN T_FDG_CSFM B
+	   ON B.PROD_NO = A.PROD_NO
+	 LEFT JOIN Z_USER Z
+	   ON Z.USER_ID = B.CHARGE_ID
+	 LEFT JOIN Z_USER Y
+	   ON Y.USER_ID = B.CONFIRM_ID
+	 LEFT JOIN Z_USER X
+	   ON X.USER_ID = B.MANDATE_ID
+	 WHERE A.CHARGE_DT != '' 
+	   AND A.CONFIRM_DT != ''  
+	   AND A.Z06 between #{START_DATE} AND #{END_DATE}
+	   AND A.DEL_NY = 'N'
+	 ORDER BY A.Z06 DESC, B.WORK_DT DESC
+    </select>
+    <select id="selectFdgCsfmDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgCsfmDetail (chem.xml) */
+SELECT  (CASE WHEN B.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS CSFM_YN
+                   ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                   ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                   ,A.Z01
+                   ,A.Z02
+                   ,B.A01
+                   ,B.A02
+                   ,B.B01
+                   ,B.B02
+                   ,B.C01
+                   ,B.C02
+                   ,B.D01
+                   ,B.D02
+                   ,B.E01
+                   ,B.E02
+                   ,B.F01
+                   ,B.F02
+                   ,B.G01
+                   ,B.G02
+                   ,B.H01
+                   ,B.H02
+                   ,B.I01
+                   ,B.I02
+                   ,B.J01
+                   ,B.J02
+                   ,B.K01
+                   ,B.K02
+                   ,B.L01
+                   ,B.L02
+                   ,B.M01
+                   ,B.M02
+                   ,B.N01
+                   ,B.N02
+                   ,B.O01
+                   ,B.O02
+                   ,B.P01
+                   ,B.P02
+                   ,B.Q01
+                   ,B.Q02
+                   ,B.R01
+                   ,B.R02
+                   ,B.S01
+                   ,B.S02
+                   ,B.INSP_TIME
+                   ,B.ETC
+                   ,B.CHARGE_ID
+                   ,B.CONFIRM_ID
+                   ,B.MANDATE_ID
+                   ,B.CHARGE_NM
+                   ,B.CONFIRM_NM
+                   ,B.MANDATE_NM
+                   ,B.CHARGE_DT
+                   ,B.CONFIRM_DT
+                   ,B.MANDATE_DT
+                   ,B.WORK_DT
+             FROM T_FDG_BPR A
+             LEFT JOIN T_FDG_CSFM B
+               ON B.PROD_NO = A.PROD_NO
+             WHERE 1=1 
+     AND  A.PROD_NO = #{PROD_NO}
+    </select>
+    
+ <insert id="changeFdgCsfm" parameterType="HashMap">
+    /* k99.code.changeFdgCsfm (chem.xml) */
+
+                INSERT INTO T_FDG_CSFM
+                SET PROD_NO = #{PROD_NO}
+                   ,A01 = #{A01}
+			       ,A02 = #{A02}
+			       ,B01 = #{B01}
+			       ,B02 = #{B02}
+			       ,C01 = #{C01}
+			       ,C02 = #{C02}
+			       ,D01 = #{D01}
+			       ,D02 = #{D02}
+			       ,E01 = #{E01}
+			       ,E02 = #{E02}
+			       ,F01 = #{F01}
+			       ,F02 = #{F02}
+			       ,G01 = #{G01}
+			       ,G02 = #{G02}
+			       ,H01 = #{H01}
+			       ,H02 = #{H02}
+			       ,I01 = #{I01}
+			       ,I02 = #{I02}
+			       ,J01 = #{J01}
+			       ,J02 = #{J02}
+			       ,K01 = #{K01}
+			       ,K02 = #{K02}
+			       ,L01 = #{L01}
+			       ,L02 = #{L02}
+			       ,M01 = #{M01}
+			       ,M02 = #{M02}
+			       ,N01 = #{N01}
+			       ,N02 = #{N02}
+			       ,O01 = #{O01}
+			       ,O02 = #{O02}
+			       ,P01 = #{P01}
+			       ,P02 = #{P02}
+			       ,Q01 = #{Q01}
+			       ,Q02 = #{Q02}
+			       ,R01 = #{R01}
+			       ,R02 = #{R02}
+			       ,S01 = #{S01}
+			       ,S02 = #{S02}
+			       ,WORK_DT = REPLACE(#{WORK_DT},'-','')
+			       ,INSP_TIME  = #{INSP_TIME}
+			       ,ETC        = #{ETC}
+				   ,CHARGE_ID  = #{CHARGE_ID}
+				   ,CONFIRM_ID = #{CONFIRM_ID}
+				   ,MANDATE_ID = #{MANDATE_ID}
+				   ,CHARGE_NM  = #{CHARGE_NM}
+				   ,CONFIRM_NM = #{CONFIRM_NM}
+				   ,MANDATE_NM = #{MANDATE_NM}
+				   ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+				   ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+				   ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+				   ,INS_DTM = DEFAULT
+				   ,INS_NM = #{INS_NM}
+				   ,MODE_DTM = DEFAULT
+				   ,MODE_NM = #{MODE_NM}
+    ON DUPLICATE KEY UPDATE
+                    A01 = #{A01}
+			       ,A02 = #{A02}
+			       ,B01 = #{B01}
+			       ,B02 = #{B02}
+			       ,C01 = #{C01}
+			       ,C02 = #{C02}
+			       ,D01 = #{D01}
+			       ,D02 = #{D02}
+			       ,E01 = #{E01}
+			       ,E02 = #{E02}
+			       ,F01 = #{F01}
+			       ,F02 = #{F02}
+			       ,G01 = #{G01}
+			       ,G02 = #{G02}
+			       ,H01 = #{H01}
+			       ,H02 = #{H02}
+			       ,I01 = #{I01}
+			       ,I02 = #{I02}
+			       ,J01 = #{J01}
+			       ,J02 = #{J02}
+			       ,K01 = #{K01}
+			       ,K02 = #{K02}
+			       ,L01 = #{L01}
+			       ,L02 = #{L02}
+			       ,M01 = #{M01}
+			       ,M02 = #{M02}
+			       ,N01 = #{N01}
+			       ,N02 = #{N02}
+			       ,O01 = #{O01}
+			       ,O02 = #{O02}
+			       ,P01 = #{P01}
+			       ,P02 = #{P02}
+			       ,Q01 = #{Q01}
+			       ,Q02 = #{Q02}
+			       ,R01 = #{R01}
+			       ,R02 = #{R02}
+			       ,S01 = #{S01}
+			       ,S02 = #{S02}
+			       ,WORK_DT = REPLACE(#{WORK_DT},'-','')
+			       ,INSP_TIME  = #{INSP_TIME}
+			       ,ETC        = #{ETC}
+			       ,CHARGE_ID  = #{CHARGE_ID} 
+				   ,CONFIRM_ID = #{CONFIRM_ID}
+				   ,MANDATE_ID = #{MANDATE_ID}
+				   ,CHARGE_NM  = #{CHARGE_NM}
+				   ,CONFIRM_NM = #{CONFIRM_NM}
+				   ,MANDATE_NM = #{MANDATE_NM}
+				   ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+				   ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+				   ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+				   ,MODE_DTM = DEFAULT
+				   ,MODE_NM = #{MODE_NM}
+    </insert>
+    
+    <delete id="deleteFdgCsfm" parameterType="hashMap">
+    DELETE FROM T_FDG_CSFM
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    <select id="selectFdgCmpsList" parameterType="HashMap" resultType="HashMap" > 
+     /* chem.selectFdgSrList (chem.xml) */
+                SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                  ,C.PROD_NO
+                  ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                  ,FN_FMT_DT(C.WORK_DT)    AS WORK_DT    /* 작업일 */
+                  ,FN_FMT_DT(C.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                  ,FN_FMT_DT(C.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                  ,FN_FMT_DT(C.MANDATE_DT) AS MANDATE_DT /* 관리자확인일 */
+                  ,Z.USER_NM               AS CHARGE_NM  /* 담당자 */
+                  ,Y.USER_NM               AS CONFIRM_NM /* 확인자 */
+                  ,X.USER_NM               AS MANDATE_NM /* 지시자 */
+                  ,(CASE WHEN C.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS CMPS_YN
+             FROM T_FDG_BPR A
+             JOIN T_FDG_CSFM B
+               ON B.PROD_NO = A.PROD_NO
+              AND B.WORK_DT != ''
+             LEFT JOIN T_FDG_CMPS C
+               ON C.PROD_NO = A.PROD_NO
+             LEFT JOIN Z_USER Z
+               ON Z.USER_ID = C.CHARGE_ID
+             LEFT JOIN Z_USER Y
+               ON Y.USER_ID = C.CONFIRM_ID
+             LEFT JOIN Z_USER X
+               ON X.USER_ID = C.MANDATE_ID
+             WHERE A.CHARGE_DT != '' 
+               AND A.CONFIRM_DT != ''  
+               AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+               AND A.DEL_NY = 'N'
+             ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC
+    </select>
+    
+    <select id="selectFdgSrDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgSrDetail (chem.xml) */
+    SELECT A.PROD_NO
+	      ,B.A_OPERATOR
+		  ,B.A_REVIEWER
+		  ,B.AA01
+		  ,B.AA02
+		  ,B.AA03
+		  ,B.AB01
+		  ,B.AB02
+		  ,B.AB03
+		  ,B.AC01
+		  ,B.AC0101
+		  ,B.AC0102
+		  ,B.AC0103
+		  ,B.AC0201
+		  ,B.AC0202
+		  ,B.AC0203
+		  ,B.AC0301
+		  ,B.AC0302
+		  ,B.AC0303
+		  ,B.AC0401
+		  ,B.AC0402
+		  ,B.AC0403
+		  ,B.AD01
+		  ,B.AD02
+		  ,B.AB0101
+		  ,B.AB0102
+		  ,B.AB0103
+		  ,B.AB0104
+		  ,B.AB0201
+		  ,B.AB0202
+		  ,B.AB0203
+		  ,B.AB0204
+		  ,B.AB0301
+		  ,B.AB0302
+		  ,B.AB0303
+		  ,B.AB0304
+		  ,B.AB0401
+		  ,B.AB0402
+		  ,B.AB0403
+		  ,B.AB0404
+		  ,B.AB0501
+		  ,B.AB0502
+		  ,B.AB0503
+		  ,B.AB0504
+		  ,B.AB0601
+		  ,B.AB0602
+		  ,B.AB0603
+		  ,B.AB0604
+		  ,B.AB0701
+		  ,B.AB0702
+		  ,B.AB0703
+		  ,B.AB0704
+		  ,B.AB0801
+		  ,B.AB0802
+		  ,B.AB0803
+		  ,B.AB0804
+		  ,B.AB0901
+		  ,B.AB0902
+		  ,B.AB0903
+		  ,B.AB0904
+		  ,B.AB1001
+		  ,B.AB1002
+		  ,B.AB1003
+		  ,B.AB1004
+		  ,B.B_OPERATOR
+		  ,B.B_REVIEWER
+		  ,B.B_TIME_FROM
+		  ,B.B_TIME_TO
+		  ,B.B0101
+		  ,B.B0102
+		  ,B.B0201
+		  ,B.B0202
+		  ,B.B0301		
+		  ,B.B0302
+		  ,B.B0401
+		  ,B.B0402
+		  ,B.C_OPERATOR
+		  ,B.C_REVIEWER
+		  ,B.C_TIME_FROM
+		  ,B.C_TIME_TO
+		  ,B.C_STANDARD
+		  ,B.C0101
+		  ,B.C0102
+		  ,B.C0201
+		  ,B.C0202
+		  ,B.C0301
+		  ,B.C0302
+		  ,B.C0401
+		  ,B.C0402
+		  ,B.C0501
+		  ,B.C0502
+		  ,B.C0601
+		  ,B.C0602
+		  ,B.D_OPERATOR
+		  ,B.D_REVIEWER
+		  ,B.D_TIME_FROM
+		  ,B.D_TIME_TO
+		  ,B.D_STANDARD
+		  ,B.D0101
+		  ,B.D0102
+		  ,B.D0201
+		  ,B.D0202
+		  ,B.D0301
+		  ,B.D0302
+		  ,B.D0401
+		  ,B.D0402
+		  ,B.D0501
+		  ,B.D0502
+		  ,B.D0601
+		  ,B.D0602
+		  ,B.D0701
+		  ,B.D0702
+		  ,B.D0801
+		  ,B.D0802
+		  ,B.D0901
+		  ,B.D0902
+		  ,B.D1001
+		  ,B.D1002
+		  ,B.D1101
+		  ,B.D1102
+		  ,B.D1201
+		  ,B.D1202
+		  ,B.D1301
+		  ,B.D1302
+		  ,B.D1401
+		  ,B.D1402
+		  ,B.D1501
+		  ,B.D1502
+		  ,B.D1601
+		  ,B.D1602
+		  ,B.D1701
+		  ,B.D1702
+		  ,B.D1801
+		  ,B.D1802
+		  ,B.D1901
+		  ,B.D1902
+		  ,B.D2001
+		  ,B.D2002
+		  ,B.E_OPERATOR
+		  ,B.E_REVIEWER
+		  ,B.E_TIME_FROM
+		  ,B.E_TIME_TO
+		  ,B.E0101
+		  ,B.E0102
+		  ,B.E0201
+		  ,B.E0202
+		  ,B.E0301
+		  ,B.E0302
+		  ,B.E0401
+		  ,B.E0402
+		  ,B.E0501
+		  ,B.E0502
+		  ,B.E0601
+		  ,B.E0602
+		  ,B.E0701
+		  ,B.E0702
+		  ,B.E0801
+		  ,B.E0802
+		  ,B.E0901
+		  ,B.E0902
+		  ,B.F_OPERATOR
+		  ,B.F_REVIEWER
+		  ,B.F_TIME_FROM
+		  ,B.F_TIME_TO
+		  ,B.F0101
+		  ,B.F0102
+		  ,B.F0201
+		  ,B.F0202
+		  ,B.F0301
+		  ,B.F0302
+		  ,B.F0401
+		  ,B.F0402
+		  ,B.F0501
+		  ,B.F0502
+		  ,B.F0601
+		  ,B.F0602
+		  ,B.F0701
+		  ,B.F0702
+		  ,B.F0801
+		  ,B.F0802
+		  ,B.F0901
+		  ,B.F0902
+		  ,B.ETC
+		  ,B.WORK_DT
+		  ,B.CHARGE_ID
+		  ,B.CONFIRM_ID
+		  ,B.MANDATE_ID
+		  ,B.CHARGE_NM
+		  ,B.CONFIRM_NM
+		  ,B.MANDATE_NM
+		  ,B.CHARGE_DT
+		  ,B.CONFIRM_DT
+		  ,B.MANDATE_DT
+		  ,A.Z01
+		  ,A.Z02
+     FROM T_FDG_BPR A
+     LEFT JOIN T_FDG_CMPS B
+       ON B.PROD_NO = A.PROD_NO
+     WHERE 1=1 
+     AND A.PROD_NO = #{PROD_NO}
+    </select>
+    
+     <insert id="changeFdgCmps" parameterType="HashMap">
+    /* k99.code.changeFdgCmps (chem.xml) */
+    INSERT INTO T_FDG_CMPS
+               SET PROD_NO = #{PROD_NO}
+                  ,A_OPERATOR = #{A_OPERATOR}
+				  ,A_REVIEWER = #{A_REVIEWER}
+				  ,AA01 = #{AA01}
+				  ,AA02 = #{AA02}
+				  ,AA03 = #{AA03}
+				  ,AB01 = #{AB01}
+				  ,AB02 = #{AB02}
+				  ,AB03 = #{AB03}
+				  ,AC01 = #{AC01}
+				  ,AC0101 = #{AC0101} 
+				  ,AC0102 = #{AC0102}
+				  ,AC0103 = #{AC0103}
+				  ,AC0201 = #{AC0201}
+				  ,AC0202 = #{AC0202}
+				  ,AC0203 = #{AC0203}
+				  ,AC0301 = #{AC0301}
+				  ,AC0302 = #{AC0302}
+				  ,AC0303 = #{AC0303}
+				  ,AC0401 = #{AC0401}
+				  ,AC0402 = #{AC0402}
+				  ,AC0403 = #{AC0403}
+				  ,AD01 = #{AD01}
+				  ,AD02 = #{AD02}
+				  ,AB0101 = #{AB0101}
+				  ,AB0102 = #{AB0102}
+				  ,AB0103 = #{AB0103}
+				  ,AB0104 = #{AB0104}
+				  ,AB0201 = #{AB0201}
+				  ,AB0202 = #{AB0202}
+				  ,AB0203 = #{AB0203}
+				  ,AB0204 = #{AB0204}
+				  ,AB0301 = #{AB0301}
+				  ,AB0302 = #{AB0302}
+				  ,AB0303 = #{AB0303}
+				  ,AB0304 = #{AB0304}
+				  ,AB0401 = #{AB0401}
+				  ,AB0402 = #{AB0402}
+				  ,AB0403 = #{AB0403}
+				  ,AB0404 = #{AB0404} 
+				  ,AB0501 = #{AB0501}
+				  ,AB0502 = #{AB0502}
+				  ,AB0503 = #{AB0503}
+				  ,AB0504 = #{AB0504}
+				  ,AB0601 = #{AB0601}
+				  ,AB0602 = #{AB0602}
+				  ,AB0603 = #{AB0603}
+				  ,AB0604 = #{AB0604}
+				  ,AB0701 = #{AB0701}
+				  ,AB0702 = #{AB0702}
+				  ,AB0703 = #{AB0703}
+				  ,AB0704 = #{AB0704}
+				  ,AB0801 = #{AB0801}
+				  ,AB0802 = #{AB0802}
+				  ,AB0803 = #{AB0803}
+				  ,AB0804 = #{AB0804}
+				  ,AB0901 = #{AB0901}
+				  ,AB0902 = #{AB0902}
+				  ,AB0903 = #{AB0903}
+				  ,AB0904 = #{AB0904}
+				  ,AB1001 = #{AB1001}
+				  ,AB1002 = #{AB1002}
+				  ,AB1003 = #{AB1003}
+				  ,AB1004 = #{AB1004}
+				  ,B_OPERATOR = #{B_OPERATOR}
+				  ,B_REVIEWER = #{B_REVIEWER}
+				  ,B_TIME_FROM = #{B_TIME_FROM}
+				  ,B_TIME_TO = #{B_TIME_TO}
+				  ,B0101 = #{B0101}
+				  ,B0102 = #{B0102}
+				  ,B0201 = #{B0201}
+				  ,B0202 = #{B0202}
+				  ,B0301 = #{B0301}
+				  ,B0302 = #{B0302}
+				  ,B0401 = #{B0401}
+				  ,B0402 = #{B0402}
+				  ,C_OPERATOR = #{C_OPERATOR}
+				  ,C_REVIEWER = #{C_REVIEWER}
+				  ,C_TIME_FROM = #{C_TIME_FROM}
+				  ,C_TIME_TO = #{C_TIME_TO}
+				  ,C_STANDARD = #{C_STANDARD}
+				  ,C0101 = #{C0101}
+				  ,C0102 = #{C0102}
+				  ,C0201 = #{C0201}
+				  ,C0202 = #{C0202}
+				  ,C0301 = #{C0301}
+				  ,C0302 = #{C0302}
+				  ,C0401 = #{C0401}
+				  ,C0402 = #{C0402}
+				  ,C0501 = #{C0501}
+				  ,C0502 = #{C0502}
+				  ,C0601 = #{C0601}
+				  ,C0602 = #{C0602}
+				  ,D_OPERATOR = #{D_OPERATOR}
+				  ,D_REVIEWER = #{D_REVIEWER}
+				  ,D_TIME_FROM = #{D_TIME_FROM}
+				  ,D_TIME_TO = #{D_TIME_TO}
+				  ,D_STANDARD = #{D_STANDARD}
+				  ,D0101 = #{D0101}
+				  ,D0102 = #{D0102}
+				  ,D0201 = #{D0201}
+				  ,D0202 = #{D0202}
+				  ,D0301 = #{D0301}
+				  ,D0302 = #{D0302}
+				  ,D0401 = #{D0401}
+				  ,D0402 = #{D0402}
+				  ,D0501 = #{D0501}
+				  ,D0502 = #{D0502}
+				  ,D0601 = #{D0601}
+				  ,D0602 = #{D0602}
+				  ,D0701 = #{D0701}
+				  ,D0702 = #{D0702}
+				  ,D0801 = #{D0801}
+				  ,D0802 = #{D0802}
+				  ,D0901 = #{D0901}
+				  ,D0902 = #{D0902}
+				  ,D1001 = #{D1001}
+				  ,D1002 = #{D1002}
+				  ,D1101 = #{D1101}
+				  ,D1102 = #{D1102}
+				  ,D1201 = #{D1201}
+				  ,D1202 = #{D1202}
+				  ,D1301 = #{D1301}
+				  ,D1302 = #{D1302}
+				  ,D1401 = #{D1401}
+				  ,D1402 = #{D1402}
+				  ,D1501 = #{D1501}
+				  ,D1502 = #{D1502}
+				  ,D1601 = #{D1601}
+				  ,D1602 = #{D1602}
+				  ,D1701 = #{D1701}
+				  ,D1702 = #{D1702}
+				  ,D1801 = #{D1801}
+				  ,D1802 = #{D1802}
+				  ,D1901 = #{D1901}
+				  ,D1902 = #{D1902}
+				  ,D2001 = #{D2001}
+				  ,D2002 = #{D2002}
+				  ,E_OPERATOR = #{E_OPERATOR}
+				  ,E_REVIEWER = #{E_REVIEWER}
+				  ,E_TIME_FROM = #{E_TIME_FROM}
+				  ,E_TIME_TO = #{E_TIME_TO}
+				  ,E0101 = #{E0101}
+				  ,E0102 = #{E0102}
+				  ,E0201 = #{E0201}
+				  ,E0202 = #{E0202}
+				  ,E0301 = #{E0301}
+				  ,E0302 = #{E0302}
+				  ,E0401 = #{E0401}
+				  ,E0402 = #{E0402}
+				  ,E0501 = #{E0501}
+				  ,E0502 = #{E0502}
+				  ,E0601 = #{E0601}
+				  ,E0602 = #{E0602}
+				  ,E0701 = #{E0701}
+				  ,E0702 = #{E0702}
+				  ,E0801 = #{E0801}
+				  ,E0802 = #{E0802}
+				  ,E0901 = #{E0901}
+				  ,E0902 = #{E0902}
+				  ,F_OPERATOR = #{F_OPERATOR}
+				  ,F_REVIEWER = #{F_REVIEWER}
+				  ,F_TIME_FROM = #{F_TIME_FROM}
+				  ,F_TIME_TO = #{F_TIME_TO}
+				  ,F0101 = #{F0101}
+				  ,F0102 = #{F0102}
+				  ,F0201 = #{F0201}
+				  ,F0202 = #{F0202}
+				  ,F0301 = #{F0301}
+				  ,F0302 = #{F0302}
+				  ,F0401 = #{F0401}
+				  ,F0402 = #{F0402}
+				  ,F0501 = #{F0501}
+				  ,F0502 = #{F0502}
+				  ,F0601 = #{F0601}
+				  ,F0602 = #{F0602}
+				  ,F0701 = #{F0701}
+				  ,F0702 = #{F0702}
+				  ,F0801 = #{F0801}
+				  ,F0802 = #{F0802}
+				  ,F0901 = #{F0901}
+				  ,F0902 = #{F0902}
+				  ,WORK_DT = REPLACE(#{WORK_DT},'-','')
+			      ,CHARGE_ID  = #{CHARGE_ID}
+				  ,CONFIRM_ID = #{CONFIRM_ID}
+				  ,MANDATE_ID = #{MANDATE_ID}
+			      ,CHARGE_NM  = #{CHARGE_NM}
+				  ,CONFIRM_NM = #{CONFIRM_NM}
+				  ,MANDATE_NM = #{MANDATE_NM}
+	    		  ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+			      ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+			      ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+			      ,ETC = #{ETC}
+			      ,INS_DTM = DEFAULT
+				  ,INS_NM = #{INS_NM}
+				  ,MODE_DTM = DEFAULT
+				  ,MODE_NM = #{MODE_NM}
+               ON DUPLICATE KEY UPDATE
+                   A_OPERATOR = #{A_OPERATOR}
+				  ,A_REVIEWER = #{A_REVIEWER}
+				  ,AA01 = #{AA01}
+				  ,AA02 = #{AA02}
+				  ,AA03 = #{AA03}
+				  ,AB01 = #{AB01}
+				  ,AB02 = #{AB02}
+				  ,AB03 = #{AB03}
+				  ,AC01 = #{AC01}
+				  ,AC0101 = #{AC0101}
+				  ,AC0102 = #{AC0102}
+				  ,AC0103 = #{AC0103}
+				  ,AC0201 = #{AC0201}
+				  ,AC0202 = #{AC0202}
+				  ,AC0203 = #{AC0203}
+				  ,AC0301 = #{AC0301}
+				  ,AC0302 = #{AC0302}
+				  ,AC0303 = #{AC0303}
+				  ,AC0401 = #{AC0401}
+				  ,AC0402 = #{AC0402}
+				  ,AC0403 = #{AC0403}
+				  ,AD01 = #{AD01}
+				  ,AD02 = #{AD02}
+				  ,AB0101 = #{AB0101}
+				  ,AB0102 = #{AB0102}
+				  ,AB0103 = #{AB0103}
+				  ,AB0104 = #{AB0104}
+				  ,AB0201 = #{AB0201}
+				  ,AB0202 = #{AB0202}
+				  ,AB0203 = #{AB0203}
+				  ,AB0204 = #{AB0204}
+				  ,AB0301 = #{AB0301}
+				  ,AB0302 = #{AB0302}
+				  ,AB0303 = #{AB0303}
+				  ,AB0304 = #{AB0304}
+				  ,AB0401 = #{AB0401}
+				  ,AB0402 = #{AB0402}
+				  ,AB0403 = #{AB0403}
+				  ,AB0404 = #{AB0404} 
+				  ,AB0501 = #{AB0501}
+				  ,AB0502 = #{AB0502}
+				  ,AB0503 = #{AB0503}
+				  ,AB0504 = #{AB0504}
+				  ,AB0601 = #{AB0601}
+				  ,AB0602 = #{AB0602}
+				  ,AB0603 = #{AB0603}
+				  ,AB0604 = #{AB0604}
+				  ,AB0701 = #{AB0701}
+				  ,AB0702 = #{AB0702}
+				  ,AB0703 = #{AB0703}
+				  ,AB0704 = #{AB0704}
+				  ,AB0801 = #{AB0801}
+				  ,AB0802 = #{AB0802}
+				  ,AB0803 = #{AB0803}
+				  ,AB0804 = #{AB0804}
+				  ,AB0901 = #{AB0901}
+				  ,AB0902 = #{AB0902}
+				  ,AB0903 = #{AB0903}
+				  ,AB0904 = #{AB0904}
+				  ,AB1001 = #{AB1001}
+				  ,AB1002 = #{AB1002}
+				  ,AB1003 = #{AB1003}
+				  ,AB1004 = #{AB1004}
+				  ,B_OPERATOR = #{B_OPERATOR}
+				  ,B_REVIEWER = #{B_REVIEWER}
+				  ,B_TIME_FROM = #{B_TIME_FROM}
+				  ,B_TIME_TO = #{B_TIME_TO}
+				  ,B0101 = #{B0101}
+				  ,B0102 = #{B0102}
+				  ,B0201 = #{B0201}
+				  ,B0202 = #{B0202}
+				  ,B0301 = #{B0301}
+				  ,B0302 = #{B0302}
+				  ,B0401 = #{B0401}
+				  ,B0402 = #{B0402}
+				  ,C_OPERATOR = #{C_OPERATOR}
+				  ,C_REVIEWER = #{C_REVIEWER}
+				  ,C_TIME_FROM = #{C_TIME_FROM}
+				  ,C_TIME_TO = #{C_TIME_TO}
+				  ,C_STANDARD = #{C_STANDARD}
+				  ,C0101 = #{C0101}
+				  ,C0102 = #{C0102}
+				  ,C0201 = #{C0201}
+				  ,C0202 = #{C0202}
+				  ,C0301 = #{C0301}
+				  ,C0302 = #{C0302}
+				  ,C0401 = #{C0401}
+				  ,C0402 = #{C0402}
+				  ,C0501 = #{C0501}
+				  ,C0502 = #{C0502}
+				  ,C0601 = #{C0601}
+				  ,C0602 = #{C0602}
+				  ,D_OPERATOR = #{D_OPERATOR}
+				  ,D_REVIEWER = #{D_REVIEWER}
+				  ,D_TIME_FROM = #{D_TIME_FROM}
+				  ,D_TIME_TO = #{D_TIME_TO}
+				  ,D_STANDARD = #{D_STANDARD}
+				  ,D0101 = #{D0101}
+				  ,D0102 = #{D0102}
+				  ,D0201 = #{D0201}
+				  ,D0202 = #{D0202}
+				  ,D0301 = #{D0301}
+				  ,D0302 = #{D0302}
+				  ,D0401 = #{D0401}
+				  ,D0402 = #{D0402}
+				  ,D0501 = #{D0501}
+				  ,D0502 = #{D0502}
+				  ,D0601 = #{D0601}
+				  ,D0602 = #{D0602}
+				  ,D0701 = #{D0701}
+				  ,D0702 = #{D0702}
+				  ,D0801 = #{D0801}
+				  ,D0802 = #{D0802}
+				  ,D0901 = #{D0901}
+				  ,D0902 = #{D0902}
+				  ,D1001 = #{D1001}
+				  ,D1002 = #{D1002}
+				  ,D1101 = #{D1101}
+				  ,D1102 = #{D1102}
+				  ,D1201 = #{D1201}
+				  ,D1202 = #{D1202}
+				  ,D1301 = #{D1301}
+				  ,D1302 = #{D1302}
+				  ,D1401 = #{D1401}
+				  ,D1402 = #{D1402}
+				  ,D1501 = #{D1501}
+				  ,D1502 = #{D1502}
+				  ,D1601 = #{D1601}
+				  ,D1602 = #{D1602}
+				  ,D1701 = #{D1701}
+				  ,D1702 = #{D1702}
+				  ,D1801 = #{D1801}
+				  ,D1802 = #{D1802}
+				  ,D1901 = #{D1901}
+				  ,D1902 = #{D1902}
+				  ,D2001 = #{D2001}
+				  ,D2002 = #{D2002}
+				  ,E_OPERATOR = #{E_OPERATOR}
+				  ,E_REVIEWER = #{E_REVIEWER}
+				  ,E_TIME_FROM = #{E_TIME_FROM}
+				  ,E_TIME_TO = #{E_TIME_TO}
+				  ,E0101 = #{E0101}
+				  ,E0102 = #{E0102}
+				  ,E0201 = #{E0201}
+				  ,E0202 = #{E0202}
+				  ,E0301 = #{E0301}
+				  ,E0302 = #{E0302}
+				  ,E0401 = #{E0401}
+				  ,E0402 = #{E0402}
+				  ,E0501 = #{E0501}
+				  ,E0502 = #{E0502}
+				  ,E0601 = #{E0601}
+				  ,E0602 = #{E0602}
+				  ,E0701 = #{E0701}
+				  ,E0702 = #{E0702}
+				  ,E0801 = #{E0801}
+				  ,E0802 = #{E0802}
+				  ,E0901 = #{E0901}
+				  ,E0902 = #{E0902}
+				  ,F_OPERATOR = #{F_OPERATOR}
+				  ,F_REVIEWER = #{F_REVIEWER}
+				  ,F_TIME_FROM = #{F_TIME_FROM}
+				  ,F_TIME_TO = #{F_TIME_TO}
+				  ,F0101 = #{F0101}
+				  ,F0102 = #{F0102}
+				  ,F0201 = #{F0201}
+				  ,F0202 = #{F0202}
+				  ,F0301 = #{F0301}
+				  ,F0302 = #{F0302}
+				  ,F0401 = #{F0401}
+				  ,F0402 = #{F0402}
+				  ,F0501 = #{F0501}
+				  ,F0502 = #{F0502}
+				  ,F0601 = #{F0601}
+				  ,F0602 = #{F0602}
+				  ,F0701 = #{F0701}
+				  ,F0702 = #{F0702}
+				  ,F0801 = #{F0801}
+				  ,F0802 = #{F0802}
+				  ,F0901 = #{F0901}
+				  ,F0902 = #{F0902}	
+				  ,WORK_DT = REPLACE(#{WORK_DT},'-','')
+                  ,CHARGE_ID  = #{CHARGE_ID}
+				  ,CONFIRM_ID = #{CONFIRM_ID}
+				  ,MANDATE_ID = #{MANDATE_ID}
+			      ,CHARGE_NM  = #{CHARGE_NM}
+				  ,CONFIRM_NM = #{CONFIRM_NM}
+				  ,MANDATE_NM = #{MANDATE_NM}
+	    		  ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+			      ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+			      ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+			      ,ETC = #{ETC}
+			      ,MODE_DTM = DEFAULT
+				  ,MODE_NM = #{MODE_NM}
+    </insert> 
+    
+    <delete id="deleteFdgCmpsfm" parameterType="hashMap">
+    DELETE FROM T_FDG_CMPS
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+ <select id="selectFdgDspsList" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgDspsList (chem.xml) */
+                        SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                          
+                              ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                              ,FN_FMT_DT(D.WORK_DT)    AS WORK_DT    /* 작업일 */
+                              ,FN_FMT_DT(D.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                              ,FN_FMT_DT(D.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                              ,FN_FMT_DT(D.MANDATE_DT) AS MANDATE_DT /* 관리자확인일 */
+                              ,Z.USER_NM               AS CHARGE_NM  /* 담당자 */
+                              ,Y.USER_NM               AS CONFIRM_NM /* 확인자 */
+                              ,X.USER_NM               AS MANDATE_NM /* 지시자 */
+                              ,(CASE WHEN D.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS DSPS_YN
+                              ,D.FILE_SEQ
+                        FROM T_FDG_BPR A
+                        JOIN T_FDG_CSFM B
+                          ON B.PROD_NO = A.PROD_NO
+                         AND B.WORK_DT != ''
+                        JOIN T_FDG_CMPS C
+                          ON C.PROD_NO = A.PROD_NO
+                         AND C.WORK_DT != ''
+                   LEFT JOIN T_FDG_DSPS D
+                          ON D.PROD_NO = A.PROD_NO
+                   LEFT JOIN Z_USER Z
+                          ON Z.USER_ID = C.CHARGE_ID
+                   LEFT JOIN Z_USER Y
+                          ON Y.USER_ID = C.CONFIRM_ID
+                   LEFT JOIN Z_USER X
+                          ON X.USER_ID = C.MANDATE_ID
+                       WHERE A.CHARGE_DT != '' 
+                         AND A.CONFIRM_DT != ''  
+                         
+                          AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+                          AND A.DEL_NY = 'N'
+                    ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC
+    </select>
+    
+ <select id="selectFdgDspsDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgDspsDetail (chem.xml) */
+     SELECT  A.PROD_NO
+            ,A.Z01
+            ,A.Z02
+			,B.A_TIME_FROM
+			,B.A_TIME_TO
+			,B.A_OPERATOR
+			,B.A_REVIEWER
+			,B.A_STANDARD
+			,B.A0101
+			,B.A0102
+			,B.A0201
+			,B.A0202
+			,B.A0301
+			,B.A0302
+			,B.A0401
+			,B.A0402
+			,B.A0501
+			,B.A0502
+			,B.B_TIME_FROM
+			,B.B_TIME_TO
+			,B.B_OPERATOR
+			,B.B_REVIEWER
+			,B.B_STANDARD
+			,B.B0101
+			,B.B0201
+			,B.B0202
+			,B.B0301
+			,B.B0302
+			,B.B0401
+			,B.C_OPERATOR
+			,B.C_REVIEWER
+			,B.C0101
+			,B.C0102
+			,B.C0103
+			,B.C0104
+			,B.C0201
+			,B.C0202
+			,B.C0203
+			,B.C0204
+			,B.C0301
+			,B.C0302
+			,B.C0303
+			,B.C0304
+			,B.D_OPERATOR
+			,B.D_REVIEWER
+			,B.E01
+			,B.E02
+			,B.E03
+			,B.E04
+			,B.E05
+			,B.E06
+			,B.E07
+			,B.E08
+			,B.E09
+            ,B.ETC 
+            ,B.FILE_SEQ
+            ,B.WORK_DT
+            ,B.CHARGE_ID
+            ,B.CONFIRM_ID
+            ,B.MANDATE_ID
+            ,B.CHARGE_NM
+            ,B.CONFIRM_NM
+            ,B.MANDATE_NM
+            ,B.CHARGE_DT
+            ,B.CONFIRM_DT
+            ,B.MANDATE_DT
+     FROM T_FDG_BPR A
+     LEFT JOIN T_FDG_DSPS B
+       ON B.PROD_NO = A.PROD_NO
+     WHERE 1=1 
+      AND A.PROD_NO = #{PROD_NO}
+    </select>
+    
+    <insert id="changeFdgDsps" parameterType="HashMap">
+    /* k99.code.changeFdgDsps (chem.xml) */
+		  INSERT INTO T_FDG_DSPS
+		     SET PROD_NO = #{PROD_NO}
+				,A_TIME_FROM = #{A_TIME_FROM}
+				,A_TIME_TO = #{A_TIME_TO}
+				,A_OPERATOR = #{A_OPERATOR}
+				,A_REVIEWER = #{A_REVIEWER}
+				,A_STANDARD = #{A_STANDARD}
+				,A0101 = #{A0101}
+				,A0102 = #{A0102}
+				,A0201 = #{A0201}
+				,A0202 = #{A0202}
+				,A0301 = #{A0301}
+				,A0302 = #{A0302}
+				,A0401 = #{A0401}
+				,A0402 = #{A0402}
+				,A0501 = #{A0501}
+				,A0502 = #{A0502}
+				,B_TIME_FROM = #{B_TIME_FROM}
+				,B_TIME_TO = #{B_TIME_TO}
+				,B_OPERATOR = #{B_OPERATOR}
+				,B_REVIEWER = #{B_REVIEWER}
+				,B_STANDARD = #{B_STANDARD}
+				,B0101 = #{B0101}
+				,B0201 = #{B0201}
+				,B0202 = #{B0202}
+				,B0301 = #{B0301}
+				,B0302 = #{B0302}
+				,B0401 = #{B0401}
+				,C_OPERATOR = #{C_OPERATOR}
+				,C_REVIEWER = #{C_REVIEWER}
+				,C0101 = #{C0101}
+				,C0102 = #{C0102}
+				,C0103 = #{C0103}
+				,C0104 = #{C0104}
+				,C0201 = #{C0201}
+				,C0202 = #{C0202}
+				,C0203 = #{C0203}
+				,C0204 = #{C0204}
+				,C0301 = #{C0301}
+				,C0302 = #{C0302}
+				,C0303 = #{C0303}
+				,C0304 = #{C0304}
+				,D_OPERATOR = #{D_OPERATOR}
+				,D_REVIEWER = #{D_REVIEWER}
+				,E01 = #{E01}
+				,E02 = #{E02}
+				,E03 = #{E03}
+				,E04 = #{E04}
+				,E05 = #{E05}
+				,E06 = #{E06}
+				,E07 = #{E07}
+				,E08 = #{E08}
+				,E09 = #{E09}
+				,ETC = #{ETC}
+				,FILE_SEQ = #{FILE_SEQ}
+	    		,WORK_DT = REPLACE(#{WORK_DT},'-','')
+		        ,CHARGE_ID  = #{CHARGE_ID}
+			    ,CONFIRM_ID = #{CONFIRM_ID}
+			    ,MANDATE_ID = #{MANDATE_ID}
+		        ,CHARGE_NM  = #{CHARGE_NM}
+			    ,CONFIRM_NM = #{CONFIRM_NM}
+			    ,MANDATE_NM= #{MANDATE_NM}
+    		    ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+		        ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+		        ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+         ON DUPLICATE KEY UPDATE
+                 A_TIME_FROM = #{A_TIME_FROM}
+				,A_TIME_TO = #{A_TIME_TO}
+				,A_OPERATOR = #{A_OPERATOR}
+				,A_REVIEWER = #{A_REVIEWER}
+				,A_STANDARD = #{A_STANDARD}
+				,A0101 = #{A0101}
+				,A0102 = #{A0102}
+				,A0201 = #{A0201}
+				,A0202 = #{A0202}
+				,A0301 = #{A0301}
+				,A0302 = #{A0302}
+				,A0401 = #{A0401}
+				,A0402 = #{A0402}
+				,A0501 = #{A0501}
+				,A0502 = #{A0502}
+				,B_TIME_FROM = #{B_TIME_FROM}
+				,B_TIME_TO = #{B_TIME_TO}
+				,B_OPERATOR = #{B_OPERATOR}
+				,B_REVIEWER = #{B_REVIEWER}
+				,B_STANDARD = #{B_STANDARD}
+				,B0101 = #{B0101}
+				,B0201 = #{B0201}
+				,B0202 = #{B0202}
+				,B0301 = #{B0301}
+				,B0302 = #{B0302}
+				,B0401 = #{B0401}
+				,C_OPERATOR = #{C_OPERATOR}
+				,C_REVIEWER = #{C_REVIEWER}
+				,C0101 = #{C0101}
+				,C0102 = #{C0102}
+				,C0103 = #{C0103}
+				,C0104 = #{C0104}
+				,C0201 = #{C0201}
+				,C0202 = #{C0202}
+				,C0203 = #{C0203}
+				,C0204 = #{C0204}
+				,C0301 = #{C0301}
+				,C0302 = #{C0302}
+				,C0303 = #{C0303}
+				,C0304 = #{C0304}
+				,D_OPERATOR = #{D_OPERATOR}
+				,D_REVIEWER = #{D_REVIEWER}
+				,E01 = #{E01}
+				,E02 = #{E02}
+				,E03 = #{E03}
+				,E04 = #{E04}
+				,E05 = #{E05}
+				,E06 = #{E06}
+				,E07 = #{E07}
+				,E08 = #{E08}
+				,E09 = #{E09}
+				,ETC = #{ETC}
+				,FILE_SEQ = #{FILE_SEQ}
+				,WORK_DT = REPLACE(#{WORK_DT},'-','')
+		        ,CHARGE_ID  = #{CHARGE_ID}
+			    ,CONFIRM_ID = #{CONFIRM_ID}
+			    ,MANDATE_ID = #{MANDATE_ID}
+		        ,CHARGE_NM  = #{CHARGE_NM}
+			    ,CONFIRM_NM = #{CONFIRM_NM}
+			    ,MANDATE_NM= #{MANDATE_NM}
+    		    ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+		        ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+		        ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+		        ,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    </insert>
+    
+    <delete id="deleteFdgDspsfm" parameterType="hashMap">
+    DELETE FROM T_FDG_DSPS
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    <select id="selectFdgPackList" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgPackList (chem.xml) */
+      SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                 ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                 ,FN_FMT_DT(E.WORK_DT)    AS WORK_DT    /* 작업일 */
+                 ,FN_FMT_DT(E.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                 ,FN_FMT_DT(E.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                 ,FN_FMT_DT(E.MANDATE_DT) AS MANDATE_DT /* 관리자확인일 */
+                 ,Z.USER_NM               AS CHARGE_NM  /* 담당자 */
+                 ,Y.USER_NM               AS CONFIRM_NM /* 확인자 */
+                 ,X.USER_NM               AS MANDATE_NM /* 지시자 */
+                 ,(CASE WHEN E.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS PACK_YN
+                 ,E.FILE_SEQ
+           FROM T_FDG_BPR A
+           JOIN T_FDG_CSFM B
+             ON B.PROD_NO = A.PROD_NO
+            AND B.WORK_DT != ''
+           JOIN T_FDG_CMPS C
+             ON C.PROD_NO = A.PROD_NO
+            AND C.WORK_DT != ''
+           JOIN T_FDG_DSPS D
+             ON D.PROD_NO = A.PROD_NO
+      LEFT JOIN t_fdg_pack E
+             ON E.PROD_NO = A.PROD_NO
+      LEFT JOIN Z_USER Z
+             ON Z.USER_ID = C.CHARGE_ID
+      LEFT JOIN Z_USER Y
+             ON Y.USER_ID = C.CONFIRM_ID
+      LEFT JOIN Z_USER X
+             ON X.USER_ID = C.MANDATE_ID
+          WHERE A.CHARGE_DT != '' 
+            AND A.CONFIRM_DT != ''  
+            
+             AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+             AND A.DEL_NY = 'N'
+       ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC
+    </select>
+    
+    <select id="selectFdgPackDetail" parameterType="HashMap" resultType="HashMap" >
+     /* chem.selectFdgPackDetail (chem.xml) */
+	SELECT  A.PROD_NO
+	        ,A.Z01
+	        ,A.Z02
+			,B.A_OPERATOR
+			,B.A_REVIEWER
+			,B.A0101
+			,B.A0102
+			,B.A0201
+			,B.A0202
+			,B.A03
+			,B.A04
+			,B.A05
+			,B.A06
+			,B.A07
+			,B.A08
+			,B.B_OPERATOR
+			,B.B_REVIEWER
+			,B.B_TIME_FROM
+			,B.B_TIME_TO
+			,B.B01
+			,B.B0101
+			,B.B0102
+			,B.B0201
+			,B.B0202
+			,B.B0301
+			,B.B0302
+			,B.B0401
+			,B.B0402
+			,B.B0501
+			,B.B0502
+			,B.B0601
+			,B.B0602
+			,B.B0701
+			,B.B0702
+			,B.C01
+			,B.C02
+			,B.D01
+			,B.D02
+			,B.E01
+			,B.E02
+			,B.F01
+			,B.F02
+			,B.G01
+			,B.ETC
+			,B.FILE_SEQ
+            ,B.WORK_DT
+            ,B.CHARGE_ID
+            ,B.CONFIRM_ID
+            ,B.MANDATE_ID
+            ,B.CHARGE_NM
+            ,B.CONFIRM_NM
+            ,B.MANDATE_NM
+            ,B.CHARGE_DT
+            ,B.CONFIRM_DT
+            ,B.MANDATE_DT
+     FROM T_FDG_BPR A
+     LEFT JOIN T_FDG_PACK B
+       ON B.PROD_NO = A.PROD_NO
+	     WHERE 1=1 
+	     AND A.PROD_NO = #{PROD_NO}
+    </select>
+    
+    <insert id="changeFdgPack" parameterType="HashMap">
+    /* k99.code.changeFdgPack (chem.xml) */
+    INSERT INTO T_FDG_PACK
+    SET PROD_NO = #{PROD_NO}
+				,A_OPERATOR = #{A_OPERATOR}
+				,A_REVIEWER = #{A_REVIEWER}
+				,A0101 = #{A0101}
+				,A0102 = #{A0102}
+				,A0201 = #{A0201}
+				,A0202 = #{A0202}
+				,A03 = #{A03}
+				,A04 = #{A04}
+				,A05 = #{A05}
+				,A06 = #{A06}
+				,A07 = #{A07}
+				,A08 = #{A08}
+				,B_OPERATOR = #{B_OPERATOR}
+				,B_REVIEWER = #{B_REVIEWER}
+				,B_TIME_FROM = #{B_TIME_FROM}
+				,B_TIME_TO = #{B_TIME_TO}
+				,B01 = #{B01}
+				,B0101 = #{B0101}
+				,B0102 = #{B0102}
+				,B0201 = #{B0201}
+				,B0202 = #{B0202}
+				,B0301 = #{B0301}
+				,B0302 = #{B0302}
+				,B0401 = #{B0401}
+				,B0402 = #{B0402}
+				,B0501 = #{B0501}
+				,B0502 = #{B0502}
+				,B0601 = #{B0601}
+				,B0602 = #{B0602}
+				,B0701 = #{B0701}
+				,B0702 = #{B0702}
+				,C01 = #{C01}
+				,C02 = #{C02}
+				,D01 = #{D01}
+				,D02 = #{D02}
+				,E01 = #{E01}
+				,E02 = #{E02}
+				,F01 = #{F01}
+				,F02 = #{F02}
+				,G01 = #{G01}
+				,ETC = #{ETC}
+				,FILE_SEQ = #{FILE_SEQ}
+				,WORK_DT = REPLACE(#{WORK_DT},'-','')
+		        ,CHARGE_ID  = #{CHARGE_ID}
+			    ,CONFIRM_ID = #{CONFIRM_ID}
+			    ,MANDATE_ID = #{MANDATE_ID}
+		        ,CHARGE_NM  = #{CHARGE_NM}
+			    ,CONFIRM_NM = #{CONFIRM_NM}
+			    ,MANDATE_NM = #{MANDATE_NM}
+    		    ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+		        ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+		        ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+     ON DUPLICATE KEY UPDATE
+                 A_OPERATOR = #{A_OPERATOR}
+				,A_REVIEWER = #{A_REVIEWER}
+				,A0101 = #{A0101}
+				,A0102 = #{A0102}
+				,A0201 = #{A0201}
+				,A0202 = #{A0202}
+				,A03 = #{A03}
+				,A04 = #{A04}
+				,A05 = #{A05}
+				,A06 = #{A06}
+				,A07 = #{A07}
+				,A08 = #{A08}
+				,B_OPERATOR = #{B_OPERATOR}
+				,B_REVIEWER = #{B_REVIEWER}
+				,B_TIME_FROM = #{B_TIME_FROM}
+				,B_TIME_TO = #{B_TIME_TO}
+				,B01 = #{B01}
+				,B0101 = #{B0101}
+				,B0102 = #{B0102}
+				,B0201 = #{B0201}
+				,B0202 = #{B0202}
+				,B0301 = #{B0301}
+				,B0302 = #{B0302}
+				,B0401 = #{B0401}
+				,B0402 = #{B0402}
+				,B0501 = #{B0501}
+				,B0502 = #{B0502}
+				,B0601 = #{B0601}
+				,B0602 = #{B0602}
+				,B0701 = #{B0701}
+				,B0702 = #{B0702}
+				,C01 = #{C01}
+				,C02 = #{C02}
+				,D01 = #{D01}
+				,D02 = #{D02}
+				,E01 = #{E01}
+				,E02 = #{E02}
+				,F01 = #{F01}
+				,F02 = #{F02}
+				,G01 = #{G01}
+				,ETC = #{ETC}
+				,FILE_SEQ = #{FILE_SEQ}
+				,WORK_DT = REPLACE(#{WORK_DT},'-','')
+		        ,CHARGE_ID  = #{CHARGE_ID}
+			    ,CONFIRM_ID = #{CONFIRM_ID}
+			    ,MANDATE_ID = #{MANDATE_ID}
+		        ,CHARGE_NM  = #{CHARGE_NM}
+			    ,CONFIRM_NM = #{CONFIRM_NM}
+			    ,MANDATE_NM = #{MANDATE_NM}
+    		    ,CHARGE_DT  = REPLACE(#{CHARGE_DT},'-','')
+		        ,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+		        ,MANDATE_DT = REPLACE(#{MANDATE_DT},'-','')
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    </insert>
+    
+    <delete id="deleteFdgPackfm" parameterType="hashMap">
+    DELETE FROM T_FDG_PACK
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    <sql id="ref_pagingHeader">
+        SELECT Y.*
+            FROM (
+                SELECT
+                    X.*
+                    , @rownum := @rownum + 1 AS RNUM
+                FROM (
+    </sql>
+    
+    <sql id="ref_pagingFooter">                    
+            )X 
+        )Y
+		<if test="sortBy != null and sortBy != ''">
+	    ORDER BY ${sortBy} ${descending}
+	    </if>
+        LIMIT ${firstNum}, ${once_display_count}            
+    </sql>
+    
+    <sql id="ref_search">
+		<if test='search_keyword != null and !search_keyword.equals("")'>
+        	<if test='search_type != null and !search_type.equals("")'>
+        		<choose>
+        			<when test='search_type.equals("I")'>
+        				AND USER_ID LIKE CONCAT('%',#{search_keyword},'%')
+        			</when>
+        			<when test='search_type.equals("N")'>
+        				AND USER_NM LIKE CONCAT('%',#{search_keyword},'%')
+        			</when>
+        		</choose>
+        	</if>
+        </if>
+    </sql>
+    
+</mapper>

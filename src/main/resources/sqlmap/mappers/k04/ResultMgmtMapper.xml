@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k04.result">
+    <select id="selectResultMgmt" parameterType="HashMap" resultType="HashMap">
+    /* ResultMgmt.vue.결과관리.selectResultMgmt*/
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+		SELECT SEQ,
+		       EDNT_YEAR,
+		       STATUS,
+		       IPNT_GB_CODE,
+		       IPNT_NO,
+		       USER_NAME,
+		       IPNT_EVENT_CODE,
+		       SEX_GB_CODE,
+		       I_VIOLATION_DT,
+		       I_BIRTH_DT,
+		       AGE,
+		       PLAYER_GROUP,
+		       VIOLATION_DIVISION,
+		       DECISION_DIVISION,
+		       P_RULE,
+		       PROHIBIT_SUBSTANCE,
+		       TERM,
+		       UNIT,
+		       START_DATE,
+		       END_DATE,
+		       DELIBERATE,
+		       CASE_RECEPTION,
+		       IPNT_COLLECTOR_NAME,
+		       IPNT_COLLECTOR_NUM,
+		       GAME_NAME,
+		       NOTICE_CHARGE,
+		       TEMP_QUALIFICATION,
+		       B_IPNT_COLLECTOR_NAME,
+		       B_IPNT_COLLECTOR_ANALYSIS,
+		       TEMP_REQUEST_HEARING,
+		       TEMP_OPEN_HEARING,
+		       NOTICE_DECISION,
+		       FILLING_APPEAL,
+		       OPEN_APPEAL,  
+		       FINAL_DECISION,
+		       ETC,
+		       TEMPORARY_SUSPENSION,
+		       AGREEMENT,
+		       APPROVAL,
+		       WITHOUT_HEARING_DICISION,
+		       NOTICE_APPEAL_DECISION,
+		       SUMMARY,
+		       DECISION_AGE,
+		       APPLICABLE_REGULATIONS,
+		       TEMPORARY_QUAL_SUSPENSION,
+		       NOTICE_CHARGE_ARTICLE,
+		       REG_USER,
+		       REG_DATE,
+		       EDT_USER,
+		       EDT_DATE,
+              #{CURR_PAGE} AS CURR_PAGE,
+              #{PER_PAGE} AS PER_PAGE,
+              COUNT(1) OVER() AS ALL_COUNT
+		FROM IPNT_STATIS
+        WHERE 1=1
+         
+         <if test="START_DATE != null and START_DATE != ''">
+         AND FINAL_DECISION BETWEEN REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+         </if>
+         <if test="IPNT_GB_CODE != null and IPNT_GB_CODE != ''">
+         AND IPNT_GB_CODE = #{IPNT_GB_CODE}
+         </if>
+         <if test="STATUS != null and STATUS != ''">
+         AND STATUS = #{STATUS}
+         </if>             		
+        ) A
+    </select>
+    
+    <select id="selectResultMgmtDetail" parameterType="HashMap" resultType="HashMap">
+    /* ResultMgmt.vue.결과관리.selectResult0110ValDetail*/
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+		SELECT SEQ,
+		       EDNT_YEAR,
+		       STATUS,
+		       IPNT_GB_CODE,
+		       IPNT_NO,
+		       USER_NAME,
+		       IPNT_EVENT_CODE,
+		       SEX_GB_CODE,
+		       I_VIOLATION_DT,
+		       I_BIRTH_DT,
+		       AGE,
+		       PLAYER_GROUP,
+		       VIOLATION_DIVISION,
+		       DECISION_DIVISION,
+		       P_RULE,
+		       PROHIBIT_SUBSTANCE,
+		       TERM,
+		       UNIT,
+		       START_DATE,
+		       END_DATE,
+		       DELIBERATE,
+		       CASE_RECEPTION,
+		       IPNT_COLLECTOR_NAME,
+		       IPNT_COLLECTOR_NUM,
+		       GAME_NAME,
+		       NOTICE_CHARGE,
+		       TEMP_QUALIFICATION,
+		       B_IPNT_COLLECTOR_NAME,
+		       B_IPNT_COLLECTOR_ANALYSIS,
+		       TEMP_REQUEST_HEARING,
+		       TEMP_OPEN_HEARING,
+		       NOTICE_DECISION,
+		       FILLING_APPEAL,
+		       OPEN_APPEAL,  
+		       FINAL_DECISION,
+		       ETC,
+		       TEMPORARY_SUSPENSION,
+		       AGREEMENT,
+		       APPROVAL,
+		       WITHOUT_HEARING_DICISION,
+		       NOTICE_APPEAL_DECISION,
+		       SUMMARY,
+		       DECISION_AGE,
+		       APPLICABLE_REGULATIONS,
+		       TEMPORARY_QUAL_SUSPENSION,
+		       NOTICE_CHARGE_ARTICLE,
+		       REG_USER,
+		       REG_DATE,
+		       EDT_USER,
+		       EDT_DATE,
+              #{CURR_PAGE} AS CURR_PAGE,
+              #{PER_PAGE} AS PER_PAGE,
+              COUNT(1) OVER() AS ALL_COUNT
+		FROM IPNT_STATIS
+        WHERE 1=1
+         AND SEQ = #{SEQ}
+         <if test="START_DATE != null and START_DATE != ''">
+         AND FINAL_DECISION BETWEEN REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+         </if>
+         <if test="IPNT_GB_CODE != null and IPNT_GB_CODE != ''">
+         AND IPNT_GB_CODE = #{IPNT_GB_CODE}
+         </if>
+         <if test="STATUS != null and STATUS != ''">
+         AND STATUS = #{STATUS}
+         </if>             		
+        ) A
+    </select>
+    
+    <insert id="insertResultMgmt" parameterType="hashMap">
+	    INSERT INTO IPNT_STATIS
+	   (
+	     SEQ                      
+	    ,EDNT_YEAR                
+	    ,STATUS                   
+	    ,IPNT_GB_CODE             
+	    ,IPNT_NO                  
+	    ,USER_NAME                
+	    ,IPNT_EVENT_CODE          
+	    ,SEX_GB_CODE              
+	    ,I_VIOLATION_DT           
+	    ,I_BIRTH_DT               
+	    ,AGE                      
+	    ,PLAYER_GROUP             
+	    ,VIOLATION_DIVISION       
+	    ,DECISION_DIVISION        
+	    ,P_RULE                                 
+	    ,PROHIBIT_SUBSTANCE       
+	    ,TERM                     
+	    ,UNIT                     
+	    ,START_DATE               
+	    ,END_DATE                 
+	    ,DELIBERATE               
+	    ,CASE_RECEPTION           
+	    ,IPNT_COLLECTOR_NAME      
+	    ,IPNT_COLLECTOR_NUM       
+	    ,GAME_NAME                
+	    ,NOTICE_CHARGE            
+	    ,TEMP_QUALIFICATION       
+	    ,B_IPNT_COLLECTOR_NAME    
+	    ,B_IPNT_COLLECTOR_ANALYSIS
+	    ,TEMP_REQUEST_HEARING     
+	    ,TEMP_OPEN_HEARING               
+	    ,NOTICE_DECISION          
+	    ,FILLING_APPEAL           
+	    ,OPEN_APPEAL              
+	    ,FINAL_DECISION           
+	    ,ETC   
+	    ,AGREEMENT 
+	    ,APPROVAL 
+	    ,WITHOUT_HEARING_DICISION 
+	    ,NOTICE_APPEAL_DECISION 
+	    ,SUMMARY 
+	    ,DECISION_AGE 
+	    ,APPLICABLE_REGULATIONS
+	    ,NOTICE_CHARGE_ARTICLE
+	    ,TEMPORARY_QUAL_SUSPENSION                   
+	    ,REG_USER                 
+	    ,REG_DATE                 
+	    ,EDT_USER                 
+	    ,EDT_DATE                 
+	   )
+		VALUES
+	   (
+		 SEQ_IPNT_STATIS.NEXTVAL
+		,#{EDNT_YEAR}
+		,#{STATUS}
+		,#{IPNT_GB_CODE}
+		,#{IPNT_NO}
+		,#{USER_NAME}
+		,#{IPNT_EVENT_CODE}
+		,#{SEX_GB_CODE}
+		,#{I_VIOLATION_DT}
+		,#{I_BIRTH_DT}
+		,#{AGE}
+		,#{PLAYER_GROUP}
+		,#{VIOLATION_DIVISION}
+		,#{DECISION_DIVISION}
+		,#{P_RULE}
+		,#{PROHIBIT_SUBSTANCE}
+		,#{TERM}
+		,#{UNIT}
+		,#{START_DATE}
+		,#{END_DATE}
+		,#{DELIBERATE}
+		,#{CASE_RECEPTION}
+		,#{IPNT_COLLECTOR_NAME}
+		,#{IPNT_COLLECTOR_NUM}
+		,#{GAME_NAME}
+		,#{NOTICE_CHARGE}
+		,#{TEMP_QUALIFICATION}
+		,#{B_IPNT_COLLECTOR_NAME}
+		,#{B_IPNT_COLLECTOR_ANALYSIS}
+		,#{TEMP_REQUEST_HEARING}
+		,#{TEMP_OPEN_HEARING}
+		,#{NOTICE_DECISION}
+		,#{FILLING_APPEAL}
+		,#{OPEN_APPEAL}
+		,#{FINAL_DECISION}
+		,#{ETC}
+		,#{AGREEMENT}
+		,#{APPROVAL}
+		,#{WITHOUT_HEARING_DICISION}
+		,#{NOTICE_APPEAL_DECISION}
+		,#{SUMMARY}
+		,#{DECISION_AGE}
+		,#{APPLICABLE_REGULATIONS}
+		,#{NOTICE_CHARGE_ARTICLE}
+		,#{TEMPORARY_QUAL_SUSPENSION}
+		,#{REG_USER}
+		,SYSDATE
+		,#{EDT_USER}
+		,SYSDATE
+	    )
+    </insert>
+    <update id="updateResultMgmt" parameterType="hashMap">
+    UPDATE IPNT_STATIS 
+    SET  EDNT_YEAR                   = #{EDNT_YEAR}                               
+        ,STATUS                      = #{STATUS}                     
+        ,IPNT_GB_CODE                = #{IPNT_GB_CODE}               
+        ,IPNT_NO                     = #{IPNT_NO}                    
+        ,USER_NAME                   = #{USER_NAME}                  
+        ,IPNT_EVENT_CODE             = #{IPNT_EVENT_CODE}            
+        ,SEX_GB_CODE                 = #{SEX_GB_CODE}                
+        ,I_VIOLATION_DT              = #{I_VIOLATION_DT}             
+        ,I_BIRTH_DT                  = #{I_BIRTH_DT}                 
+        ,AGE                         = #{AGE}                        
+        ,PLAYER_GROUP                = #{PLAYER_GROUP}               
+        ,VIOLATION_DIVISION          = #{VIOLATION_DIVISION}         
+        ,DECISION_DIVISION           = #{DECISION_DIVISION}          
+        ,P_RULE                      = #{P_RULE}                                   
+        ,PROHIBIT_SUBSTANCE          = #{PROHIBIT_SUBSTANCE}         
+        ,TERM                        = #{TERM}                       
+        ,UNIT                        = #{UNIT}                       
+        ,START_DATE                  = #{START_DATE}                 
+        ,END_DATE                    = #{END_DATE}                   
+        ,DELIBERATE                  = #{DELIBERATE}                 
+        ,CASE_RECEPTION              = #{CASE_RECEPTION}             
+        ,IPNT_COLLECTOR_NAME         = #{IPNT_COLLECTOR_NAME}        
+        ,IPNT_COLLECTOR_NUM          = #{IPNT_COLLECTOR_NUM}         
+        ,GAME_NAME                   = #{GAME_NAME}                  
+        ,NOTICE_CHARGE               = #{NOTICE_CHARGE}              
+        ,TEMP_QUALIFICATION          = #{TEMP_QUALIFICATION}         
+        ,B_IPNT_COLLECTOR_NAME       = #{B_IPNT_COLLECTOR_NAME}      
+        ,B_IPNT_COLLECTOR_ANALYSIS   = #{B_IPNT_COLLECTOR_ANALYSIS}   
+        ,TEMP_REQUEST_HEARING        = #{TEMP_REQUEST_HEARING}       
+        ,TEMP_OPEN_HEARING           = #{TEMP_OPEN_HEARING}                  
+        ,NOTICE_DECISION             = #{NOTICE_DECISION}            
+        ,FILLING_APPEAL              = #{FILLING_APPEAL}             
+        ,OPEN_APPEAL                 = #{OPEN_APPEAL}                
+        ,FINAL_DECISION              = #{FINAL_DECISION}             
+        ,ETC                         = #{ETC}        
+        ,AGREEMENT                   = #{AGREEMENT} 
+        ,APPROVAL                    = #{APPROVAL} 
+        ,WITHOUT_HEARING_DICISION    = #{WITHOUT_HEARING_DICISION} 
+        ,NOTICE_APPEAL_DECISION      = #{NOTICE_APPEAL_DECISION} 
+        ,SUMMARY                     = #{SUMMARY} 
+        ,DECISION_AGE                = #{DECISION_AGE} 
+        ,APPLICABLE_REGULATIONS      = #{APPLICABLE_REGULATIONS} 
+        ,NOTICE_CHARGE_ARTICLE       = #{NOTICE_CHARGE_ARTICLE} 
+        ,TEMPORARY_QUAL_SUSPENSION   = #{TEMPORARY_QUAL_SUSPENSION}                 
+        ,EDT_USER                    = #{EDT_USER}                   
+        ,EDT_DATE                    = SYSDATE                   
+    WHERE SEQ = #{SEQ}             
+    </update>
+    
+    <delete id="deleteResultMgmt" parameterType="hashMap">
+    DELETE FROM IPNT_STATIS
+    WHERE SEQ = #{SEQ}
+    </delete>
+    </mapper>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="recently">
+    <select id="selectRecentlyList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* recently.selectRecentlyList 최근주문내역 목록 조회 */
+        SELECT A.TBL_NM
+             , A.GUBUN
+             ,CASE WHEN A.TBL_NM = 'T_SALEBACKRCPT' THEN (SELECT MAX(CD_NM)
+                                               FROM T_CODE 
+                                              WHERE P_CODE = '402' AND CODE = (CASE WHEN C.ORD_TYPE_CD='10' THEN '03' ELSE C.BACK_EXAM_CD END))
+      WHEN A.TBL_NM = 'T_SALEBACK'     THEN (SELECT IFNULL(MAX(CASE WHEN D.ORD_TYPE_CD  = '10' THEN CD_NM
+                                                                    WHEN D.BACK_EXAM_CD = '05' THEN CD_NM
+                                                                    WHEN (SELECT COUNT(1) FROM T_SALEBACKRCPTMOVE_DTL WHERE SN = D.SN AND ITEM_QTY_NOBACK <![CDATA[>]]> 0) <![CDATA[>]]> 0 THEN '부분완료'
+                                                                    WHEN D.BACK_EXAM_CD <![CDATA[<=]]> '02' THEN '완료'
+                                                                    ELSE IFNULL(CD_NM,'') END),'완료')
+                                              FROM T_CODE
+                                             WHERE P_CODE = '402' AND CODE = (CASE WHEN D.ORD_TYPE_CD='10' THEN '03' ELSE D.BACK_EXAM_CD END))
+      ELSE A.STATS
+ END AS STATS /* 처리상태*/
+             , A.BRCH_CD
+             , A.CUST_CD
+             , A.SN
+             , A.ORD_DT
+             , A.ORD_DT_FM
+             , A.APRV_NO
+             , A.APRV_DT
+             , A.APRV_DT_FM
+             , A.APRVDTTM
+             , A.ORDDTTM
+             , A.ITEM_NM
+             , A.ITEM_NM_UNIT
+             , A.ITEM_CNT
+             , F_S_EMPTY(A.ORD_MEMO,'') AS ORD_MEMO
+             , CASE WHEN A.GUBUN = '반품' THEN (SELECT X.CD_NM
+                                                  FROM T_CODE X
+                                                 WHERE X.P_CODE = '303'
+                                                   AND X.CODE = IFNULL(B.BACK_GB_CD, C.BACK_GB_CD)
+                                               )
+                    ELSE ''
+               END BACK_GB_NM
+             , (SELECT IFNULL(SUM(X.TOTAL_AMT),0)
+                  FROM V_WEB_ORDER_D X
+                 WHERE X.SN = A.SN
+               ) AS TOTAL_AMT
+             ,(CASE WHEN A.GUBUN = '매출' AND A.ORD_TYPE_CD = '01' THEN 'Y' ELSE 'N' END) AS REORDER_YN
+          FROM V_WEB_ORDER_M A
+          LEFT JOIN T_SALEBACK B
+            ON B.SN = A.SN
+          LEFT JOIN T_SALEBACKRCPT C
+            ON C.SN = A.SN
+          LEFT JOIN T_SALEBACKRCPTMOVE D
+            ON D.SN = A.SN
+         WHERE A.CUST_CD = #{custCd}
+           AND A.ORD_DT BETWEEN #{startDt} AND #{endDt}
+        <if test="searchGb != null and searchGb != '' ">
+            <choose>
+                <when test='searchGb == "1"'>
+                    AND TBL_NM IN ('T_WEBGATE', 'T_SALE', 'T_SALERCPT')
+                </when>
+                <when test='searchGb == "2"'>
+                    AND TBL_NM IN ( 'T_SALEBACK', 'T_SALEBACKRCPT')
+                </when>
+            </choose>
+        </if>
+         ORDER BY ORDDTTM DESC
+    </select>
+    
+    <select id="selectRecentlyDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* recently.selectRecentlyDtlList 최근주문내역 상세 조회 */
+        SELECT A.TBL_NM
+             , A.GUBUN
+             , A.STATS
+             , A.SN
+             , A.SNO
+             , A.ITEM_NM
+             , A.ITEM_NM_UNIT
+             , A.PAY_ITEM_NM
+             , A.BOHUM_CD
+             , A.ITEM_QTY
+             , A.ORD_WP2_AMT
+             , A.TOTAL_AMT
+             , A.EXP_DT
+             , A.PROD_NO
+             , A.MAKER_NM
+             , (SELECT SUBSTRING(Y.CD_NM, 1, 1)
+                  FROM T_ITEM X
+                  JOIN T_CODE Y
+                    ON Y.P_CODE = '101'
+                   AND Y.CODE = X.MED_CD
+                 WHERE X.ITEM_CD = A.ITEM_CD
+               ) AS MED_NM
+             , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+             , (SELECT CASE WHEN COUNT(1) > 0 THEN 'Y'
+                            ELSE 'N'
+                       END
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = #{custCd}
+                   AND X.ITEM_CD = A.ITEM_CD
+               ) AS FAVORITE_YN
+             , A.ITEM_CD
+             <!-- , COALESCE(C.AVAIL_STOCK, 0) AS AVAIL_STOCK -->
+             , 0 AS REQ_QTY
+             , D.SMALLBOX_QTY
+             , D.MIDBOX_QTY
+             , D.LARGEBOX_QTY
+             , D.MIN_ORD_QTY
+             , D.MAX_ORD_QTY
+             , D.PRICE_DOWN_DT
+             , D.PRICE_DOWN_WP2
+             , D.WEB_BACK_MEMO
+             , D.SOLDOUT_NOTE
+             , D.TAKEBACK
+             , D.UNIT
+             , D.AVAIL_STOCK
+             , D.ITEM_GB_CD
+             , D.DLV_BRCH_CD
+             , D.G_DLV_BRCH_CD
+             , CASE WHEN D.DLV_BRCH_CD != D.G_DLV_BRCH_CD THEN '광역' ELSE '' END G_DLV_INFO
+             , D.PACK_NM
+             , A.G_DLV_YN
+             , D.TAKEBACK_LIMIT_YN
+             , D.WEB_BACK_USE_YN
+          FROM V_WEB_ORDER_D A
+          JOIN T_CUST B
+            ON B.CUST_CD = #{custCd}
+          JOIN T_ITEM_STOCK C
+            ON C.ITEM_CD = A.ITEM_CD
+           AND C.BRCH_CD = B.DLV_BRCH_CD
+           AND C.USE_YN = 'Y'
+          JOIN (SELECT A.ITEM_CD
+                     , A.ITEM_NM
+                     , A.MAKER_NM
+                     , A.UNIT
+                     , A.BOHUM_CD
+                     , A.SMALLBOX_QTY /* 소 */
+                     , A.MIDBOX_QTY   /* 중 */
+                     , A.LARGEBOX_QTY /* 대 */
+                     , A.MIN_ORD_QTY /* 최소주문 */
+                     , A.MAX_ORD_QTY /* 최대주문 : 0 이면 빈값으로 */
+                     , A.PRICE_DOWN_DT /* 보험약가(일자) */
+                     , A.PRICE_DOWN_WP2 /* 보험약가(금액) : 0 이면 빈값으로 */
+                     , A.WEB_BACK_MEMO /* 반품조건 */
+                     , A.SOLDOUT_NOTE /* 입고예정일 */
+                     , CASE WHEN A.TAKEBACK_YN = 'Y' THEN '반품제약'
+                            ELSE '반품불가'
+                       END TAKEBACK /* 반품 */
+                     , A.AVAIL_STOCK
+                     , A.ITEM_GB_CD
+                     , A.DLV_BRCH_CD
+                     , A.G_DLV_BRCH_CD
+                     , A.TAKEBACK_LIMIT_YN
+                     , A.WEB_BACK_USE_YN
+                     , NVL((SELECT CD_NM FROM T_CODE WHERE P_CODE = '114' AND CODE = A.PACK_CD),'') AS PACK_NM
+                  FROM V_ITEM_GORDER A
+                 WHERE A.CUST_CD = #{custCd}
+               ) D
+            ON D.ITEM_CD = A.ITEM_CD
+           AND D.G_DLV_BRCH_CD = B.DLV_BRCH_CD
+           AND D.ITEM_GB_CD = A.ITEM_GB_CD
+         WHERE A.TBL_NM = #{tblNm}
+           AND A.SN = #{sn}
+         ORDER BY A.SN DESC, A.SNO ASC
+    </select>
+    
+    <select id="selectItemDtlInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* recently.selectItemDtlInfo 제품정보 조회 */
+        SELECT A.ITEM_CD
+             , A.ITEM_NM
+             , A.MAKER_NM
+             , A.UNIT
+             , A.BOHUM_CD
+             , A.SMALLBOX_QTY /* 소 */
+             , A.MIDBOX_QTY   /* 중 */
+             , A.LARGEBOX_QTY /* 대 */
+             , A.MIN_ORD_QTY /* 최소주문 */
+             , A.MAX_ORD_QTY /* 최대주문 : 0 이면 빈값으로 */
+             , A.PRICE_DOWN_DT /* 보험약가(일자) */
+             , A.PRICE_DOWN_WP2 /* 보험약가(금액) : 0 이면 빈값으로 */
+             , A.WEB_BACK_MEMO /* 반품조건 */
+             , A.SOLDOUT_NOTE /* 입고예정일 */
+             , CASE WHEN A.TAKEBACK_YN = 'Y' THEN '반품제약'
+                    ELSE '반품불가'
+               END TAKEBACK /* 반품 */
+             , NVL((SELECT CD_NM FROM T_CODE WHERE P_CODE = '114' AND CODE = A.PACK_CD),'') AS PACK_NM
+             , A.TAKEBACK_LIMIT_YN
+             , A.WEB_BACK_USE_YN
+          FROM V_ITEM_GORDER A
+         WHERE A.CUST_CD = #{custCd}
+           AND A.ITEM_CD = #{itemCd}
+           AND A.ITEM_GB_CD = '01'
+         LIMIT 1
+    </select>
+    
+    <update id="procSaleDelete" statementType="CALLABLE" parameterType="java.util.HashMap">
+    /* recently.procSaleDelete 주문취소 */
+       {CALL P_SALE_D(
+              #{TYPE}
+            , #{SN}
+            , #{USER_ID}
+            , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+            , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+            )}
+    </update>
+    
+    <update id="procSaleDeleteRe" statementType="CALLABLE" parameterType="java.util.HashMap">
+    /* recently.procSaleDeleteRe 개별주문취소 */
+       {CALL P_SALE_D(
+              #{I_TYPE}
+            , #{I_SN}
+            , #{USER_ID}
+            , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+            , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+            )}
+    </update>
+</mapper>

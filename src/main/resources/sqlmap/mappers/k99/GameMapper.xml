@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.game">
+    
+    <select id="selectGame" parameterType="HashMap" resultType="HashMap">
+    /* k99.game.selectGame (GameMapper.xml) */
+		SELECT T1.GAME_CODE,
+		       T1.GAME_NAME,
+		       T1.GAME_YEAR,
+		       T1.GAME_START_DATE,
+		       T1.GAME_END_DATE,
+		       T1.USE_YN,
+		       U1.USER_ID AS REG_USER,
+		       TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE,
+		       U2.USER_ID AS EDT_USER,
+		       TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+		  FROM K99_GAME T1
+		  LEFT OUTER JOIN USER01TB U1
+		    ON U1.USER_ID = T1.REG_USER
+		  LEFT OUTER JOIN USER01TB U2
+		    ON U2.USER_ID = T1.EDT_USER
+		 WHERE T1.USE_YN = 'Y'
+		 <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+           AND UPPER(T1.GAME_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+         </if>
+		 ORDER BY GAME_CODE    
+    </select>
+    
+    
+</mapper>

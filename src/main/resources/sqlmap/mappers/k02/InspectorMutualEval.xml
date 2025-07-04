@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k02.inspectorMutualEval">
+    
+    <select id="selectInspectorMutualEval" parameterType="HashMap" resultType="HashMap">
+     /* k02.inspectorMutualEval.selectInspectorMutualEval - 도핑검사관 상호평가 */
+    
+		SELECT T1.IPNT_UPPER_SEQ,
+		       T1.IPNT_NO,
+		       T1.IPNT_NAME,
+		       T1.IPNT_PLACE_DETAIL,
+		       T1.IPNT_DATE,
+		       T1.IPNT_TIME
+		  FROM K03_DOPING_INSPECT_REG T1
+		 WHERE T1.USE_YN = 'Y'
+           AND EXISTS  (
+			               SELECT 1
+			                 FROM K03_DOPING_INSPECT_DCO
+			                 WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ
+			                   AND USER_ID = #{USER_ID}
+			                   AND USE_YN = 'Y'
+			                   AND 'Y' IN (CHOOSE_BCO_YN, CHOOSE_DCO_YN, CHOOSE_DCOBCO_YN, PREDECESSOR_YN)
+                       )
+        <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+           AND T1.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+           AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+           AND UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+           AND UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+		 ORDER BY T1.REG_DATE DESC                                            
+    </select>
+    
+    <select id="selectInspectorMutualEvalStatus" parameterType="HashMap" resultType="HashMap">
+        /* k02.inspectorMutualEval.selectInspectorMutualEvalStatus - 도핑검사관 상호평가현황 */
+    
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T1.IPNT_NO
+                ,T2.USER_ID
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T2.USER_ID) AS USER_NAME
+                ,TO_CHAR(T3.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,T1.IPNT_DATE 
+        FROM    K03_DOPING_INSPECT_REG T1
+                ,K03_DOPING_INSPECT_DCO T2
+                ,(SELECT REG_DATE,USER_ID,IPNT_UPPER_SEQ FROM K03_INSP_MUTUAL_LIST WHERE EVALUATOR_ID = #{USER_ID}) T3
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T2.USER_ID = T3.USER_ID (+)
+        AND     T2.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ(+)        
+        AND     T1.USE_YN = 'Y'
+        AND     T2.USE_YN = 'Y'
+        AND     'Y' IN (T2.CHOOSE_BCO_YN, T2.CHOOSE_DCO_YN, T2.CHOOSE_DCOBCO_YN, T2.PREDECESSOR_YN)
+        AND     EXISTS  (
+                        SELECT  1
+                        FROM    K03_DOPING_INSPECT_DCO
+                        WHERE   USER_ID = #{USER_ID}
+                        AND     IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ
+                        )
+         AND T2.USER_ID != #{USER_ID}               
+        ORDER BY CASE WHEN T2.PREDECESSOR_YN = 'Y' THEN 1
+                      WHEN T2.CHOOSE_DCO_YN = 'Y' THEN 2
+                      WHEN T2.CHOOSE_BCO_YN = 'Y' THEN 3
+                      WHEN T2.CHOOSE_DCOBCO_YN = 'Y' THEN 4
+                      ELSE 5
+                 END     
+    </select>
+    
+    <select id="selectEvalMst" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k02.inspectorMutualEval.selectEvalMst - 도핑검사관 상호평가 질문지 */
+    
+		 SELECT DISTINCT T.EVAL_YEAR,T.EVAL_NO
+		   FROM K03_INSP_MUTUAL_MST T
+		  WHERE T.EVAL_START_DATE <= #{IPNT_DATE}
+			AND T.EVAL_END_DATE >= #{IPNT_DATE}
+    ]]>
+    </select>
+    
+    <select id="selectEvalItem" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k02.inspectorMutualEval.selectEvalItem - 도핑검사관 상호평가 질문지 평가항목 */
+    
+       SELECT T.EVAL_YEAR,
+		      T.EVAL_NO,
+		      T.SEQ,
+		      T.EVAL_QUESTIONS,
+		      T.EVAL_GUBUN,
+		      T.EVAL_H_VALUE_NM,
+		      T.EVAL_L_VALUE__NM
+		 FROM K03_INSP_MUTUAL_MST T
+		WHERE T.EVAL_YEAR = #{EVAL_YEAR}
+		  AND T.EVAL_NO = #{EVAL_NO}     
+		ORDER BY T.SEQ
+    ]]>
+    </select>
+    
+    <select id="selectEvalExample" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k02.inspectorMutualEval.selectEvalExample - 도핑검사관 상호평가 질문지  평가항목별 보기 */
+    
+         SELECT T.EVAL_YEAR,
+				T.EVAL_NO,
+				T.SEQ,
+				T.DTL_SEQ,
+				T.DTL_EVAL_NAME,
+				T.EVAL_VALUE
+		 FROM K03_INSP_MUTUAL_DTL T
+		WHERE T.EVAL_YEAR = #{EVAL_YEAR}
+		  AND T.EVAL_NO = #{EVAL_NO}
+		ORDER BY T.SEQ,T.DTL_SEQ
+    ]]>
+    </select>
+    
+    <update id="saveEvalResult" parameterType="HashMap">
+    /* k02.inspectorMutualEval.saveEvalResult - 도핑검사관 상호평가 질문지  응답저장 */
+    
+        MERGE INTO K03_INSP_MUTUAL_RESULT
+        USING DUAL
+           ON ( 
+                IPNT_NO = #{IPNT_NO}
+				AND IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+				AND USER_ID = #{GSS.USER_ID}
+				AND EVALUATOR_ID = #{EVALUATOR_ID}
+				AND EVAL_YEAR = #{EVAL_YEAR}
+				AND EVAL_NO = #{EVAL_NO}
+				AND SEQ = #{SEQ}
+				AND DTL_SEQ = #{DTL_SEQ} 
+           )
+        WHEN MATCHED THEN
+             UPDATE SET EVAL_VALUE = #{EVAL_VALUE},
+						EVAL_REASON = #{EVAL_REASON},
+						EDT_USER = #{GSS.USER_ID},
+						EDT_DATE = SYSDATE
+        WHEN NOT MATCHED THEN
+             INSERT (
+                IPNT_NO,
+				IPNT_UPPER_SEQ,
+				USER_ID,
+				EVALUATOR_ID,
+				EVAL_YEAR,
+				EVAL_NO,
+				SEQ,
+				DTL_SEQ,
+				EVAL_VALUE,
+				EVAL_REASON,
+				REG_USER,
+				REG_DATE
+             ) VALUES (
+                #{IPNT_NO},
+                #{IPNT_UPPER_SEQ},
+                #{GSS.USER_ID},
+                #{EVALUATOR_ID},
+                #{EVAL_YEAR},
+                #{EVAL_NO},
+                #{SEQ},
+                #{DTL_SEQ},
+                #{EVAL_VALUE},
+                #{EVAL_REASON},
+                #{GSS.USER_ID},
+                SYSDATE
+             )
+    </update>
+    
+    <!--  /* 상호평가 */-->
+    <select id="selectEvalDcoCnt" parameterType="java.util.HashMap"   resultType="java.util.HashMap" >
+        <![CDATA[
+        /* k02.inspectorMutualEval.selectEvalDcoCnt - 도핑검사관 상호평가 알림건수조회 */
+    	select sum(EVAL_YET_CNT) as EVAL_YET_CNT
+  from (
+  SELECT NVL(COUNT(B.USER_ID),0) - NVL(COUNT(C.USER_ID),0) AS EVAL_YET_CNT
+		      --,NVL(COUNT(B.USER_ID),0) AS EVAL_ALL_CNT
+		      --,NVL(COUNT(C.USER_ID),0) AS EVAL_DID_CNT
+		  FROM IPNT01TB A
+		  JOIN IPNT07TB B
+		    ON B.IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ
+		   AND B.USER_ID != #{USER_ID}
+		   AND B.USE_YN = 'Y'
+		   AND 'Y' in (B.CHOOSE_BCO_YN,B.CHOOSE_DCO_YN,B.CHOOSE_DCOBCO_YN,B.PREDECESSOR_YN)
+		  LEFT JOIN IPNT11TB C
+		    ON C.IPNT_NO = A.IPNT_NO
+		   AND C.USER_ID = B.USER_ID
+		 WHERE EXISTS (SELECT 1 
+		                 FROM IPNT07TB 
+		                WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ 
+		                  AND USER_ID = #{USER_ID}
+		                  AND USE_YN = 'Y'
+		                  AND 'Y' in (CHOOSE_BCO_YN,CHOOSE_DCO_YN,CHOOSE_DCOBCO_YN,PREDECESSOR_YN)
+		              )
+		   AND A.USE_YN = 'Y'
+		   AND A.IPNT_DATE <  TO_CHAR(SYSDATE,'YYYYMMDD')
+           AND A.IPNT_DATE >= TO_CHAR(SYSDATE-400,'YYYYMMDD') --검사일이 어느일자 기준으로 적용할건지
+           union ALL
+           SELECT NVL(COUNT(B.USER_ID),0) - NVL(COUNT(C.USER_ID),0) AS EVAL_YET_CNT
+		      --,NVL(COUNT(B.USER_ID),0) AS EVAL_ALL_CNT
+		      --,NVL(COUNT(C.USER_ID),0) AS EVAL_DID_CNT
+		  FROM K03_DOPING_INSPECT_REG A
+		  JOIN K03_DOPING_INSPECT_DCO B
+		    ON B.IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ
+		   AND B.USER_ID !=  #{USER_ID}
+		   AND B.USE_YN = 'Y'
+		   AND 'Y' in (B.CHOOSE_BCO_YN,B.CHOOSE_DCO_YN,B.CHOOSE_DCOBCO_YN,B.PREDECESSOR_YN)
+		  LEFT JOIN K03_INSP_MUTUAL_LIST C
+		    ON C.IPNT_NO = A.IPNT_NO
+		   AND C.USER_ID = B.USER_ID
+		 WHERE EXISTS (SELECT 1 
+		                 FROM IPNT07TB 
+		                WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ 
+		                  AND USER_ID = #{USER_ID}
+		                  AND USE_YN = 'Y'
+		                  AND 'Y' in (CHOOSE_BCO_YN,CHOOSE_DCO_YN,CHOOSE_DCOBCO_YN,PREDECESSOR_YN)
+		              )
+		   AND A.USE_YN = 'Y'
+		   AND A.IPNT_DATE <  TO_CHAR(SYSDATE,'YYYYMMDD')
+           AND A.IPNT_DATE >= TO_CHAR(SYSDATE-400,'YYYYMMDD') --검사일이 어느일자 기준으로 적용할건지
+           )
+         
+        ]]>
+    </select>
+
+
+    <select id="selectEvalDcoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+        /* k02.inspectorMutualEval.selectEvalDcoCnt - 도핑검사관 상호평가 알림건수조회 */
+    	SELECT 'ADTIS' AS GUBUN,
+			   A.IPNT_UPPER_SEQ,
+			   A.IPNT_NO,
+			   A.IPNT_NAME,
+			   A.IPNT_PLACE_ADDRESS,
+			   A.IPNT_DATE
+		  FROM IPNT01TB A
+		 WHERE EXISTS (
+			            SELECT 1
+			              FROM IPNT07TB
+			             WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ
+			               AND USER_ID = #{USER_ID}
+			               AND USE_YN = 'Y'
+			               AND 'Y' IN ( CHOOSE_BCO_YN, CHOOSE_DCO_YN, CHOOSE_DCOBCO_YN, PREDECESSOR_YN )
+			          )
+		   AND A.USE_YN = 'Y'
+		   AND A.IPNT_DATE < TO_CHAR(SYSDATE, 'YYYYMMDD')
+		   AND A.IPNT_DATE >= #{IPNT_DATE}--검사일이 어느일자 기준으로 적용할건지
+	     UNION ALL
+		SELECT 'KADAMS' AS GUBUN,
+			   A.IPNT_UPPER_SEQ,
+			   A.IPNT_NO,
+			   A.IPNT_NAME,
+			   A.IPNT_PLACE_ADDRESS,
+			   A.IPNT_DATE
+		  FROM K03_DOPING_INSPECT_REG A
+		 WHERE EXISTS (
+			            SELECT 1
+			              FROM K03_DOPING_INSPECT_DCO
+			             WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ
+			               AND USER_ID = #{USER_ID}
+			               AND USE_YN = 'Y'
+			               AND 'Y' IN ( CHOOSE_BCO_YN, CHOOSE_DCO_YN, CHOOSE_DCOBCO_YN, PREDECESSOR_YN )
+			          )
+		   AND A.USE_YN = 'Y'
+		   AND A.IPNT_DATE < TO_CHAR(SYSDATE, 'YYYYMMDD')
+		   AND A.IPNT_DATE >= #{IPNT_DATE} --검사일이 어느일자 기준으로 적용할건지
+        ]]>
+    </select>
+    
+    <select id="countIPNT01TBByUserId" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+        /* k02.inspectorMutualEval.countIPNT01TBByUserId - 도핑검사관 신청선정건수조회 */
+        SELECT SUM(CNTIPNT) AS CNTIPNT
+		  FROM 
+			  ( SELECT COUNT(*) AS CNTIPNT
+			        FROM IPNT01TB T1 , IPNT07TB T2
+			        WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+			        AND T1.USE_YN = 'Y'
+			        AND T2.USER_ID = #{USER_ID}
+			        AND TO_DATE(RPAD(IPNT_DATE || IPNT_TIME,12,0),'YYYYMMDDHH24:MI') >= SYSDATE
+			  UNION ALL
+			  SELECT COUNT(*) AS CNTIPNT
+			        FROM K03_DOPING_INSPECT_REG T1 , K03_DOPING_INSPECT_DCO T2
+			        WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+			        AND T1.USE_YN = 'Y'
+			        AND T2.USER_ID = #{USER_ID}
+			        AND TO_DATE(RPAD(IPNT_DATE || IPNT_TIME,12,0),'YYYYMMDDHH24:MI') >= SYSDATE
+			  ) A
+        ]]>
+    </select>
+
+    <select id="countIPNT01TBByCharger" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        <![CDATA[
+        /* k02.inspectorMutualEval.countIPNT01TBByCharger - 도핑검사관 신청선정건수조회 */
+        SELECT SUM(CNTIPNT) AS CNTIPNT
+        FROM ( SELECT COUNT(*) AS CNTIPNT
+	             FROM IPNT01TB T1
+	            WHERE T1.USE_YN = 'Y'
+	              AND T1.IPNT_CHARGER_ID = #{USER_ID}
+	              AND T1.CHOOSE_DONE_YN = 'N'
+	              AND TO_DATE(T1.IPNT_DONE_DATE,'YYYYMMDD')+1 >= SYSDATE
+	            UNION ALL
+	           SELECT COUNT(*) AS CNTIPNT
+	             FROM K03_DOPING_INSPECT_REG T1
+	            WHERE T1.USE_YN = 'Y'
+	              AND T1.IPNT_CHARGER_ID = #{USER_ID}
+	              AND T1.CHOOSE_DONE_YN = 'N'
+	              AND TO_DATE(T1.IPNT_DONE_DATE,'YYYYMMDD')+1 >= SYSDATE
+             )
+        ]]>
+    </select>
+    
+</mapper>

@@ -1,0 +1,241 @@
+$w: #ffffff;
+$b: #000;
+
+$b1: #354265;
+$b2: #003853;
+// $b3: #1f3f82;
+$b3: #1235aa;
+$b4: #384dd6;
+$b5: #e8ebf2;
+
+$r1: #f5536d;
+
+// header
+$body: #f5f5f5;
+$header-bg: #17328f;
+$header-on: #081e6b;
+$lnb-txt: #333;
+$lnb-on: #1a399f;
+
+// line
+$line-color: #d9e1f8;
+$line-300: #eaeaea;
+$line-400: #cdcdcd;
+
+//table
+$th-line: #c3d0f3;
+$th-bg: #f9fbff;
+$td-line: $line-300;
+
+// color
+$primary: #17328f;
+
+$red-200: #e53030;
+$red-300: #db0303;
+$red-400: #b42e2e;
+
+$blue-400: #3567db;
+
+$purple-400: #8250c7;
+
+$gray-e: #eaeaea;
+$gray-c: #cdcdcd;
+$gray-c2: #c8c8c8;
+$gray-a: #a5a5a5;
+$gray-9: #999;
+$gray-7: #737373;
+$gray-5: #576182;
+$gray-3: #333;
+$gray-1: #111;
+
+$q-badge: #333;
+
+// 사이즈 함수
+@function per($px, $parent-width: 1920px) {
+  $percent: ($px / $parent-width) * 100;
+  @return floor($percent) * 1%;
+}
+
+@function rem($size) {
+  $remSize: $size / 16px;
+  @return floor($remSize * 100) / 100 * 1rem;
+}
+
+@mixin fs-1 {
+  font-size: rem(48px);
+}
+
+@mixin fs-2 {
+  font-size: rem(32px);
+}
+
+@mixin fs-3 {
+  font-size: rem(24px);
+}
+
+@mixin fs-4 {
+  font-size: rem(20px);
+}
+
+@mixin fs-5 {
+  font-size: 14px;
+  // @media screen and (max-width: 786px) {
+  //   font-size: 14px;
+  // }
+}
+
+@mixin fs-6 {
+  font-size: rem(12px);
+
+  @media screen and (max-width: 786px) {
+    font-size: 12px;
+  }
+}
+
+@mixin fw-9 {
+  font-weight: 900;
+}
+
+@mixin fw-8 {
+  font-weight: 800;
+}
+
+@mixin fw-7 {
+  font-weight: 600;
+}
+
+@mixin fw-6 {
+  font-weight: 600;
+}
+
+@mixin fw-5 {
+  font-weight: 500;
+}
+
+@mixin fw-4 {
+  font-weight: 400;
+}
+
+@mixin gradation {
+  background-image: linear-gradient(to bottom, $b3, $b2);
+}
+
+@mixin boxshadow {
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.33);
+}
+
+@mixin countbox_shadow {
+  box-shadow: inset 0 0 6px 0 rgba(0, 0, 0, 0.16);
+}
+
+@mixin flex_center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin flex_start {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+@mixin flex_end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+@mixin flex_around {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+@mixin flex_between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+///////////////// mobile /////////////////
+@mixin fs-7 {
+  font-size: 10px;
+}
+
+@mixin fs-8 {
+  font-size: 8px;
+}
+
+@mixin border {
+  border: 1px solid $b3;
+}
+
+@mixin border-b {
+  border-bottom: 1px solid $line-400;
+}
+
+@mixin border-default {
+  border-bottom: 2px solid $b3;
+}
+
+@mixin border-top {
+  border-top: 2px solid $b3;
+}
+
+//더보기 화면 폰트사이즈
+@mixin mfs-5 {
+  font-size: rem(14px) !important;
+
+  @media screen and (max-width: 786px) {
+    font-size: 14px !important;
+  }
+}
+
+@mixin mfs-6 {
+  font-size: rem(12px) !important;
+
+  @media screen and (max-width: 786px) {
+    font-size: 14px !important;
+  }
+}
+
+// 공통
+
+@mixin scroll($scrl-width: 10px,
+  $scrl-height: 7px,
+  $scrl-bar: #bdbdbd,
+  $scrl-bg: #eaeaea) {
+  scrollbar-3dlight-color: $scrl-bar;
+  scrollbar-arrow-color: $scrl-bar;
+  scrollbar-base-color: $scrl-bg;
+  scrollbar-face-color: $scrl-bar;
+  scrollbar-track-color: $scrl-bg;
+  scrollbar-darkshadow-color: $scrl-bar;
+  scrollbar-highlight-color: $scrl-bar;
+  scrollbar-shadow-color: $scrl-bar;
+
+  &::-webkit-scrollbar {
+    width: $scrl-width;
+    height: $scrl-height;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $scrl-bar;
+    border-radius: $scrl-width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: $scrl-bg;
+    width: $scrl-width;
+    height: $scrl-height;
+    border-radius: $scrl-width;
+  }
+}
+
+//테이블 타이틀
+@mixin tblTit {
+  font-size: rem(19px);
+  color: #000;
+  font-weight: 600;
+}

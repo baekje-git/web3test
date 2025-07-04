@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgq.fnreq">
+   	<select id="selectFdgqFnreqList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgq.fnreq.selectFdgqFnreqList (fnreq.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    			AS PROD_DT    /* 제조일 */
+		  ,A.PROD_NO               			AS PROD_NO    /* 제조번호 */
+		  ,FN_FMT_DT(F.SAMPLE_COLLECTOR_DT) AS COLLECTOR_DT/* 채취일자 */
+		  ,FN_FMT_DT(F.SAMPLE_COLLECTOR_DT) AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(F.TEST_REQ_DT)			AS TEST_REQ_DT/* 시험의뢰자확인일 */
+	      ,FN_FMT_DT(F.QUL_MANAGER_DT) 		AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(F.PROD_MANAGER_DT) 	AS MANDATE_DT /* 지시자확인일 */
+	      ,F.SAMPLE_COLLECTOR_ID               		AS CHARGE_NM  /* 담당자 */
+	      ,F.TEST_REQ_ID               		AS TEST_REQ_NM/* 시험의뢰자 */
+	      ,F.QUL_MANAGER_ID               		AS CONFIRM_NM /* 확인자 */
+	      ,F.PROD_MANAGER_ID               		AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgq-fnreq' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+      FROM T_FDGP_BPR A
+      JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_PACK E
+        ON E.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND E.MANDATE_SIGN IS NOT NULL
+	   <if test="START_PROD_DT != null and START_PROD_DT != '' and END_PROD_DT != null and END_PROD_DT != ''">
+       AND A.PROD_DT between REPLACE(#{START_PROD_DT},'-','') AND REPLACE(#{END_PROD_DT},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="CHARGE_NM != null and CHARGE_NM != ''">
+       AND F.SAMPLE_COLLECTOR_ID LIKE CONCAT('%',#{CHARGE_NM},'%')
+       </if>
+       <if test="CONFIRM_NM != null and CONFIRM_NM != ''">
+       AND F.QUL_MANAGER_ID LIKE CONCAT('%',#{CONFIRM_NM},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND F.PROD_MANAGER_ID LIKE CONCAT('%',#{MANDATE_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgqFnreq" parameterType="HashMap">
+    /* fdgq.fnreq.insertFdgqFnreq */
+
+                INSERT INTO T_FDGQ_FNREQ
+                SET PROD_NO = #{eData.PROD_NO}
+				,AC02 = #{eData.AC02}
+				,AD02 = #{eData.AD02}
+				,AD0201 = #{eData.AD0201}
+				,SAMPLE_COLLECTOR_ID = #{eData.SAMPLE_COLLECTOR_ID}
+				,SAMPLE_COLLECTOR_DT = #{eData.SAMPLE_COLLECTOR_DT}
+				,TEST_REQ_NO = FN_QCTS_NO('')
+				,TEST_REQ_ID = #{eData.TEST_REQ_ID}
+				,TEST_REQ_DT = #{eData.TEST_REQ_DT}
+				,BC02 = #{eData.BC02}
+				,QUL_MANAGER_ID = #{eData.QUL_MANAGER_ID}
+				,QUL_MANAGER_DT = #{eData.QUL_MANAGER_DT}
+				,PROD_MANAGER_ID = #{eData.PROD_MANAGER_ID}
+				,PROD_MANAGER_DT = #{eData.PROD_MANAGER_DT}
+				,REG_ID = #{userData.USER_ID}
+				,REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+				 AC02 = #{eData.AC02}
+				,AD02 = #{eData.AD02}
+				,AD0201 = #{eData.AD0201}
+				,SAMPLE_COLLECTOR_ID = #{eData.SAMPLE_COLLECTOR_ID}
+				,SAMPLE_COLLECTOR_DT = #{eData.SAMPLE_COLLECTOR_DT}
+				,TEST_REQ_ID = #{eData.TEST_REQ_ID}
+				,TEST_REQ_DT = #{eData.TEST_REQ_DT}
+				,BC02 = #{eData.BC02}
+				,QUL_MANAGER_ID = #{eData.QUL_MANAGER_ID}
+				,QUL_MANAGER_DT = #{eData.QUL_MANAGER_DT}
+				,PROD_MANAGER_ID = #{eData.PROD_MANAGER_ID}
+				,PROD_MANAGER_DT = #{eData.PROD_MANAGER_DT}
+			    ,EDT_ID = #{userData.USER_ID}
+			    ,EDT_DTM = NOW()
+    </insert>
+</mapper>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.resultShow">
+    <select id="select_ResultShowList" parameterType="HashMap" resultType="HashMap">
+	<![CDATA[
+	/* (ResultShowListMapper.xml) - k03.resultShow.selectK01_NOTICE */
+        SELECT IPNT_NO
+               ,IPNT_UPPER_SEQ
+               ,IPNT_DATE
+               ,IPNT_TIME
+               ,IPNT_SUPERVISOR
+               ,IPNT_RESULT_MANAGER
+               ,IPNT_COLLECTOR
+               ,IPNT_CTL_COORDINATOR
+               ,IPNT_DCO_ID
+               ,IPNT_EVENT_CODE
+               ,IPNT_EVENT_DET_CODE
+               ,IPNT_PERIOD_CODE
+               , IPNT_NOTICE
+               ,PLAYER_LEVEL
+               ,TEST_COMMENT
+               ,STATUS
+               ,PLAYER_NO
+               ,USER_ID
+               ,REG_USER
+               ,REG_DATE
+               ,EDT_USER
+               ,EDT_DATE
+        FROM K03_PAPER_TEST
+        WHERE 1=1
+        
+        ]]> 
+    </select>
+    <select id="select_ResultShowDetail" parameterType="HashMap" resultType="HashMap">
+	<![CDATA[
+	/* (ResultShowListMapper.xml) - k03.resultShow.select_ResultShowDetail */
+                SELECT A.IPNT_NO
+                       ,A.IPNT_UPPER_SEQ
+                       ,A.IPNT_DATE
+                       ,A.IPNT_TIME
+                       ,A.IPNT_SUPERVISOR
+                       ,A.IPNT_RESULT_MANAGER
+                       ,A.IPNT_COLLECTOR
+                       ,A.IPNT_CTL_COORDINATOR
+                       ,A.IPNT_DCO_ID
+                       ,A.IPNT_EVENT_CODE
+                       ,A.IPNT_EVENT_DET_CODE
+                       ,A.IPNT_PERIOD_CODE
+                       ,A.IPNT_NOTICE
+                       ,A.PLAYER_LEVEL
+                       ,A.TEST_COMMENT
+                       ,A.STATUS
+                       ,A.PLAYER_NO
+                       ,A.USER_ID
+                       ,A.REG_USER
+                       ,A.REG_DATE
+                       ,A.EDT_USER
+                       ,A.EDT_DATE
+                       ,B.USER_NAME
+                       ,B.BIRTH_DT
+                       ,B.COUNTRY
+                       ,B.USER_SEX
+                       ,F_CODE_NM('EVENT_CODE',F_CODE_OPTION('PRO_ORGZ', B.PRO_ORGZ, 'OPTION8')) AS IPNT_EVENT_NAME
+                       ,F_CODE_NM('EVENT_DET_CODE',F_CODE_OPTION('PRO_ORGZ', B.PRO_ORGZ, 'OPTION9')) AS IPNT_EVENT_DET_NAME
+                FROM K03_PAPER_TEST a , USER01TB B
+                WHERE 1=1
+                AND A.USER_ID = B.USER_ID
+                AND A.IPNT_NO = #{IPNT_NO}
+        ]]> 
+    </select>
+    <select id="select_PaperTestDtl" parameterType="HashMap" resultType="HashMap">
+	<![CDATA[
+	/* (ResultShowListMapper.xml) - k03.resultShow.select_PaperTestDtl */
+                SELECT B.IPNT_NO
+                      ,B.IPNT_SUB_SEQ
+                      ,B.IPNT_UPPER_SEQ
+                      ,B.IPNT_FLAG
+                      ,B.IPNT_SUB_FLAG
+                      ,B.SAMPLE_CODE
+                      ,B.TIME_COLLECTION
+                      ,B.SENT_LAB
+                      ,B.VOLUME
+                      ,B.PH
+			 		  ,B.SPECIFIC_GRAVITY
+			 		  ,B.MENUFACTURE
+			 		  ,B.PARTIAL_YN
+					  ,B.REG_USER
+					  ,B.REG_DATE
+					  ,B.EDT_USER
+					  ,B.EDT_DATE 
+                FROM K03_PAPER_TEST A
+			    JOIN K03_PAPER_TEST_DTL B 
+				  ON B.IPNT_NO =A.IPNT_NO 
+				LEFT OUTER JOIN K03_ADAMS_CSV_NEG C  --소변
+				  ON C.SAMPLE_CODE = B.SAMPLE_CODE 
+			    LEFT OUTER JOIN K03_ADAMS_CSV_BLOOD D  --혈액
+				  ON D.SAMPLE_CODE = B.SAMPLE_CODE 
+				LEFT OUTER JOIN K03_ADAMS_CSV_ABP E  --ABP
+				  ON E.SAMPLE_CODE = B.SAMPLE_CODE 
+                WHERE 1=1
+                AND B.IPNT_NO = #{IPNT_NO}
+        ]]> 
+    </select>
+</mapper>

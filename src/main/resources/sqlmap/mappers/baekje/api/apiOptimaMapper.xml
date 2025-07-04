@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiOptima">
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiOptimaMapper.xml][apiOnConnect.insertApiHistory][API연동이력(T_API_LOG) ]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+        , MOD_ID
+        , ERR_MSG
+    ) VALUES (
+          #{API_IP}
+        , #{API_ID}
+        , #{API_TXT}
+        , #{API_INS}
+        , CURRENT TIMESTAMP
+        , #{API_MOD}
+        , #{ERR_MSG}
+        )
+</insert>
+
+<select id="checkAuth"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectAuthCheck][인증체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_KEY},'') = '' THEN 'API키값이 누락되었습니다'
+                           WHEN USER_STRING1 != #{API_KEY} THEN 'API키값이 일치하지 않습니다'
+                           WHEN IFNULL(#{API_IP},'') = '' THEN 'IP가 확인되지 않습니다'
+                           WHEN USER_STRING2 != #{API_IP} AND USER_STRING3 != #{API_IP} AND USER_STRING4 != #{API_IP} AND USER_STRING5 != #{API_IP} AND USER_STRING6 != #{API_IP} THEN '승인되지 않은 IP입니다'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE='581'
+       AND CODE = #{API_BRCH_CD}
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="selectDlvBrch"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectDlvBrch][창고송신]+*/
+	SELECT A.BRCH_CD  AS "STOCK_CODE"
+	      ,A.BRCH_SNM AS "STOCK_NAME"
+          ,(SELECT COUNT(1) 
+              FROM T_CUST 
+             WHERE BRCH_CD = #{API_BRCH_CD}
+               AND DLV_BRCH_CD = A.BRCH_CD
+               AND CUST_GB_CD NOT IN ('09')
+               AND SB_GB_CD = '02'
+               AND DEAL_END_YN = 'N'
+           ) AS CUST_COUNT
+	  FROM T_BRANCH A
+	 WHERE 1=1
+	   AND A.USE_YN = 'Y'
+	   AND A.DLV_BRCH_YN = 'Y'
+	 ORDER BY A.SORT_NO
+</select>
+
+<select id="selectItem"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectItem][품목조회]+*/
+    SELECT ITEM_CODE
+           ,ITEM_NAME
+           ,ITEM_UNIT
+           ,SOBUN_NAME
+           ,TAKEBACK_NAME
+           ,PYOJUN_CODE
+           ,BOHUM_CODE
+           ,BOHUM_DATE
+           ,MAKER_NAME
+           ,MED_NAME
+           ,PAY_ITEM_NAME
+           ,TAX_NAME
+           ,SPEC_NAME
+           ,ITEM_AMT
+           ,SALE_AMT
+      FROM V_ITEM_MALL
+     WHERE MALL_CODE = #{API_BRCH_CD}
+    <if test='ITEM_CODE_LIKE != null and ITEM_CODE_LIKE != ""'>
+       AND ITEM_CODE LIKE CONCAT(#{ITEM_CODE_LIKE},'%')
+    </if>
+</select>
+
+<select id="checkCust"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectCustCheck][거래처체크]+*/
+    SELECT CASE WHEN F_S_EMPTY(#{CUST_NAME}) = ''   THEN '거래처명 누락입니다'
+                WHEN F_S_EMPTY(#{SERVICE_NO}) = ''  THEN '사업자번호 누락입니다'
+                WHEN F_S_EMPTY(#{MEDICARE_NO}) = '' THEN '요양기관번호 누락입니다'
+                WHEN F_S_EMPTY(#{CEO_NAME}) = ''    THEN '대표자명 누락입니다'
+                WHEN F_S_EMPTY(#{HP_NO}) = ''       THEN '휴대번호 누락입니다'
+                WHEN F_S_EMPTY(#{ZIP_CODE}) = ''    THEN '우편번호 누락입니다'
+                WHEN F_S_EMPTY(#{ADDRESS1}) = ''    THEN '기본주소 누락입니다'
+                
+                WHEN 
+				   (SELECT COUNT(1)
+				      FROM V_CUST
+				     WHERE BRCH_CD = #{API_BRCH_CD}
+                       AND CUST_CD != IFNULL(#{CUST_CODE},'')
+				       AND SERVICE_NO = #{SERVICE_NO}
+				       AND CUST_GB_CD != '09'
+                       AND DEAL_END_YN = 'N'
+				   ) > 0 THEN '사업자번호 중복입니다'
+                WHEN 
+				   (SELECT COUNT(1)
+				      FROM V_CUST
+				     WHERE BRCH_CD = #{API_BRCH_CD}
+                       AND CUST_CD != IFNULL(#{CUST_CODE},'')
+				       AND MED_ORG_CD = #{MEDICARE_NO}
+                       AND CUST_GB_CD != '09'
+                       AND DEAL_END_YN = 'N'
+                   ) > 0 THEN '요양기관번호 중복입니다'
+                ELSE 'OK'
+                END
+      FROM DUAL
+</select>
+
+<select id="selectNewCustCd"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectNewCustCd][신규거래처코드]+*/
+    SELECT CONCAT(#{API_BRCH_CD},IFNULL(MAX(SUBSTR(CUST_CD,3)),'30000')+1)
+      FROM T_CUST
+     WHERE BRCH_CD = #{API_BRCH_CD}
+       AND NOT REGEXP_LIKE(SUBSTR(CUST_CD,3), '[^0-9]')
+       AND CUST_CD BETWEEN CONCAT(#{API_BRCH_CD},'30000') AND CONCAT(#{API_BRCH_CD},'60000')
+</select>
+
+<insert id="insertCust"  parameterType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.mergeCust][거래처등록]+*/
+    INSERT INTO T_CUST 
+           (
+             CUST_CD
+            ,CUST_NM
+            ,BRCH_CD
+            ,SERVICE_NO
+            ,MED_ORG_CD
+            ,CEO_NM
+            ,HP_NO
+            ,TEL_NO
+            ,ZIP_CD
+            ,EMAIL
+            ,CUST_ADDRESS
+            ,CUST_ADDRESS2
+            
+            ,DEPT_CD
+            ,CATEGORY_CD
+            ,CUST_GB_CD
+            ,SB_GB_CD
+            ,WP2_GB_CD
+            ,SALE_START_DT
+            ,DEAL_END_RSN_CD
+            ,SEX_CD
+            ,BIRTH_DT
+
+            ,INS_ID
+            ,INS_DTM
+           )
+    VALUES (
+             CAST(#{CUST_CODE} AS VARCHAR(7))
+            ,CAST(#{CUST_NAME} AS VARCHAR(100) CCSID 933)
+            ,#{API_BRCH_CD}
+            ,CAST(#{SERVICE_NO} AS VARCHAR(20))
+            ,CAST(#{MEDICARE_NO} AS VARCHAR(10))
+            ,CAST(#{CEO_NAME} AS VARCHAR(20) CCSID 933)
+            ,DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(CAST(#{HP_NO} AS VARCHAR(20))))
+            ,DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(CAST(#{TEL_NO} AS VARCHAR(20))))
+            ,CAST(#{ZIP_CODE} AS VARCHAR(7))
+            ,DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{EMAIL}))
+            ,DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{ADDRESS1}))
+            ,DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{ADDRESS2}))
+            
+            ,(SELECT MAX(USER_STRING10) FROM T_CODE WHERE P_CODE = '581' AND CODE = #{API_BRCH_CD})   /* 부서코드 : 전체(디폴트처리) */
+            ,'11' /* 거래처 업종코드 : 양약/소매 */
+            ,'01' /* 거래처 구분코드 : 약국 */
+            ,'02' /* 매입매출처구분 : 매출처 */
+            ,'01' /* 출하가결정코드 : 출하가 */
+            ,F_S_DAY() /* 인수일 : 당일 */
+            ,'00' /* 종료사유 : 정상 */
+            ,'M' /* 성별 : 남자 */
+            ,F_S_DAY() /* 생년월일 : 당일 */
+
+            ,#{API_INS}
+            ,CURRENT TIMESTAMP
+           )    
+</insert>
+
+<update id="updateCust"  parameterType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.updateCust][거래처수정]+*/
+    UPDATE T_CUST
+       SET CUST_NM = CAST(#{CUST_NAME} AS VARCHAR(100) CCSID 933)
+          ,SERVICE_NO = CAST(#{SERVICE_NO} AS VARCHAR(20))
+          ,MED_ORG_CD = CAST(#{MEDICARE_NO} AS VARCHAR(10))
+          ,CEO_NM = CAST(#{CEO_NAME} AS VARCHAR(20) CCSID 933)
+          ,HP_NO = DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(CAST(#{HP_NO} AS VARCHAR(20))))
+          ,TEL_NO = DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(CAST(#{TEL_NO} AS VARCHAR(20))))
+          ,ZIP_CD = CAST(#{ZIP_CODE} AS VARCHAR(7))
+          ,EMAIL = DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{EMAIL}))
+          ,CUST_ADDRESS = DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{ADDRESS1}))
+          ,CUST_ADDRESS2 = DAMO.SCP_ENCB64('SCP_ALL', F_S_EMPTY(#{ADDRESS2}))
+     WHERE CUST_CD = CAST(#{CUST_CODE} AS VARCHAR(7))
+       AND BRCH_CD = #{API_BRCH_CD}
+</update>
+
+<update id="callPCustAft" parameterType="java.util.HashMap" statementType="CALLABLE">
+    {CALL P_CUST_AFT(
+          #{I_TYPE              ,mode=IN  ,jdbcType=VARCHAR}
+         ,#{CUST_CODE           ,mode=IN  ,jdbcType=VARCHAR}
+         ,#{API_INS             ,mode=IN  ,jdbcType=VARCHAR}
+         ,#{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+         ,#{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+    )}
+</update>
+
+<select id="selectCust"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectCust][거래처조회]+*/
+    SELECT CUST_CD AS CUST_CODE
+          ,F_S_EMPTY(CUST_NM) AS CUST_NAME
+          ,F_S_EMPTY(SERVICE_NO) AS SERVICE_NO
+          ,F_S_EMPTY(MED_ORG_CD) AS MEDICARE_NO
+          ,F_S_EMPTY(CEO_NM) AS CEO_NAME
+          ,F_S_EMPTY(HP_NO) AS HP_NO
+          ,F_S_EMPTY(TEL_NO) AS TEL_NO
+          ,F_S_EMPTY(ZIP_CD) AS ZIP_CODE
+          ,F_S_EMPTY(EMAIL) AS EMAIL
+          ,F_S_EMPTY(CUST_ADDRESS) AS ADDRESS1
+          ,F_S_EMPTY(CUST_ADDRESS2) AS ADDRESS2
+          ,F_S_EMPTY(DLV_BRCH_CD) AS STOCK_CODE
+      FROM V_CUST
+     WHERE 1=1
+       AND BRCH_CD = #{API_BRCH_CD}
+       AND CUST_GB_CD NOT IN ('09')
+       AND SB_GB_CD = '02'
+       AND DEAL_END_YN = 'N'
+    <if test='CUST_CODE != null and CUST_CODE != ""'>
+       AND CUST_CD = #{CUST_CODE}
+    </if>
+     ORDER BY CUST_CD
+</select>
+
+<select id="selectStock"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectStock][재고조회]+*/
+    SELECT STOCK_CODE
+          ,ITEM_CODE
+          ,COALESCE(STOCK_QTY,0) AS STOCK_QTY
+          ,COALESCE(MIN(COALESCE(MAX_ORD_QTY,STOCK_QTY),STOCK_QTY),0) AS MAX_QTY
+      FROM (
+          SELECT A.BRCH_CD     AS STOCK_CODE
+                ,A.ITEM_CD     AS ITEM_CODE
+                ,(CASE WHEN A.AVAIL_STOCK = 0 THEN 0
+                       WHEN F.RATE_STOCK IS NULL THEN 0
+                       ELSE FLOOR(A.AVAIL_STOCK*CAST(1.0*F.RATE_STOCK/100 AS DECIMAL(10,2)))
+                       END)    AS STOCK_QTY
+                ,CASE WHEN G.MAX_ORD_QTY > 0 THEN G.MAX_ORD_QTY END AS MAX_ORD_QTY
+            FROM T_ITEM_STOCK A
+            JOIN T_ITEM B
+              ON B.ITEM_CD = A.ITEM_CD
+             AND B.USE_YN = 'Y'
+             AND B.FORBID_YN = 'N'
+             AND B.SUBDIV_YN = 'N'
+             AND B.MED_CD IN ('01','02')
+             AND B.WP2_AMT > 1
+            JOIN T_MAKER C
+              ON C.MAKER_CD = B.MAKER_CD
+            JOIN T_CODE D
+              ON D.P_CODE = '101'
+             AND D.CODE = B.MED_CD
+            JOIN T_CODE E
+              ON E.P_CODE = '109'
+             AND E.CODE = B.SPEC_CD
+            JOIN T_MALL_RULE F
+              ON F.MALL_CD = #{API_BRCH_CD}
+             AND (1-B.BP1_AMT/B.WP2_AMT)*100 > F.PROFIT_MIN
+            LEFT JOIN T_ITEM_PRICE G
+              ON G.BRCH_CD = A.BRCH_CD
+             AND G.ITEM_CD = A.ITEM_CD
+           WHERE 1=1
+             AND A.USE_YN = 'Y'
+             AND A.AVAIL_STOCK > -1
+             AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_SPEC Z WHERE Z.MALL_CD = F.MALL_CD AND Z.SPEC_CD = B.SPEC_CD)
+             AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_ITEM Y WHERE Y.MALL_CD = F.MALL_CD AND Y.ITEM_CD = B.ITEM_CD)
+             AND A.BRCH_CD = #{STOCK_CODE}
+    <if test='ITEM_CODE_LIKE != null and ITEM_CODE_LIKE != ""'>
+             AND A.ITEM_CD LIKE CONCAT(#{ITEM_CODE_LIKE},'%')
+    </if>
+             AND EXISTS (SELECT 1 
+                           FROM T_CUST 
+                          WHERE BRCH_CD = #{API_BRCH_CD}
+                            AND DLV_BRCH_CD = A.BRCH_CD
+                            AND CUST_GB_CD NOT IN ('09')
+                            AND SB_GB_CD = '02'
+                            AND DEAL_END_YN = 'N'
+                        )
+           ) A
+     ORDER BY A.STOCK_CODE, A.ITEM_CODE
+</select>
+
+<select id="checkOrderNo"  parameterType="java.util.HashMap" resultType="String">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.checkOrderNo][주문번호체크]+*/
+    SELECT CASE WHEN COUNT(1) > 0 THEN '주문번호중복' ELSE '' END
+      FROM T_MALL_ORD A
+     WHERE A.MALL_CD = #{API_BRCH_CD}
+       AND A.ORD_NO = #{ORDER_NO}
+</select>
+
+<select id="checkAvailStock"  parameterType="java.util.HashMap" resultType="String">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.checkAvailStock][재고체크]+*/
+    SELECT CASE WHEN MAX(A.CUST_CD) IS NULL THEN '미등록거래처'
+                WHEN MAX(A.DLV_BRCH_CD) IS NULL THEN '창고미등록'
+                WHEN 1 > #{ITEM_QTY} THEN '주문수량오류'
+                WHEN MAX(B.FORBID_YN) = 'Y' THEN '출하금지품목'
+                WHEN MAX(B.SUBDIV_YN) = 'Y' THEN '소분품목주문불가'
+                WHEN MAX(C.AVAIL_STOCK) IS NULL THEN '창고미취급품목'
+                WHEN 1 >  MAX(FLOOR(C.AVAIL_STOCK*CAST((1.0*G.RATE_STOCK/100) AS DECIMAL(10,2)))) THEN '품절'
+                WHEN #{ITEM_QTY} > MAX(FLOOR(C.AVAIL_STOCK*CAST((1.0*G.RATE_STOCK/100) AS DECIMAL(10,2)))) THEN '재고수량초과'
+                WHEN #{ITEM_QTY} > (CASE WHEN MAX(H.MAX_ORD_QTY) > 0 THEN MAX(H.MAX_ORD_QTY) END) THEN '최대주문수량초과('||MAX(H.MAX_ORD_QTY)||')'
+                ELSE '' END
+      FROM T_CUST A
+      JOIN T_ITEM B
+        ON B.ITEM_CD = #{ITEM_CODE}
+       AND B.USE_YN = 'Y'
+       AND B.MED_CD IN ('01','02')
+       AND B.WP2_AMT > 1
+      LEFT JOIN T_ITEM_STOCK C
+        ON C.BRCH_CD = A.DLV_BRCH_CD
+       AND C.ITEM_CD = B.ITEM_CD
+       AND C.AVAIL_STOCK > -1
+      JOIN T_MAKER D
+        ON D.MAKER_CD = B.MAKER_CD
+      JOIN T_CODE E
+        ON E.P_CODE = '101'
+       AND E.CODE = B.MED_CD
+      JOIN T_CODE F
+        ON F.P_CODE = '109'
+       AND F.CODE = B.SPEC_CD
+      JOIN T_MALL_RULE G
+        ON G.MALL_CD = A.BRCH_CD
+       AND (1-B.BP1_AMT/B.WP2_AMT)*100 > G.PROFIT_MIN
+      LEFT JOIN T_ITEM_PRICE H
+        ON H.BRCH_CD = A.DLV_BRCH_CD
+       AND H.ITEM_CD = B.ITEM_CD
+     WHERE 1=1
+       AND A.BRCH_CD = #{API_BRCH_CD}
+       AND A.CUST_CD = #{CUST_CODE}
+       AND A.CUST_GB_CD NOT IN ('09')
+       AND A.SB_GB_CD = '02'
+       AND A.DEAL_END_YN = 'N'
+       AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_SPEC Z WHERE Z.MALL_CD = G.MALL_CD AND Z.SPEC_CD = B.SPEC_CD)
+       AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_ITEM Y WHERE Y.MALL_CD = G.MALL_CD AND Y.ITEM_CD = B.ITEM_CD)
+</select>
+
+<insert id="insertOrder"  parameterType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.insertOrder][주문등록]+*/
+    INSERT INTO T_MALL_ORD 
+           (
+             MALL_CD
+            ,ORD_NO
+            ,ITEM_CD
+            ,CUST_CD
+            ,ORD_DT
+            ,ITEM_QTY
+            ,ORD_AMT
+            ,INS_ID
+            ,INS_DTM
+           )
+    VALUES (
+             #{API_BRCH_CD}
+            ,#{ORDER_NO}
+            ,#{ITEM_CODE}
+            ,#{CUST_CODE}
+            ,VARCHAR_FORMAT(CURRENT TIMESTAMP, 'YYYYMMDD')
+            ,#{ITEM_QTY}
+            ,#{ORDER_AMT}
+            ,#{API_INS}
+            ,CURRENT TIMESTAMP
+           )    
+</insert>
+
+<select id="callPSaleMallOrd" parameterType="java.util.HashMap" statementType="CALLABLE">
+     /*+[apiOptimaMapper.xml][apiOptimaMapper.callPSaleMallOrd][주문승인접수프로시져]+*/
+    {CALL P_SALE_MALL_ORD(
+          #{I_MALL_CD           ,mode=IN    ,jdbcType=VARCHAR}
+        , #{I_ORD_NO            ,mode=IN    ,jdbcType=VARCHAR}
+        , #{I_CUST_CD           ,mode=IN    ,jdbcType=VARCHAR}
+        , #{I_USER_ID           ,mode=IN    ,jdbcType=VARCHAR}
+        , #{O_VAL               ,mode=OUT   ,jdbcType=VARCHAR}
+        , #{O_MSG               ,mode=OUT   ,jdbcType=VARCHAR}
+        )}
+</select>
+
+<select id="selectOrderState"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectOrderState][주문상태조회]+*/
+	SELECT A.ORD_NO AS ORDER_NO
+	      ,CASE WHEN (SELECT COUNT(1) FROM T_SALERCPT WHERE SN = MAX(A.ORD_SEQ) AND SN != 0) != 0 THEN '접수'
+	            WHEN (SELECT COUNT(1) FROM T_SALE WHERE SN = MAX(A.ORD_SEQ) AND SN != 0) != 0 THEN '완료'
+	            ELSE '취소'
+	            END AS ORDER_STATE
+	  FROM T_MALL_ORD A
+	 WHERE A.MALL_CD = #{API_BRCH_CD}
+	   AND A.ORD_DT = #{ORDER_DATE}
+	   AND A.CUST_CD = #{CUST_CODE}
+    <if test='ORDER_NO != null and ORDER_NO != ""'>
+       AND A.ORD_NO = #{ORDER_NO}
+    </if>
+	 GROUP BY A.ORD_NO
+	 ORDER BY A.ORD_NO
+</select>
+
+
+<select id="selectSaleList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOptimaMapper.xml][apiOptimaMapper.selectSaleDetail][매출내역조회]+*/
+    SELECT A.APRV_DT AS SALE_DATE
+          ,A.CUST_CD AS CUST_CODE
+          ,A.GUBUN_NM AS SALE_GUBUN
+          ,A.BACK_GB_NM AS BACK_NAME
+          ,A.ITEM_CD AS ITEM_CODE
+          ,A.ITEM_QTY AS ITEM_QTY
+          ,A.TOTAL_AMT AS SALE_AMT
+          ,CASE WHEN A.ORD_TYPE_CD = '34' THEN '약가보상' ELSE '' END AS BIGO
+      FROM V_SALE_DTL A
+     WHERE A.BRCH_CD = #{API_BRCH_CD}
+       AND A.APRV_DT = #{SALE_DATE}
+       AND A.CUST_CD = #{CUST_CODE}
+     ORDER BY A.APRV_DT, A.SN, A.SNO
+</select>
+
+
+</mapper>

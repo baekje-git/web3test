@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="761" height="48" viewBox="0 0 761 48">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="공지사항_Frame_Clip_Content_Mask_" data-name="공지사항 [Frame Clip Content Mask]" width="761" height="48" fill="none"/>
+    </clipPath>
+    <clipPath id="clip-path-2">
+      <rect id="아이콘_Frame_Clip_Content_Mask_" data-name="아이콘 [Frame Clip Content Mask]" width="36" height="16" fill="none"/>
+    </clipPath>
+    <clipPath id="clip-path-3">
+      <rect id="_20_Frame_Clip_Content_Mask_" data-name="20 [Frame Clip Content Mask]" width="20" height="20" fill="none"/>
+    </clipPath>
+    <clipPath id="clip-path-4">
+      <rect id="Layer_1_Frame_Clip_Content_Mask_" data-name="Layer_1 [Frame Clip Content Mask]" width="24.62" height="20" fill="none"/>
+    </clipPath>
+  </defs>
+  <g id="공지사항_Clip_Content_" data-name="공지사항 (Clip Content)" clip-path="url(#clip-path)">
+    <g id="Frame_1" data-name="Frame 1" transform="translate(0 13)">
+      <g id="ico_notice" transform="translate(-1 3)">
+        <rect id="아이콘_Frame_Background_" data-name="아이콘 [Frame Background]" width="16" height="16" fill="none"/>
+        <path id="Vector" d="M0,0H16V16H0Z" fill="none"/>
+        <g id="Group">
+          <g id="Group-2" data-name="Group">
+            <path id="Vector-2" data-name="Vector" d="M0,0H2.47V.8H0Z" transform="translate(12.431 4.761) rotate(-21.91)" fill="#39549e"/>
+            <path id="Vector-3" data-name="Vector" d="M0,0H2.41V.8H0Z" transform="translate(12.52 7.6)" fill="#39549e"/>
+            <path id="Vector-4" data-name="Vector" d="M0,0H.8V2.47H0Z" transform="translate(12.434 11.235) rotate(-68.1)" fill="#39549e"/>
+          </g>
+          <path id="Vector-5" data-name="Vector" d="M.54,2.247,8.69.027a.732.732,0,0,1,.93.71v10.34a.737.737,0,0,1-.93.71L.54,9.567A.729.729,0,0,1,0,8.857v-5.9a.738.738,0,0,1,.54-.71Z" transform="translate(0.98 2.093)" fill="#39549e"/>
+        </g>
+      </g>
+      <text id="공지사항" transform="translate(23 1.748)" fill="#111" font-size="14" font-family="Pretendard-Bold, Pretendard" font-weight="700"><tspan x="0" y="13">공지사항</tspan></text>
+      <rect id="타이틀_Frame_Clip_Content_Mask_" data-name="타이틀 [Frame Clip Content Mask]" width="71" height="22" fill="none"/>
+      <text id="_시스템점검_사이트_일시적_이용불가_안내입니다_-_일시:_2024.09.01" data-name="[시스템점검] 사이트 일시적 이용불가 안내입니다 - 일시: 2024.09.01" transform="translate(83 1.953)" fill="#111" font-size="14" font-family="Pretendard-Regular, Pretendard" letter-spacing="-0.025em"><tspan x="0" y="13" xml:space="preserve">[시스템점검] 사이트 일시적 이용불가 안내입니다 -    일시: 2024.09.01</tspan></text>
+      <g id="아이콘_Clip_Content_" data-name="아이콘 (Clip Content)" transform="translate(486 3)" clip-path="url(#clip-path-2)">
+        <g id="_20_20" data-name="20*20">
+          <g id="Group-3" data-name="Group">
+            <path id="Vector-6" data-name="Vector" d="M0,0H16V16H0Z" transform="translate(16 16) rotate(180)" fill="none"/>
+            <g id="Group-4" data-name="Group">
+              <path id="Vector-7" data-name="Vector" d="M13,6.5A6.5,6.5,0,1,1,6.5,0,6.5,6.5,0,0,1,13,6.5Z" transform="translate(14.5 14.5) rotate(180)" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+              <path id="Vector-8" data-name="Vector" d="M0,0,2.78,2.79,0,5.58" transform="translate(9.39 10.79) rotate(180)" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+            </g>
+          </g>
+        </g>
+        <g id="_20_20-2" data-name="20*20">
+          <g id="Group-5" data-name="Group">
+            <path id="Vector-9" data-name="Vector" d="M0,0H16V16H0Z" transform="translate(20)" fill="none"/>
+            <g id="Group-6" data-name="Group">
+              <path id="Vector-10" data-name="Vector" d="M13,6.5A6.5,6.5,0,1,1,6.5,0,6.5,6.5,0,0,1,13,6.5Z" transform="translate(21.5 1.5)" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+              <path id="Vector-11" data-name="Vector" d="M0,0,2.78,2.79,0,5.58" transform="translate(26.61 5.21)" fill="none" stroke="#333" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g id="배송마감" transform="translate(562 8)">
+      <rect id="배송마감_Frame_Background_" data-name="배송마감 [Frame Background]" width="199" height="32" fill="#09247e"/>
+      <g id="아이콘" transform="translate(28 4)">
+        <g id="_20_Clip_Content_" data-name="20 (Clip Content)" transform="translate(2 2)" clip-path="url(#clip-path-3)">
+          <g id="Layer_1_Clip_Content_" data-name="Layer_1 (Clip Content)" transform="translate(-4)" clip-path="url(#clip-path-4)">
+            <rect id="Layer_1_Frame_Background_" data-name="Layer_1 [Frame Background]" width="24.62" height="20" fill="none"/>
+            <path id="Vector-12" data-name="Vector" d="M0,0H20V20H0Z" transform="translate(-0.38)" fill="none"/>
+            <g id="Group-7" data-name="Group">
+              <path id="Vector-13" data-name="Vector" d="M22.13,0H0" transform="translate(0.7 18.81)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+              <g id="Group-8" data-name="Group">
+                <path id="Vector-14" data-name="Vector" d="M4.16,2.08A2.08,2.08,0,1,1,2.08,0,2.078,2.078,0,0,1,4.16,2.08Z" transform="translate(3.9 14.02)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-15" data-name="Vector" d="M4.16,2.08A2.08,2.08,0,1,1,2.08,0,2.08,2.08,0,0,1,4.16,2.08Z" transform="translate(15.88 14.02)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-16" data-name="Vector" d="M0,0H4.05L6.28,4.44,8.09,6.08v4.66a.734.734,0,0,1-.73.73H5.25" transform="translate(15.09 4.21)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-17" data-name="Vector" d="M7.3,0H0" transform="translate(8.3 15.67)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-18" data-name="Vector" d="M3.46,3.14H0V0H1.52" transform="translate(18.25 5.83)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-19" data-name="Vector" d="M2.5,12.84H0V0H13.81V12.84" transform="translate(1.2 2.83)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                <path id="Vector-20" data-name="Vector" d="M0,0V.05" transform="translate(20.09 11.86)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
+      <text id="_수_13:00_배송마감" data-name="(수) 13:00 배송마감" transform="translate(56 6.857)" fill="#f6f7b7" font-size="14" font-family="Pretendard-SemiBold, Pretendard" font-weight="600"><tspan x="0" y="13">(수) 13:00 배송마감</tspan></text>
+    </g>
+  </g>
+</svg>

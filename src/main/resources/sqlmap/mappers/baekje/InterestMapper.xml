@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="interest">
+    <insert id="insertInterestItem" parameterType="java.util.HashMap">
+        /* interest.insertInterestItem 관심상품 등록 */
+        INSERT INTO T_WEB_MY_ITEM
+             ( CUST_CD
+             , ITEM_CD
+             , GROUP_NO
+             , ALARM_YN
+             , INS_ID
+             , INS_DTM
+             )
+        VALUES
+             ( #{custCd}
+             , #{itemCd}
+             , 0
+             , 'N'
+             , #{userId}
+             , F_S_NOW()
+             )
+    </insert>
+    
+    <delete id="deleteInterestItem" parameterType="java.util.HashMap">
+        /* interest.deleteInterestItem 관심상품 삭제 */
+        DELETE
+          FROM T_WEB_MY_ITEM
+         WHERE CUST_CD = #{custCd}
+           AND ITEM_CD = #{itemCd}
+    </delete>
+    
+    <select id="selectFixedInterestGroupList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* interest.selectFixedInterestGroupList 관심상품 그룹 목록(고정) 조회 */
+        SELECT F_S_EMPTY(#{custCd}, '') AS CUST_CD
+             , 'X' AS GROUP_NO
+             , '입고알림품목' AS GROUP_NM
+             , 'Y' AS ALARM_YN
+             , (SELECT COUNT(1)
+                  FROM T_WEB_MY_ITEM X
+                  JOIN T_ITEM_SOLDOUT_IN Y
+                    ON Y.ITEM_CD = X.ITEM_CD
+                   AND Y.BRCH_CD = #{brchCd}
+                 WHERE X.CUST_CD = #{custCd}
+                   AND X.ALARM_YN = 'Y'
+               ) AS ITEM_QTY
+          FROM DUAL
+         UNION ALL
+        SELECT F_S_EMPTY(#{custCd}, '') AS CUST_CD
+             , 'X' AS GROUP_NO
+             , '알림품목' AS GROUP_NM
+             , (SELECT CASE WHEN COUNT(1) > 0 THEN 'Y'
+                              ELSE 'N'
+                        END
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = #{custCd}
+                   AND X.ALARM_YN = 'Y'
+               ) AS ALARM_YN
+             , (SELECT COUNT(1)
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = #{custCd}
+                   AND X.ALARM_YN = 'Y'
+               ) AS ITEM_QTY
+          FROM DUAL
+         UNION ALL
+        SELECT F_S_EMPTY(#{custCd}, '') AS CUST_CD
+             , '0' AS GROUP_NO
+             , '기본그룹' AS GROUP_NM
+             , 'N' AS ALARM_YN
+             , (SELECT COUNT(1)
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = #{custCd}
+                   AND X.GROUP_NO = 0
+               ) AS ITEM_QTY
+          FROM DUAL
+    </select>
+    
+    <select id="selectInterestGroupList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* interest.selectInterestGroupList 관심상품 그룹 목록 조회 */
+        SELECT A.CUST_CD
+             , A.GROUP_NO
+             , A.GROUP_NM
+             , 'N' AS ALARM_YN
+             , (SELECT COUNT(1)
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = A.CUST_CD
+                   AND X.GROUP_NO = A.GROUP_NO
+               ) AS ITEM_QTY
+             , A.SORT_NO
+             , 'N' AS EDIT_YN
+          FROM T_WEB_MY_ITEM_GROUP A
+         WHERE A.CUST_CD = #{custCd}
+         ORDER BY A.SORT_NO
+    </select>
+    
+    <select id="selectGroupItemList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* interest.selectGroupItemList 관심상품 그룹별 상품 목록 조회 */
+        SELECT A.ITEM_CD
+             , A.ITEM_NM
+             , A.MAKER_NM
+             , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+             , SUBSTRING(A.MED_NM, 1, 1) AS MED_NM
+             , A.UNIT
+             , A.ORD_WP2_AMT
+             , CASE WHEN A.AVAIL_STOCK <![CDATA[<]]> 0 THEN 0
+                    WHEN A.REAL_MAX_ORD_QTY <![CDATA[>]]> 0 THEN A.MAX_ORD_QTY
+               ELSE A.AVAIL_STOCK END AS AVAIL_STOCK
+             , (SELECT IFNULL(SUM(X.ITEM_CNT), 0)
+                  FROM V_WEB_ORDER_M X
+                 WHERE X.CUST_CD = A.CUST_CD
+                   AND X.ITEM_CD = A.ITEM_CD
+                   AND X.ORD_DT LIKE F_S_ADDDATE('M', 'M', '', -1) || '%'
+               ) AS BFR_MTH_ORD
+             , (SELECT IFNULL(SUM(X.ITEM_CNT), 0)
+                  FROM V_WEB_ORDER_M X
+                 WHERE X.CUST_CD = A.CUST_CD
+                   AND X.ITEM_CD = A.ITEM_CD
+                   AND X.ORD_DT LIKE F_S_ADDDATE('M', 'M', '', 0) || '%'
+               ) AS THS_MTH_ORD
+             , 0 AS AVRG_MTNLY_USG
+             , (SELECT X.ALARM_YN
+                  FROM T_WEB_MY_ITEM X
+                 WHERE X.CUST_CD = A.CUST_CD
+                   AND X.ITEM_CD = A.ITEM_CD
+                   AND X.GROUP_NO = B.GROUP_NO
+               ) AS ALARM_YN
+             , A.DLV_BRCH_CD
+             , A.ITEM_GB_CD
+             , 0 AS REQ_QTY
+             , A.SMALLBOX_QTY /* 소 */
+             , A.MIDBOX_QTY   /* 중 */
+             , A.LARGEBOX_QTY /* 대 */
+             , A.MIN_ORD_QTY /* 최소주문 */
+             , CASE WHEN A.MAX_ORD_QTY = 0 THEN ''
+                    ELSE CAST(A.MAX_ORD_QTY AS VARCHAR(20))
+               END AS MAX_ORD_QTY /* 최대주문 : 0 이면 빈값으로 */
+             , A.PRICE_DOWN_DT /* 보험약가(일자) */
+             , CASE WHEN A.PRICE_DOWN_WP2 = 0 THEN ''
+                    ELSE CAST(A.PRICE_DOWN_WP2 AS VARCHAR(20))
+               END AS PRICE_DOWN_WP2 /* 보험약가(금액) : 0 이면 빈값으로 */
+             , A.WEB_BACK_MEMO /* 반품조건 */
+             , A.SOLDOUT_NOTE /* 입고예정일 */
+             , CASE WHEN A.TAKEBACK_YN = 'Y' THEN '반품제약'
+                    ELSE '반품불가'
+               END TAKEBACK /* 반품 */
+             , IFNULL(B.MONTH_QTY, '') AS MONTH_QTY
+             , A.G_DLV_BRCH_CD
+             , A.TAKEBACK_LIMIT_YN
+             , A.WEB_BACK_USE_YN
+          FROM V_ITEM_GORDER A
+          JOIN T_WEB_MY_ITEM B
+            ON B.CUST_CD = A.CUST_CD
+           AND B.ITEM_CD = A.ITEM_CD
+        <if test='searchType == "1"'>
+          JOIN T_ITEM_SOLDOUT_IN C
+            ON C.ITEM_CD = A.ITEM_CD
+           AND C.BRCH_CD = A.BRCH_CD
+           AND B.ALARM_YN = 'Y'
+        </if>
+         WHERE A.CUST_CD = #{custCd}
+        <if test='searchOption == "1"'>
+           AND A.MED_CD = '02'
+           AND A.PAY_ITEM_YN = 'Y'
+        </if>
+        <if test='searchOption == "2"'>
+           AND A.MED_CD = '02'
+           AND A.PAY_ITEM_YN = 'N'
+        </if>
+        <if test='searchOption == "3"'>
+           AND A.MED_CD = '01'
+           AND A.PAY_ITEM_YN = 'Y'
+        </if>
+        <if test='searchOption == "4"'>
+           AND A.MED_CD = '01'
+           AND A.PAY_ITEM_YN = 'N'
+        </if>
+        <!--  
+        <if test='keyword != ""'>
+           AND (A.BOHUM_CD = #{bohumCd} OR
+                A.ITEM_NM LIKE #{itemNm}
+               )
+        </if>
+        -->
+        <if test="itemNm != null and itemNm !=''">
+            <bind name="itemNm" value='"%" + itemNm + "%"'/>
+            AND A.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test="bohumCd != null and bohumCd !=''">
+            <bind name="bohumCd" value='"%" + bohumCd + "%"'/>
+            AND A.BOHUM_CD LIKE #{bohumCd}
+        </if>    
+        <if test='makerNm != ""'>
+        <bind name="makerNm" value='"%" + makerNm + "%"'/>
+           AND A.MAKER_NM LIKE #{makerNm}
+        </if>
+        <if test='searchType == "2"'>
+           AND B.ALARM_YN = 'Y'
+        </if>
+        <if test='searchType == "3"'>
+           AND B.GROUP_NO = #{groupNo}
+        </if>
+           AND A.DLV_BRCH_CD = A.G_DLV_BRCH_CD
+         ORDER BY B.INS_DTM DESC
+    </select>
+    
+    <update id="updateAlarmYn" parameterType="java.util.HashMap">
+        /* interest.updateAlarmYn 관심상품 알람여부 수정 */
+        UPDATE T_WEB_MY_ITEM
+           SET ALARM_YN = #{alarmYn}
+             , MOD_ID = #{userId}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{custCd}
+           AND ITEM_CD = #{itemCd}
+    </update>
+    
+    <delete id="deleteMyItems" parameterType="java.util.HashMap">
+        /* interest.deleteMyItems 관심상품 다건 삭제 */
+        DELETE
+          FROM T_WEB_MY_ITEM
+         WHERE CUST_CD = #{CUST_CD}
+           AND GROUP_NO = #{GROUP_NO}
+           AND ALARM_YN = 'N'
+    </delete>
+    
+    <insert id="insertGroup" parameterType="java.util.HashMap">
+        /* interest.insertGroup 그룹 추가 */
+        INSERT INTO T_WEB_MY_ITEM_GROUP
+             ( CUST_CD
+             , GROUP_NO
+             , GROUP_NM
+             , SORT_NO
+             , INS_ID
+             , INS_DTM
+             )
+        VALUES
+             ( #{custCd}
+             , (SELECT IFNULL(MAX(X.GROUP_NO), 0) + 1
+                  FROM T_WEB_MY_ITEM_GROUP X
+                 WHERE X.CUST_CD = #{custCd}
+               )
+             , #{groupNm}
+             , (SELECT IFNULL(MAX(X.SORT_NO), 0) + 1
+                  FROM T_WEB_MY_ITEM_GROUP X
+                 WHERE X.CUST_CD = #{custCd}
+               )
+             , #{userId}
+             , F_S_NOW()
+             )
+    </insert>
+    
+    <delete id="deleteGroups" parameterType="java.util.HashMap">
+        /* interest.deleteGroups 그룹 삭제 */
+        DELETE
+          FROM T_WEB_MY_ITEM_GROUP
+         WHERE CUST_CD = #{CUST_CD}
+           AND GROUP_NO = #{GROUP_NO}
+    </delete>
+    
+    <delete id="deleteAllMyItems" parameterType="java.util.HashMap">
+        /* interest.deleteAllMyItems 삭제할 그룹 내 관심상품 삭제 */
+        DELETE
+          FROM T_WEB_MY_ITEM
+         WHERE CUST_CD = #{CUST_CD}
+           AND GROUP_NO = #{GROUP_NO}
+    </delete>
+    
+    <update id="updateSortNo" parameterType="java.util.HashMap">
+        /* interest.updateAlarmYn 관심그룹 정렬순서 수정 */
+        UPDATE T_WEB_MY_ITEM_GROUP
+           SET SORT_NO = #{SORT_NO}
+             , MOD_ID = #{USER_ID}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{CUST_CD}
+           AND GROUP_NO = #{GROUP_NO}
+    </update>
+    
+    <update id="updateGroupNo" parameterType="java.util.HashMap">
+        /* interest.updateGroupNo 관심상품 그룹 수정 */
+        UPDATE T_WEB_MY_ITEM
+           SET GROUP_NO = #{GROUP_NO}
+             , MOD_ID = #{USER_ID}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{CUST_CD}
+           AND ITEM_CD = #{ITEM_CD}
+    </update>
+    
+    <update id="updateMonthQty" parameterType="java.util.HashMap">
+        /* interest.updateMonthQty 관심상품 월평균사용량 수정 */
+        UPDATE T_WEB_MY_ITEM
+           SET MONTH_QTY = #{monthQty}
+             , MOD_ID = #{userId}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{custCd}
+           AND ITEM_CD = #{itemCd}
+    </update>
+    
+    <update id="updateAllAlarmYn" parameterType="java.util.HashMap">
+        /* interest.updateAllAlarmYn 관심상품 입고알림 일괄 해제 */
+        UPDATE T_WEB_MY_ITEM
+           SET ALARM_YN = 'N'
+             , MOD_ID = #{userId}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{custCd}
+           AND ALARM_YN = 'Y'
+    </update>
+    
+    <update id="updateGroupNm" parameterType="java.util.HashMap">
+        /* interest.updateGroupNm 관심상품 그룹명 수정 */
+        UPDATE T_WEB_MY_ITEM_GROUP
+           SET GROUP_NM = #{groupNm}
+             , MOD_ID = #{userId}
+             , MOD_DTM = F_S_NOW()
+         WHERE CUST_CD = #{custCd}
+           AND GROUP_NO = #{groupNo}
+    </update>
+</mapper>

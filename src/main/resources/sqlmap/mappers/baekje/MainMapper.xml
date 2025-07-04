@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="main">
+    <select id="selectLoginIdFind" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <bind name="userNm" value='"%" + userNm + "%"'/>
+        /* main.selectLoginIdFind 아이디찾기 */
+        SELECT A.USER_ID        /* 사용자ID */
+             , A.LOGIN_ID       /* 로그인ID */
+             , A.USER_NM        /* 사용자명 */
+             , B.CEO_NM         /* 대표자명 */
+             , B.SERVICE_NO     /* 사업자번호 */
+             , B.CUST_CD        /* 거래처코드 */
+             , B.CUST_NM        /* 거래처명 */
+             , B.BRCH_CD        /* 지점코드 */
+          FROM T_USER A
+         INNER JOIN T_CUST B
+            ON B.CUST_CD = A.CUST_CD
+         WHERE A.USE_YN = 'Y'
+           AND B.WEB_USE_YN = 'Y'
+           AND B.DEAL_END_YN = 'N'
+           AND A.USER_NM LIKE #{userNm}
+           AND B.SERVICE_NO = #{serviceNo}
+    </select>
+
+    <select id="selectLoginPwFind"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <bind name="ceoNm" value='"%" + ceoNm + "%"'/>
+        /* main.selectLoginPwFind 비밀번호찾기 */
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , REPLACE(DAMO.SCP_DECB64('SCP_ALL', B.HP_NO),'-','') AS HP_NO
+             , B.CEO_NM
+             , B.SERVICE_NO
+          FROM T_USER A
+         INNER JOIN T_CUST B
+            ON B.CUST_CD = A.CUST_CD
+         WHERE A.USER_ID = #{userId}
+           AND B.CEO_NM LIKE #{ceoNm}
+           AND B.SERVICE_NO = #{serviceNo}
+    </select>
+
+    <update id="updatePassword" parameterType="java.util.HashMap" >
+        /* main.updatePassword 비밀번호 초기화 */
+        UPDATE T_USER
+           SET PASSWORD3 = PASSWORD
+             , PASSWORD2 = PASSWORD3
+             , PASSWORD1 = PASSWORD2
+             , PASSWORD = #{encNewPassword}
+             , MOD_ID = F_S_EMPTY(#{userId},'')
+             , MOD_DTM = CURRENT TIMESTAMP
+         WHERE LOGIN_ID = #{initLoginId}
+    </update>
+
+    <insert id="insertSms2" parameterType="java.util.HashMap" >
+        /* main.insertSms2 변경 비밀번호 SMS전송 */
+        INSERT INTO SMS.SC_TRAN
+             ( TR_PHONE
+             , TR_SENDDATE
+             , TR_MSG
+             , TR_CALLBACK
+             , TR_ETC1
+             , TR_ETC2
+             , TR_ETC3
+             , TR_ETC4
+             )
+        VALUES
+             ( #{trPhone}
+             , TO_CHAR(CURRENT TIMESTAMP,'YYYYMMDDHH24MISS')
+             , #{trMsg}
+             , #{trCallback}
+             , 'WEB_ORDER'
+             , #{trEtc2}
+             , #{trEtc3}
+             , #{trEtc4}
+             )
+    </insert>
+
+    <insert id="saveNewQa" parameterType="java.util.HashMap">
+        /* main.saveNewQa 신규상담신청 */            
+       <selectKey keyProperty="seqNo" resultType="int" order="AFTER">
+       SELECT IDENTITY_VAL_LOCAL() AS seqNo
+        FROM SYSIBM.SYSDUMMY1
+        </selectKey>    
+    <![CDATA[
+		 INSERT INTO SALES.T_BOARD (
+		             BOARD_CD, BRCH_CD, TTL, CTT,
+		      FIX_YN, DEL_YN, INS_ID, INS_DTM) 
+		 VALUES (
+		      '13', '01', #{ctt}, #{ctt},
+		      '', 'N', 'NEW', CURRENT TIMESTAMP)
+    ]]>
+    </insert>
+
+	<insert id="insertBoardFile" parameterType="java.util.HashMap">  
+        <!-- main.insertBoardFile : 첨부파일 메타 저장 -->      
+        INSERT INTO T_BOARD_FILE (          
+          SEQ_NO,
+          FILE_NM,
+          ORG_FILE_NM,
+          FILE_PATH,
+          FILE_SIZE,
+          FILE_EXT,
+          DEL_YN
+        ) VALUES (          
+          #{seqNo},
+          #{fileNm},
+          #{orgFileNm},
+          #{filePath},
+          #{fileSize},
+          #{fileExt},
+          'N'
+        )
+    </insert>
+
+    <select id="selectItemNms" resultType="java.util.HashMap">
+        /* main.selectItemNms 품목명 목록 조회 */
+SELECT TRIM(A.ITEM_NM) AS ITEM_NM
+  FROM T_ITEM A
+ WHERE 1 = 0
+   AND A.USE_YN = 'Y'
+   AND A.SUBDIV_YN = 'N'
+   AND A.FORBID_YN = 'N'
+   AND A.MED_CD IN ('01','02')
+   AND A.ITEM_CD != '000000'
+   AND A.ITEM_NM NOT LIKE '%품절%'
+   AND A.ITEM_NM NOT LIKE '%생산중단%'
+   AND A.ITEM_NM NOT LIKE '%판매중지%'
+   AND A.ITEM_NM NOT LIKE '%제약사회수%'
+   AND A.WP2_AMT > 0
+ GROUP BY TRIM(A.ITEM_NM)
+ ORDER BY TRIM(A.ITEM_NM)
+         <!-- LIMIT 10000 -->
+    </select>
+    
+    <select id="selectUserGb1020" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectUserGb1020 사용자 로그인시 거래처코드 목록 조회 */
+        SELECT A.CUST_CD
+             , A.CUST_NM
+             , A.DEPT_CD
+             , IFNULL(damo.SCP_DECB64('SCP_ALL', A.HP_NO),'') AS HP_NO
+             , damo.SCP_DECB64('SCP_ALL', A.TEL_NO) AS TEL_NO
+             , A.CEO_NM
+             , B.BRCH_SNM
+             , CASE WHEN C.DLV_COURSE_NM IS NOT NULL THEN C.DLV_COURSE_NM
+                    WHEN D.DLV_AREA_NM IS NOT NULL THEN D.DLV_AREA_NM
+                    WHEN C.DLV_COURSE_NM IS NULL AND D.DLV_AREA_NM IS NULL THEN ''
+               END AS DLV_COURSE_NM
+             , A.ANI_TREAT_YN
+          FROM T_CUST A
+          JOIN T_BRANCH B
+            ON B.BRCH_CD = A.BRCH_CD
+          LEFT JOIN T_ROUTE_COURSE C
+            ON C.DLV_COURSE_CD = A.DLV_COURSE_CD
+          LEFT JOIN T_ROUTE_AREA D
+            ON D.DLV_AREA_CD = A.DLV_COURSE_CD
+         WHERE 1 = 1
+           AND A.BRCH_CD IN (SELECT BRCH_CD FROM T_BRANCH WHERE P_BRCH_CD = #{loginBrchCd} OR BRCH_CD = #{loginBrchCd})
+       <if test="loginDeptCd != null and loginDeptCd !=''">
+           AND A.DEPT_CD = #{loginDeptCd}
+       </if>
+       <if test='custNmCdGb == "1" and keyword != null and keyword != ""'>
+       <bind name="keyword" value='"%" + keyword + "%"'/>
+           AND A.CUST_NM LIKE #{keyword}
+       </if>
+       <if test='custNmCdGb == "2" and keyword != null and keyword != ""'>
+       <bind name="keyword" value='"%" + keyword + "%"'/>
+           AND A.CUST_CD LIKE #{keyword}
+       </if>
+           AND A.DEAL_END_YN = 'N'
+           AND A.SB_GB_CD IN ('02','03')
+           AND A.WEB_USE_YN   = 'Y'
+           AND A.CUST_GB_CD NOT IN('09','10','11','12','13','15','18','19')
+        ORDER BY A.CUST_NM, B.BRCH_SNM
+        <!-- LIMIT #{PAGE_PER_CNT} OFFSET #{PAGE_OFFSET_CNT} -->
+    </select>
+    
+    <select id="selectChangeCust" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectChangeCust 변경 거래처 정보 */
+        SELECT A.CUST_CD
+             , A.DLV_BRCH_CD
+             , A.BRCH_CD
+             , A.CUST_NM
+             , A.HP_NO
+             , A.TEL_NO
+             , A.EMAIL
+             , A.EMP_ID
+             , A.CEO_NM
+             , A.EMP_ID
+             , A.EMP_NM
+             , A.EMP_HP_NO
+             , A.CUST_GB_CD
+             , A.DEPT_CD
+             , A.SUBDIV_BACK_YN  -- Y 일경우 소분 반품 활성
+             , CASE WHEN B.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END CASH_LIMIT_BACK_YN
+             , F_S_EMPTY(Y.USER_STRING2, '') AS DRUG_CD
+             , A.CLOSE_READY_YN
+             , A.ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = A.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.ANI_TREAT_YN
+          FROM V_CUST A
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT JOIN V_BALANCE_MONTH B
+            ON B.CUST_CD = A.CUST_CD
+           AND B.BRCH_CD = A.BRCH_CD
+           AND B.BALANCE_YM = F_S_ADDDATE('M','M',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-1')
+         WHERE A.CUST_CD = #{custCd}
+    </select>
+    
+    <select id="selectDlvInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectDlvInfo 배송관련 정보 */
+        SELECT A.BRCH_SNM
+             , DLV_COURSE_NM
+             , DLV_AREA_NM
+             , DLV_TIME
+             , F_TIME
+             , S_TIME
+             , T_TIME
+          FROM table(F_T_DLVINFO(#{custCd})) A
+    </select>
+    
+    <select id="selectChangeCustInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectChangeCustInfo 변경 거래처 정보로 변경 */
+        SELECT IFNULL(CAST(#{userId} AS VARCHAR(25)) ,'')         AS USER_ID
+             , IFNULL(CAST(#{loginId} AS VARCHAR(25)) ,'')        AS LOGIN_ID
+             , IFNULL(CAST(#{loginBrchCd} AS VARCHAR(25)) ,'')   AS LOGIN_BRCH_CD
+             , IFNULL(CAST(#{loginDeptCd} AS VARCHAR(25)),'')   AS LOGIN_DEPT_CD
+             , F_S_EMPTY(#{userNm},'')         AS USER_NM
+             , IFNULL(CAST(#{roleCd} AS VARCHAR(25)),'')         AS ROLE_CD
+             , IFNULL(CAST(#{userGbCd} AS VARCHAR(25)) ,'')      AS USER_GB_CD
+             , IFNULL(CAST(#{empNo} AS VARCHAR(25)) ,'')          AS EMP_NO
+             , IFNULL(CAST(#{brchCd} AS VARCHAR(25)) ,'')             AS BRCH_CD
+             , IFNULL(CAST(#{dlvBrchCd} AS VARCHAR(25)) ,'')         AS DLV_BRCH_CD
+             , IFNULL(CAST(#{CUST_CD} AS VARCHAR(25)) ,'')             AS CUST_CD
+             , F_S_EMPTY(#{CUST_NM},'')             AS CUST_NM
+             , IFNULL(CAST(#{EMP_ID} AS VARCHAR(25)) ,'')              AS EMP_ID
+             , F_S_EMPTY(#{EMP_NM},'')              AS EMP_NM
+             , F_S_EMPTY(#{EMP_HP_NO} ,'')           AS EMP_HP_NO
+             , F_S_EMPTY(#{HP_NO} ,'')               AS HP_NO_CUST
+             , F_S_EMPTY(#{TEL_NO}  ,'')              AS TEL_NO_CUST
+             , IFNULL(CAST(#{EMAIL} AS VARCHAR(25)) ,'')               AS EMAIL_CUST
+             , F_S_EMPTY(#{CEO_NM},'')              AS CEO_NM
+             , IFNULL(CAST(#{CUST_GB_CD} AS VARCHAR(25)) ,'')          AS CUST_GB_CD
+             , IFNULL(CAST(#{DEPT_CD} AS VARCHAR(25)) ,'')             AS DEPT_CD
+             , IFNULL( F_S_SUBDIV_BACK_YN(CAST(#{loginBrchCd} AS VARCHAR(25))) ,'N')     AS SUBDIV_BACK_YN
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = #{BRCH_CD}),'N') AS ACCPT_YN
+             , F_S_EMPTY(#{DRUG_CD},'')              AS DRUG_CD
+             , F_S_EMPTY(#{brchNm},'')              AS BRCH_NM
+             , F_S_EMPTY(#{brchSnm},'')              AS BRCH_SNM
+             , F_S_EMPTY(#{CLOSE_READY_YN},'')              AS CLOSE_READY_YN
+             , 'N' SPECIAL_ID
+             , F_S_EMPTY(#{ORD_MAKER_CD},'')              AS ORD_MAKER_CD
+             , F_S_EMPTY(#{CASH_LIMIT_BACK_YN},'')              AS CASH_LIMIT_BACK_YN
+             , IFNULL(CAST(#{ANI_TREAT_YN} AS VARCHAR(25)) ,'')          AS ANI_TREAT_YN
+          FROM DUAL
+    </select>
+    
+    <select id="selectPaymentCustInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /*+[PaymentMapper.xml][payment.selectPaymentCustInfo][신용카드 결제 요청 고객 정보 조회][by.ABJ1]+*/
+        SELECT
+            A.CUST_CD
+            , A.CUST_NM
+            , A.SERVICE_NO AS CUST_SERVICE_NO
+            , A.CEO_NM
+            , B.USER_STRING4  AS SERVICE_NO
+            , B.USER_STRING3  AS SUPCODE
+            , B.USER_STRING6  AS MID
+            , B.USER_STRING7  AS EMAIL
+            , B.USER_STRING8  AS URL
+            , B.USER_STRING9  AS KEY
+            , B.USER_STRING10 AS IV
+            , A.BRCH_CD
+            , A.EMP_ID
+            , C.EMP_NM
+            , D.LOGIN_ID AS EMP_LOGIN_ID
+        FROM T_CUST A 
+        JOIN T_CODE B ON A.BRCH_CD = B.CODE
+        LEFT JOIN T_EMP C ON C.EMP_ID = A.EMP_ID  
+        LEFT JOIN T_USER D ON D.USER_ID = A.EMP_ID
+        WHERE 1=1
+        AND A.CUST_CD = #{custCd}
+        AND B.P_CODE = '880'    
+    </select>
+    
+    <select id="selectBasketCount" resultType="java.util.HashMap">
+        /* main.selectBasketCount 주문, 반품 장바구니 갯수 조회 */
+        SELECT A.ORD_COUNT
+             , B.TAKEBACK_COUNT
+             , A.ORD_COUNT + B.TAKEBACK_COUNT AS TOTAL_COUNT
+          FROM (SELECT COUNT(1) AS ORD_COUNT
+                  FROM V_WEB_BASKET A
+                  JOIN T_CUST B
+                    ON B.CUST_CD = A.CUST_CD
+                  JOIN T_ITEM C
+                    ON C.ITEM_CD = A.ITEM_CD
+                   AND C.USE_YN = 'Y'
+                 WHERE A.CUST_CD = #{custCd}
+                   AND A.BASKET_GB_CD = '01'
+               ) A
+          JOIN (SELECT COUNT(1) AS TAKEBACK_COUNT
+                  FROM T_WEB_BASKET A
+                  JOIN T_ITEM B
+                    ON B.ITEM_CD = A.ITEM_CD
+                  JOIN T_MAKER C
+                    ON B.MAKER_CD = C.MAKER_CD
+                  JOIN T_CUST D
+                    ON D.CUST_CD  = A.CUST_CD
+                  JOIN V_ITEM_BACK E
+                    ON E.CUST_CD = A.CUST_CD
+                   AND E.ITEM_CD = A.ITEM_CD
+                 WHERE A.CUST_CD = #{custCd}
+                   AND A.BASKET_GB_CD IN ('02', '03')
+                   AND A.DEL_YN = 'N'
+               ) B
+            ON 1 = 1
+         WHERE 1 = 1
+    </select>
+    
+    <select id="selectBannerItemInfo" resultType="java.util.HashMap">
+        /* main.selectBannerItemInfo 우측 광고배너 제품정보 조회 */
+        SELECT A.ITEM_CD /* 품목코드 */
+             , C.ITEM_NM /* 품목명 */
+             , C.UNIT /* 규격 */
+             , A.SORT_NO /* 정렬순서 */
+             , A.URL_SMALL /* 광고리스트용 이미지URL(이미지,HTML) */
+             , A.URL_LARGE /* 광고상세페이지 이미지URL(이미지,HTML) : 이미지 경우 가로 100%로 설정 */
+             , C.WP2_AMT /* 단가 */
+             , B.DLV_BRCH_CD
+             , A.URL_LARGE_LINK
+          FROM T_WEB_AD_ITEM A /* 광고품목정보테이블 */
+          JOIN T_CUST B
+            ON B.CUST_CD = #{custCd} /* 로그인거래처 */
+          JOIN T_ITEM C
+            ON C.ITEM_CD = A.ITEM_CD
+           AND C.FORBID_YN = 'N' /* 출하금지 제외 */
+           AND C.SUBDIV_YN = 'N' /* 소분제외 */
+           AND C.MED_CD IN ('01','02') /* 일반,전문의약품 */
+          JOIN T_ITEM_STOCK D
+            ON D.BRCH_CD = B.DLV_BRCH_CD
+           AND D.ITEM_CD = A.ITEM_CD
+           AND D.WEB_USE_YN = 'Y' /* 웹주문가능품목 */
+           AND D.AVAIL_STOCK > 0 /* 가용재고있는품목 */
+         WHERE A.USE_YN = 'Y'
+         ORDER BY A.SORT_NO
+    </select>
+    
+    <select id="selectMakerBrchList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	/* main.selectMakerBrchList 제약회사 지점 리스트 조회 */
+        SELECT  A.BRCH_CD          AS BRCH_CD
+             , A.STOCK_USE_YN   AS STOCK_USE_YN
+             , B.BRCH_NM        AS BRCH_NM
+          FROM T_WEB_MAKER_BRANCH A
+          JOIN T_BRANCH B ON A.BRCH_CD = B.BRCH_CD AND B.USE_YN = 'Y' AND B.BRCH_GB_CD != '03'
+         WHERE A.MAKER_CD    = #{makerCd}
+           AND A.USE_YN      = 'Y'
+    </select>
+    
+    <select id="selectMakerSaleList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	/* main.selectMakerSaleList 재약회사 매출 내역 조회 */
+		SELECT MAKER_NM
+		     , CUST_NM
+		     , SERVICE_NO
+		     , ITEM_NM_UNIT
+		     , ITEM_QTY
+		     , ORD_WP2_AMT
+		     , ITEM_AMT
+		     , ADDRESS
+		     , ZIP_CD
+		     , SALE_DT
+		     , BOHUM_CD
+		  FROM V_WEB_MAKER_SALE n 
+		 WHERE 1=1
+		   AND BRCH_CD   = #{brchCd}
+		   AND APRV_DT BETWEEN #{startDt} AND #{endDt}
+		   AND MAKER_CD  = #{makerCd}
+		   <if test="medCd != null and medCd != ''  ">
+		   AND MED_CD    = #{medCd}
+		   </if>
+		   <if test="makerCd == '057' ">
+           AND CUST_CD NOT IN ('2002234', '2003281', '2002735', '0118047')
+           </if>
+		 ORDER BY MAKER_NM, ITEM_NM_UNIT, CUST_NM, SALE_DT, APRV_NO
+    </select>
+
+    <select id="selectMakerStockList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	/* main.selectMakerStockList 재약회사 재고 내역 조회 */
+		SELECT IO_YM_FM
+		     , MAKER_NM
+		     , MED_NM
+		     , ITEM_NM_UNIT
+		     , STORE_STOCK
+		     , BOHUM_CD
+		  FROM V_WEB_MAKER_STOCK
+		 WHERE 1=1
+		   AND BRCH_CD  = #{brchCd}
+		   AND IO_YM    = #{ioYm}
+		   AND MAKER_CD = #{makerCd}
+		   <if test="medCd != null and medCd != ''  ">
+		   AND MED_CD  = #{medCd}
+		   </if>
+		 ORDER BY ITEM_NM_UNIT
+    </select>
+    
+    <select id="selectDlvTime" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectDlvTime 배송마감시간 조회 */
+        SELECT CUST_CD /* 거래처코드 */
+             , CUST_NM /* 거래처명 */
+             , DLV_COURSE_CD /* 배송경로코드 */
+             , CUR_YMD AS CUR_YMD_ORG /* 현재일자 */
+             , SUBSTRING(CUR_YMD, 0, 5) || '-' || SUBSTRING(CUR_YMD, 5, 2) || '-' || SUBSTRING(CUR_YMD, 7, 2) AS CUR_YMD
+             , CUR_HMS AS CUR_HMS_ORG /* 현재시분초 */
+             , SUBSTRING(CUR_HMS, 0, 3) || ':' || SUBSTRING(CUR_HMS, 3, 2) || ':' || SUBSTRING(CUR_HMS, 5, 2) AS CUR_HMS
+             , TRIM(CUR_WEEK) AS CUR_WEEK /* 현재요일 */
+             , END_YMD AS END_YMD_ORG /* 마감일자 */
+             , SUBSTRING(CUR_YMD, 0, 5) || '-' || SUBSTRING(END_YMD, 5, 2) || '-' || SUBSTRING(END_YMD, 7, 2) AS END_YMD
+             , END_HM || '00' AS END_HM_ORG /* 마감시분 */
+             , SUBSTRING(END_HM, 0, 3) || ':' || SUBSTRING(END_HM, 3, 2) AS END_HM
+             , TRIM(END_WEEK) AS END_WEEK /* 마감요일 */
+             , DLV_WEEK /* 배송요일 */
+             , DLV_TIME /* 배송차수 */
+             , REMAIN_HMS /* 마감시간계산 */
+          FROM TABLE(F_T_DLV_TIME(#{custCd}, '', '')) A /* 거래처코드 */
+    </select>
+    
+    <select id="selectSoldoutInYn" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* main.selectSoldoutInYn 입고알림 조회(헤더 도트) */
+        SELECT COUNT(1) AS CNT
+          FROM T_WEB_MY_ITEM A
+          JOIN T_ITEM_SOLDOUT_IN B
+            ON B.ITEM_CD = A.ITEM_CD
+           AND B.BRCH_CD = #{brchCd}
+           AND B.IN_YMD BETWEEN F_S_ADDDATE('D', 'C', VARCHAR_FORMAT(CURRENT TIMESTAMP, 'YYYYMMDD'), -7)
+                            AND F_S_ADDDATE('M', 'C', VARCHAR_FORMAT(CURRENT TIMESTAMP, 'YYYYMMDD'), 0)
+         WHERE A.ALARM_YN = 'Y'
+           AND A.CUST_CD = #{custCd}
+    </select>
+    
+    <update id="updateAllAlarmYn" parameterType="java.util.HashMap" >
+        /* main.updateAllAlarmYn 알람여부 일괄 해제 */
+        UPDATE T_WEB_MY_ITEM A
+           SET A.ALARM_YN = 'N'
+         WHERE A.CUST_CD = #{custCd}
+           AND A.ITEM_CD IN (SELECT X.ITEM_CD
+                               FROM T_WEB_MY_ITEM X
+                               JOIN T_ITEM_SOLDOUT_IN Y
+                                 ON X.ITEM_CD = Y.ITEM_CD
+                                AND Y.BRCH_CD = #{brchCd}
+                              WHERE X.CUST_CD = #{custCd}
+                             )
+    </update>
+    <select id="selectLoginMainVar" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLoginMainVar 로그인 */
+    SELECT IFNULL(MAX(USER_STRING2),'logo_bj.svg') AS LOGO_IMG
+          ,IFNULL(MAX(USER_STRING2),'logo_bj.png') AS LOGO_IMG_MOBILE
+          ,(CASE WHEN IFNULL(MAX(USER_STRING3),'Y') = 'N' THEN 'N' ELSE 'Y' END) AS PAY_YN
+    FROM T_CODE
+    WHERE P_CODE = '333'
+    AND CODE = #{brchCd} /* 변수 */
+    </select>
+</mapper>

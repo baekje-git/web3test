@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="sample">
+    <select id="selectMenu" parameterType="HashMap" resultType="HashMap">
+    SELECT * c
+    FROM MENU01TB T1    
+    </select>
+
+    <select id="selectCODE00TB" parameterType="HashMap" resultType="HashMap" >
+     select * from CODE00TB t
+     order by t.sort_order
+    </select>
+    
+    <update id="saveCODE00TB" parameterType="HashMap">
+        MERGE 
+         INTO CODE00TB T
+        USING DUAL
+           ON (T.MST_CODE = #{MST_CODE})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET T.CODE_NAME = #{CODE_NAME},                     
+                     T.OPTION1 = #{OPTION1},
+                     T.OPTION2 = #{OPTION2},
+                     T.OPTION3 = #{OPTION3},
+                     T.OPTION4 = #{OPTION4},
+                     T.OPTION5 = #{OPTION5},
+                     T.EDT_DATE = SYSDATE,
+                     T.EDT_USER = #{EDT_USER},    
+                     T.USE_YN = #{USE_YN}
+         WHEN NOT MATCHED THEN
+              INSERT (T.CODE_NAME,
+                      T.MST_CODE,
+                      T.OPTION1,
+                      T.OPTION2,
+                      T.OPTION3,
+                      T.OPTION4,
+                      T.OPTION5,
+                      T.REG_DATE,
+                      T.REG_USER,
+                      T.EDT_DATE,
+                      T.EDT_USER,                     
+                      T.USE_YN )
+              VALUES (#{CODE_NAME},
+                      #{MST_CODE},
+                      #{OPTION1},
+                      #{OPTION2},
+                      #{OPTION3},
+                      #{OPTION4},
+                      #{OPTION5},
+                      SYSDATE,
+                      #{REG_USER},
+                      SYSDATE,
+                      #{EDT_USER},                     
+                      #{USE_YN}   )    
+    </update>
+    
+    <select id="selectCODE01TB" parameterType="HashMap" resultType="HashMap" >
+     SELECT T.CODE_NAME,
+		    T.DTL_CODE,
+		    T.EDT_DATE,
+		    T.EDT_USER,    
+		    T.MST_CODE,
+		    T.OPTION1,
+		    T.OPTION2,
+		    T.OPTION3,
+		    T.OPTION4,
+		    T.OPTION5,
+		    T.REG_DATE,
+		    T.REG_USER,
+		    T.SORT_ORDER,
+		    T.USE_YN 
+       FROM CODE01TB T
+      WHERE T.MST_CODE = #{MST_CODE}
+    </select>
+    
+    <update id="saveCODE01TB" parameterType="HashMap">
+		MERGE 
+		 INTO CODE01TB T
+		USING DUAL
+		   ON (T.MST_CODE = #{MST_CODE} AND T.DTL_CODE = #{DTL_CODE})
+		 WHEN MATCHED THEN
+		      UPDATE
+		         SET T.CODE_NAME = #{CODE_NAME},		             
+		             T.OPTION1 = #{OPTION1},
+		             T.OPTION2 = #{OPTION2},
+		             T.OPTION3 = #{OPTION3},
+		             T.OPTION4 = #{OPTION4},
+		             T.OPTION5 = #{OPTION5},
+		             T.EDT_DATE = SYSDATE,
+		             T.EDT_USER = #{EDT_USER},    
+		             T.USE_YN = #{USE_YN}
+		 WHEN NOT MATCHED THEN
+		      INSERT (T.CODE_NAME,
+	  	              T.DTL_CODE,			              
+			          T.MST_CODE,
+			          T.OPTION1,
+			          T.OPTION2,
+			          T.OPTION3,
+			          T.OPTION4,
+			          T.OPTION5,
+			          T.REG_DATE,
+			          T.REG_USER,
+			          T.EDT_DATE,
+                      T.EDT_USER,			          
+			          T.USE_YN )
+		      VALUES (#{CODE_NAME},
+                      #{DTL_CODE},                         
+                      #{MST_CODE},
+                      #{OPTION1},
+                      #{OPTION2},
+                      #{OPTION3},
+                      #{OPTION4},
+                      #{OPTION5},
+                      SYSDATE,
+                      #{REG_USER},
+                      SYSDATE,
+                      #{EDT_USER},                     
+                      #{USE_YN}   )    
+    </update>
+    
+    <select id="selectCODE00TB_2" parameterType="HashMap" resultType="HashMap" >
+     select * from CODE00TB t
+    </select>
+    
+    <select id="selectCODE01TB_2" parameterType="HashMap" resultType="HashMap" >
+     SELECT T.CODE_NAME,
+            T.DTL_CODE,
+            T.EDT_DATE,
+            T.EDT_USER,    
+            T.MST_CODE,
+            T.OPTION1,
+            T.OPTION2,
+            T.OPTION3,
+            T.OPTION4,
+            T.OPTION5,
+            T.REG_DATE,
+            T.REG_USER,
+            T.SORT_ORDER,
+            T.USE_YN 
+       FROM CODE01TB T      
+    </select>
+    
+    <select id="selectCODE01TB_3" parameterType="HashMap" resultType="HashMap" >
+     SELECT T.CODE_NAME,
+            T.DTL_CODE,
+            T.EDT_DATE,
+            T.EDT_USER,    
+            T.MST_CODE,
+            T.OPTION1,
+            T.OPTION2,
+            T.OPTION3,
+            T.OPTION4,
+            T.OPTION5,
+            T.REG_DATE,
+            T.REG_USER,
+            T.SORT_ORDER,
+            T.USE_YN 
+       FROM CODE01TB T
+      WHERE T.MST_CODE = #{PARAM1}
+    </select>
+    
+    <select id="selectUserInfo" parameterType="HashMap" resultType="HashMap">
+        SELECT  U1.ADDRESS_TYPE1,
+                U1.ADDRESS_TYPE2,
+                U1.AUTH_DCO_YMD,
+                U1.AUTH_EDU_YMD,
+                U1.AUTH_ID,
+                U1.AUTH_STAGE_NAME,
+                U1.AUTH_STAGE_NO,
+                U1.BANK_ACCOUNT_NO,
+                U1.BANK_CODE,
+                U1.BANK_OWNER_NAME,
+                U1.BCO_YN,
+                U1.CHANGE_PWD_DATE,
+                U1.CHARGER_YN,
+                U1.COMPANY_NAME,
+                U1.COMPANY_POSITION,
+                U1.DCO_YN,
+                U1.EDT_DATE,
+                U1.EDT_USER,
+                U1.EDU_CHARGER_YN,
+                U1.EDU_YN,
+                U1.EMAIL_AGREE_YN,
+                U1.EMP_CODE,
+                U1.HOMEPAGE_USE_YN,
+                U1.INSPECTOR_POOL,
+                U1.IP_ADDR,
+                U1.IS_ROAD_ADDRESS1,
+                U1.IS_ROAD_ADDRESS2,
+                U1.REG_DATE,
+                U1.REG_USER,
+                U1.SMS_AGREE_YN,
+                U1.TEST_CODE,
+                U1.TOKEN_DATE,
+                U1.TOKEN_VALUE,
+                U1.UNIFORM_SIZE,
+                U1.USER_ADDRESS1,
+                U1.USER_ADDRESS2,
+                U1.USER_ADDRESS_LATITUDE1,
+                U1.USER_ADDRESS_LATITUDE2,
+                U1.USER_ADDRESS_LONGITUDE1,
+                U1.USER_ADDRESS_LONGITUDE2,
+                U1.USER_AGENT,
+                U1.USER_COMPANY_PHONE,
+                U1.USER_DETAIL_ADDRESS1,
+                U1.USER_DETAIL_ADDRESS2,
+                U1.USER_EMAIL_PREFIX,
+                U1.USER_EMAIL_SUFFIX,
+                U1.USER_EN_NAME,
+                U1.USER_FILE_NAME,
+                U1.USER_FILE_PATH,
+                U1.USER_HOME_PHONE,
+                U1.USER_ID,
+                U1.USER_NAME,
+                U1.USER_PHONE,    
+                U1.USER_SEX,
+                U1.USER_ZIPCODE1,
+                U1.USER_ZIPCODE2,
+                U1.WRONG_COUNT
+         FROM USER01TB U1
+        WHERE U1.USER_ID = #{USER_ID}                  
+    </select>        
+    
+    <select id="selectMenuByUser" parameterType="HashMap" resultType="HashMap">
+		 SELECT T1.MENU_ID,
+		        T1.MENU_NAME,
+		        T1.MENU_PATH,
+		        T1.MENU_DIVISION,
+		        T1.MENU_UPPER,
+		        T1.MENU_MODAL,
+		        T1.MENU_SORT,
+		        T1.MEMO,
+		        T1.USE_YN,
+		        TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE,
+		        SUBSTR(T1.MENU_ID, 1, 2) AS MENU_GROUP
+		   FROM MENU01TB T1
+		  WHERE T1.USE_YN = 'Y'
+		    AND EXISTS (SELECT 1
+		           FROM KADA.MENU02TB A, KADA.USER03TB B
+		          WHERE A.AUTH_CODE = B.AUTH_CODE(+)
+		            AND A.MENU_ID = T1.MENU_ID
+		            AND B.USER_ID = #{USER_ID} )
+		  ORDER BY SUBSTR(T1.MENU_ID, 1, 2), T1.MENU_SORT    
+    </select>
+    
+    <insert id="insertCODE01TB" parameterType="HashMap">
+              INSERT INTO CODE01TB (
+                      CODE_NAME,
+                      DTL_CODE,                         
+                      MST_CODE,
+                      OPTION1,
+                      OPTION2,
+                      OPTION3,
+                      OPTION4,
+                      OPTION5,
+                      REG_DATE,
+                      REG_USER,
+                      EDT_DATE,
+                      EDT_USER,                     
+                      USE_YN 
+              ) VALUES (
+                      #{CODE_NAME},
+                      #{DTL_CODE},                         
+                      #{MST_CODE},
+                      #{OPTION1},
+                      #{OPTION2},
+                      #{OPTION3},
+                      #{OPTION4},
+                      #{OPTION5},
+                      SYSDATE,
+                      #{REG_USER},
+                      SYSDATE,
+                      #{EDT_USER},                     
+                      #{USE_YN}  
+              )        
+    </insert>
+    
+    <update id="updateCODE01TB" parameterType="HashMap">
+        UPDATE CODE01TB
+           SET CODE_NAME = #{CODE_NAME},                     
+               OPTION1 = #{OPTION1},
+               OPTION2 = #{OPTION2},
+               OPTION3 = #{OPTION3},
+               OPTION4 = #{OPTION4},
+               OPTION5 = #{OPTION5},
+               EDT_DATE = SYSDATE,
+               EDT_USER = #{EDT_USER},    
+               USE_YN = #{USE_YN}    
+         WHERE MST_CODE = #{MST_CODE} 
+           AND DTL_CODE = #{DTL_CODE}      
+    </update>
+    
+    <delete id="deleteCODE01TB" parameterType="HashMap">
+        DELETE FROM CODE01TB
+         WHERE MST_CODE = #{MST_CODE} 
+           AND DTL_CODE = #{DTL_CODE} 
+    </delete>
+    
+</mapper>

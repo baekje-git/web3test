@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.athletebiography">
+
+    
+    <select id="selectYearList" resultType="HashMap">
+        /* k03.athletebiography.selectYearList - 년도리스트 조회 */
+      <![CDATA[
+       SELECT TO_CHAR(SYSDATE+1825,'YYYY')-LEVEL+1 AS YEAR 
+            , TO_CHAR(SYSDATE+1825,'YYYY')-LEVEL+1 AS YEAR_NAME 
+         FROM DUAL CONNECT BY LEVEL <= ((TO_CHAR(SYSDATE+1825,'YYYY')+1)-2010)
+         ]]>
+    </select>
+    
+    <select id="selectProClubInfoList" resultType="HashMap">
+        /* k03.athletebiography.selectProClubInfoList - 선수바이오그래피 화면 구단정보 조회 */
+      <![CDATA[
+       SELECT A.MST_CODE AS CLUB_ORGZ
+                     , B.CODE_NAME AS CLUB_ORGZ_NM 
+                     , A.DTL_CODE AS CLUB_CD
+                     , A.CODE_NAME AS CLUB_NM
+                     ,A.USE_YN
+                     , C.FILE_PATH 
+                     , C.FILE_NAME 
+                     , c.OPTION1   --구단배경이미지사용
+                     , '@'||C.FILE_PATH||C.FILE_NAME as  FULLNAME
+                     , C.FILE_SEQ
+                     , C.SEQ_NO 
+                  FROM K99_CODE_DTL A
+                  JOIN  K99_CODE_DTL B ON B.DTL_CODE = A.MST_CODE AND B.MST_CODE='PRO_ORGZ' 
+                 LEFT OUTER join K99_CMMN_FILE  C
+                    on C.FILE_SEQ =A.OPTION10
+                    and C.OPTION1='Y'
+                    AND C.USE_YN='Y'
+                 WHERE 1=1
+         ]]>
+         <if test='MST_CODE != null and MST_CODE != "" and MST_CODE != null and MST_CODE == "KBO"'>
+            AND A.MST_CODE = #{MST_CODE}
+        </if>
+                   
+         
+    </select>
+    <select id="selectProPlayerInfo" resultType="HashMap">
+        /* k03.athletebiography.selectProPlayerInfo - 선수바이오그래피 화면 선수정보 조회 */
+      <![CDATA[
+        SELECT A.USER_ID
+             , A.USER_NAME  AS PLAYER_NAME
+		     , NVL(A.USER_EN_NAME,A.USER_NAME) AS PLAYER_E_NAME 
+		     , A.USER_SEX AS PLAYER_SEX
+		     , A.USER_ID AS KADAMS_ID
+		     , A.PLAYER_NO
+		     , B.CODE_NAME AS PRO_ORGZ_NM 
+		     , B.OPTION8 AS EVENT_CODE
+		     , A.CLUB_CODE   
+		     , C.CODE_NAME AS CLUB_CODE_NM  
+		     , A.PRO_ORGZ  
+		     , B.OPTION9 AS EVENT_DET_CODE
+		     , A.BIRTH_DT
+		     , CASE WHEN A.BIRTH_DT IS NOT NULL AND LENGTH(A.BIRTH_DT)=8 THEN TO_CHAR(TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), TO_DATE(A.BIRTH_DT,'YYYYMMDD')) / 12)) ELSE '' END AS AGE
+		     , '' AS MARITALSTATUS
+		     , '' AS CHILDREN
+		     , '' AS OCCUPATION
+		     , '' AS NICK_NAME
+		     , SUBSTR(A.USER_ADDRESS1,1,INSTR(A.USER_ADDRESS1,' ',1,1)) AS RESIDENCE
+		     , '' AS LANGUAGES
+		     , '' AS HOBBIES
+		     , '' AS SKIS
+		  FROM USER01TB A 
+		  LEFT OUTER JOIN K99_CODE_DTL B 
+		    ON B.MST_CODE ='PRO_ORGZ'  
+		    AND B.dtl_code = A.PRO_ORGZ
+		  LEFT OUTER JOIN   K99_CODE_DTL C
+		    ON C.MST_CODE = A.PRO_ORGZ
+		    AND C.dtl_code = A.CLUB_CODE
+		 WHERE 1=1
+		 AND A.USER_FLAG='P'
+		 AND A.USER_ID= #{USER_ID}                       
+         ]]>
+    </select>
+    
+    <select id="selectProPlayerInspectList" resultType="HashMap">
+        /* k03.athletebiography.selectProPlayerInspectList - 선수바이오그래피 화면 선수 검사일자별 조회 */
+      <![CDATA[
+    SELECT IPNT_DATE
+          , MAX(USER_NAME) AS USER_NAME
+                       , SUM(IPNT_FLAG_TOT_QTY) AS TOT_QTY
+                       , SUM(CASE WHEN IPNT_FLAG='1' AND  IPNT_PERIOD_CODE = '0' THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS U_IC
+                       , SUM(CASE WHEN IPNT_FLAG='1' AND  IPNT_PERIOD_CODE = '1' THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS U_OOC
+                       , SUM(CASE WHEN IPNT_FLAG='2' AND  IPNT_PERIOD_CODE = '0' THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS B_IC
+                       , SUM(CASE WHEN IPNT_FLAG='2' AND  IPNT_PERIOD_CODE = '1' THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS B_OOC
+                       , 0 AS BP_IC  --SUM(CASE WHEN IPNT_FLAG='2' AND  IPNT_PERIOD_CODE = '0' THEN IPNT_FLAG_TOT_QTY ELSE 0 END)
+                       , 0 AS BP_OOC  --SUM(CASE WHEN IPNT_FLAG='2' AND  IPNT_PERIOD_CODE = '1' THEN IPNT_FLAG_TOT_QTY ELSE 0 END)
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '0' AND IPNT_SUB_FLAG NOT IN('22','25','13','15') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS EPOS_IC
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '1' AND IPNT_SUB_FLAG NOT IN('22','25','13','15') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS EPOS_OOC
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '0' AND IPNT_SUB_FLAG IN('22','25') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS GH_IC
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '1' AND IPNT_SUB_FLAG IN('22','25') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS GH_OOC
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '0' AND IPNT_SUB_FLAG IN('13','15') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS GHRFS_IC
+                       , SUM(CASE WHEN IPNT_PERIOD_CODE = '1' AND IPNT_SUB_FLAG IN('13','15') THEN IPNT_FLAG_TOT_QTY ELSE 0 END) AS GHRFS_OOC
+                  FROM (
+                  SELECT D.IPNT_NO
+                   , A.USER_NAME
+                   --    , A.PLAYER_NO
+                       , B.PLAYER_NO 
+                       , D.IPNT_DATE
+                       , IPNT_PERIOD_CODE
+                       , F_CODE_NM('IPNT_PERIOD_CODE',IPNT_PERIOD_CODE ) IPNT_PERIOD_CODE_NM
+                       , D.IPNT_UPPER_SEQ
+                       , C.IPNT_FLAG  
+                       , F_CODE_NM('IPNT_FLAG',C.IPNT_FLAG )
+                       , C.IPNT_SUB_FLAG 
+                       , F_CODE_NM('IPNT_SUB_FLAG',C.IPNT_SUB_FLAG )
+                       , NVL(C.IPNT_FLAG_QTY,0)  + NVL(C.IPNT_FLAG_QTY_F,0) AS IPNT_FLAG_TOT_QTY
+                       , NVL(C.IPNT_FLAG_QTY,0) AS  IPNT_FLAG_QTY
+                       , NVL(C.IPNT_FLAG_QTY_F,0) AS IPNT_FLAG_QTY_F
+                    FROM K03_DOPING_INSPECT_REG D 
+                    JOIN K03_INSPECT_DIR_SAMPLE C 
+                    ON D.IPNT_UPPER_SEQ  =C.IPNT_UPPER_SEQ
+                   JOIN  K00_ZTESTS  B
+                    ON B.IPNT_UPPER_SEQ =C.IPNT_UPPER_SEQ
+                    AND B.IPNT_SEQ =C.IPNT_SEQ
+                    JOIN USER01TB A
+                      ON B.PLAYER_NO= A.PLAYER_NO 
+                    WHERE A.USER_ID = #{USER_ID}  
+                    AND D.IPNT_DATE  LIKE TO_CHAR(SYSDATE,'YYYY')||'%'
+                    )
+                    GROUP BY IPNT_DATE
+                    ORDER BY IPNT_DATE DESC
+                    ]]>
+   </select>
+    
+    <select id="selectProPlayerInspectYearStatic" resultType="HashMap">
+        /* k03.athletebiography.selectProPlayerInspectYearStatic - 선수바이오그래피 화면 선수 검사년도별 건수조회 */
+      <![CDATA[
+       SELECT A.YEAR, NVL(B.YEAR_TOT_QTY,0) AS YEAR_TOT
+         FROM (SELECT TO_CHAR(SYSDATE,'YYYY')-LEVEL+1 AS YEAR 
+                 FROM DUAL CONNECT BY LEVEL <= ((TO_CHAR(SYSDATE,'YYYY')+1)-( #{YEAR} - 5 ))
+                ORDER BY YEAR) A 
+         LEFT OUTER JOIN (SELECT  SUBSTR(D.IPNT_DATE,1,4) AS YEAR
+                       ,SUM( NVL(C.IPNT_FLAG_QTY,0)  + NVL(C.IPNT_FLAG_QTY_F,0) ) AS YEAR_TOT_QTY
+                    FROM K03_DOPING_INSPECT_REG D 
+                    JOIN K03_INSPECT_DIR_SAMPLE C 
+                    ON D.IPNT_UPPER_SEQ  =C.IPNT_UPPER_SEQ
+                   JOIN  K00_ZTESTS  B
+                    ON B.IPNT_UPPER_SEQ =C.IPNT_UPPER_SEQ
+                    AND B.IPNT_SEQ =C.IPNT_SEQ
+                    JOIN USER01TB A
+                      ON B.PLAYER_NO= A.PLAYER_NO 
+                    WHERE 1=1
+                   and A.USER_ID = #{USER_ID}  
+                GROUP BY SUBSTR(D.IPNT_DATE,1,4)) B
+                ON B.YEAR =A.YEAR
+                 ORDER BY A.YEAR
+                    ]]>
+   </select>
+   <select id="selectProPlayerInspectYear" resultType="HashMap">
+        /* k03.athletebiography.selectProPlayerInspectYear - 선수바이오그래피 화면 선수 통계용 년도조회 */
+      <![CDATA[
+       SELECT TO_CHAR(SYSDATE,'YYYY')-LEVEL+1 AS YEAR 
+                 FROM DUAL CONNECT BY LEVEL <= ((TO_CHAR(SYSDATE,'YYYY')+1)-( #{YEAR} - 5))
+                ORDER BY YEAR
+                    ]]>
+   </select>
+    
+    
+    <select id="selectProPlayerRTPList" resultType="HashMap">
+		<![CDATA[
+		/* k03.athletebiography.selectProPlayerRTPList - 선수바이오그래피 화면 구단선수 검사조회 */
+        				SELECT  T1.USER_ID,
+        				        NVL(T1.PLAYER_NO,'-') AS PLAYER_NO,
+						        T1.PLAYER_STATE,
+						        NVL((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLAYER_STATE' AND DTL_CODE = T1.PLAYER_STATE),'-') AS PLAYER_STATE_NAME,
+						        T1.EVENT_CODE,
+						        NVL((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T1.EVENT_CODE),'-') AS EVENT_NAME,
+						        NVL((SELECT OPTION3 FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = EVENT_CODE),'') AS EVENT_KR_NAME,
+						        T1.EVENT_DET_CODE,
+						        NVL((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.EVENT_DET_CODE),'-') AS EVENT_DET_NAME,
+						        NVL(T1.PLAYER_NAME,'-') AS PLAYER_NAME,
+						        T1.PLAYER_SEX,
+						        NVL((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = T1.PLAYER_SEX),'-') AS PLAYER_SEX_NAME,
+						        NVL(T1.ADAMS_ID,'-') AS ADAMS_ID,
+						        TO_CHAR(NVL(T2.TDP_STD,'0')) AS TDP_STD,
+						        TO_CHAR(NVL(T2.TDP_ESAS,'0')) AS TDP_ESAS,
+						        TO_CHAR(NVL(T2.TDP_GHRFS,'0')) AS TDP_GHRFS,
+						        TO_CHAR(NVL(T2.TDP_BESA,'0')) AS TDP_BESA,
+						        TO_CHAR(NVL(T2.TDP_HGH_I,'0')) AS TDP_HGH_I,
+						        TO_CHAR(NVL(T2.TDP_HGH_B,'0')) AS TDP_HGH_B,
+						        TO_CHAR(NVL(T2.TDP_ABP,'0')) AS TDP_ABP,
+						        TO_CHAR(NVL(T3.CNT11,'0') + NVL(T3.CNT12,'0') + NVL(T3.CNT13,'0') + NVL(T3.CNT15,'0')) AS TOTAL_STD,
+						        TO_CHAR(NVL(T3.CNT12,'0') + NVL(T3.CNT15,'0')) AS TOTAL_ESAS,
+						        TO_CHAR(NVL(T3.CNT13,'0') + NVL(T3.CNT15,'0')) AS TOTAL_GHRFS,
+						        TO_CHAR(NVL(T3.CNT23,'0')) AS TOTAL_BESA,
+						        TO_CHAR(NVL(T3.CNT22,'0')) AS TOTAL_HGH_I,
+						        TO_CHAR(NVL(T3.CNT25,'0')) AS TOTAL_HGH_B,
+						        TO_CHAR(NVL(T3.CNT21,'0')) AS TOTAL_ABP,
+						        TO_CHAR(NVL(T2.TDP_STD,'0') - (NVL(T3.CNT11,'0') + NVL(T3.CNT12,'0') + NVL(T3.CNT13,'0') + NVL(T3.CNT15,'0'))) AS LEFT_STD,
+						        TO_CHAR(NVL(T2.TDP_ESAS,'0') - (NVL(T3.CNT12,'0') + NVL(T3.CNT15,'0'))) AS LEFT_ESAS,
+						        TO_CHAR(NVL(T2.TDP_GHRFS,'0') - (NVL(T3.CNT13,'0') + NVL(T3.CNT15,'0'))) AS LEFT_GHRFS,
+						        TO_CHAR(NVL(T2.TDP_BESA,'0') - NVL(T3.CNT23,'0')) AS LEFT_BESA,
+						        TO_CHAR(NVL(T2.TDP_HGH_I,'0') - NVL(T3.CNT22,'0')) AS LEFT_HGH_I,
+						        TO_CHAR(NVL(T2.TDP_HGH_B,'0') - NVL(T3.CNT25,'0')) AS LEFT_HGH_B,
+						        TO_CHAR(NVL(T2.TDP_ABP,'0') - NVL(T3.CNT21,'0')) AS LEFT_ABP
+						  FROM  (SELECT A.USER_ID
+								     , A.USER_NAME  AS PLAYER_NAME
+								     , NVL(A.USER_EN_NAME,A.USER_NAME) AS PLAYER_E_NAME 
+								     , A.USER_SEX AS PLAYER_SEX
+								     , A.USER_ID AS ADAMS_ID
+								     , A.PLAYER_NO
+								     , B.CODE_NAME AS PRO_ORGZ_NM /*소속단체코드명*/
+								     , B.OPTION8 AS EVENT_CODE
+								     , A.CLUB_CODE   /* 소속클럽코드 */
+								     , C.CODE_NAME AS CLUB_CODE_NM  /*소속클럽명*/
+								     , A.PRO_ORGZ  /*소속단체코드*/
+								     , B.OPTION9 AS EVENT_DET_CODE
+								     , '' as PLAYER_STATE 
+								  FROM USER01TB A 
+								  LEFT OUTER JOIN K99_CODE_DTL B 
+								    ON B.MST_CODE ='PRO_ORGZ'  
+								    AND B.dtl_code = A.PRO_ORGZ
+								  LEFT OUTER JOIN   K99_CODE_DTL C
+								    ON C.MST_CODE = A.PRO_ORGZ
+								    AND C.dtl_code = A.CLUB_CODE
+								 WHERE 1=1
+								 AND A.USER_FLAG='P') T1
+						       ,(SELECT S2.PLAYER_NO,
+						                S1.ALL_YEAR AS TDP_YEAR,
+						                NVL(S2.TDP_STD,0) AS TDP_STD,
+						                NVL(S2.TDP_ESAS,0) AS TDP_ESAS,
+						                NVL(S2.TDP_GHRFS,0) AS TDP_GHRFS,
+						                NVL(S2.TDP_BESA,0) AS TDP_BESA,
+						                NVL(S2.TDP_HGH_I,0) AS TDP_HGH_I,
+						                NVL(S2.TDP_HGH_B,0) AS TDP_HGH_B,
+						                NVL(S2.TDP_ABP,0) AS TDP_ABP
+						        FROM    (SELECT TO_CHAR(SYSDATE,'YYYY')-LEVEL+1 AS ALL_YEAR FROM DUAL CONNECT BY LEVEL <= ((TO_CHAR(SYSDATE,'YYYY')+1)-2017)) S1,
+						                (SELECT PLAYER_NO,
+						                        TDP_YEAR,
+						                        TDP_STD,
+						                        TDP_ESAS,
+						                        TDP_GHRFS,
+						                        TDP_BESA,
+						                        TDP_HGH_I,
+						                        TDP_HGH_B,
+						                        TDP_ABP
+						                  FROM  K03_PLAYER_TDP
+						                 WHERE  1=1) S2
+						        WHERE   S1.ALL_YEAR = S2.TDP_YEAR(+)
+						        AND     S1.ALL_YEAR = #{TDP_YEAR}) T2
+						       ,(SELECT PLAYER_NO
+						               ,MAX(PLAYER_NAME) AS PLAYER_NAME
+						               ,MAX(DECODE(IPNT_SUB_FLAG,11,CNT)) AS CNT11
+						               ,MAX(DECODE(IPNT_SUB_FLAG,12,CNT)) AS CNT12
+						               ,MAX(DECODE(IPNT_SUB_FLAG,13,CNT)) AS CNT13
+						               ,MAX(DECODE(IPNT_SUB_FLAG,14,CNT)) AS CNT14
+						               ,MAX(DECODE(IPNT_SUB_FLAG,15,CNT)) AS CNT15
+						               ,MAX(DECODE(IPNT_SUB_FLAG,21,CNT)) AS CNT21
+						               ,MAX(DECODE(IPNT_SUB_FLAG,22,CNT)) AS CNT22
+						               ,MAX(DECODE(IPNT_SUB_FLAG,23,CNT)) AS CNT23
+						               ,MAX(DECODE(IPNT_SUB_FLAG,24,CNT)) AS CNT24
+						               ,MAX(DECODE(IPNT_SUB_FLAG,25,CNT)) AS CNT25
+						          FROM  (SELECT S2.IPNT_SUB_FLAG
+						                        ,S2.PLAYER_NO
+						                        ,MAX(S3.PLAYER_NAME) AS PLAYER_NAME
+						                        ,MAX(S4.PROCESS_STATUS) AS PROCESS_STATUS
+						                        ,MAX(S4.SUCCESS_STATUS) AS SUCCESS_STATUS
+						                        ,COUNT(*) AS CNT
+						                   FROM K03_DOPING_INSPECT_REG S1,
+                                                K03_DOPING_INSPECT_DTL S2,
+							                    (SELECT A.USER_ID
+												     , A.USER_NAME  AS PLAYER_NAME
+												     , NVL(A.USER_EN_NAME,A.USER_NAME) AS PLAYER_E_NAME 
+												     , A.USER_SEX AS PLAYER_SEX
+												     , A.USER_ID AS ADAMS_ID
+												     , A.PLAYER_NO
+												     , B.CODE_NAME AS PRO_ORGZ_NM /*소속단체코드명*/
+												     , B.OPTION8 AS EVENT_CODE
+												     , A.CLUB_CODE   /* 소속클럽코드 */
+												     , C.CODE_NAME AS CLUB_CODE_NM  /*소속클럽명*/
+												     , A.PRO_ORGZ  /*소속단체코드*/
+												     , B.OPTION9 AS EVENT_DET_CODE
+												     , '' AS PLAYER_STATE  
+												  FROM USER01TB A 
+												  LEFT OUTER JOIN K99_CODE_DTL B 
+												    ON B.MST_CODE ='PRO_ORGZ'  
+												    AND B.dtl_code = A.PRO_ORGZ
+												  LEFT OUTER JOIN   K99_CODE_DTL C
+												    ON C.MST_CODE = A.PRO_ORGZ
+												    AND C.dtl_code = A.CLUB_CODE
+												 WHERE 1=1
+												 AND A.USER_FLAG='P')  S3,
+                                                 K03_INSPECT_ORDER S4
+						                WHERE   S1.IPNT_UPPER_SEQ = S2.IPNT_UPPER_SEQ(+)
+						                AND     S1.IPNT_UPPER_SEQ = S4.IPNT_UPPER_SEQ(+)
+						                AND     S2.PLAYER_NO = S3.PLAYER_NO
+						                AND     S4.FINISH_DATE LIKE #{TDP_YEAR} || '%'
+						                GROUP   BY S2.IPNT_SUB_FLAG,S2.PLAYER_NO,S4.PROCESS_STATUS,S4.SUCCESS_STATUS
+						                HAVING  S4.PROCESS_STATUS = 'C' AND S4.SUCCESS_STATUS = 'S')
+					            GROUP BY PLAYER_NO
+					            ORDER BY PLAYER_NO,PLAYER_NAME) T3
+						  WHERE T1.PLAYER_NO = T2.PLAYER_NO(+)
+						    AND T1.PLAYER_NO = T3.PLAYER_NO(+)
+						    AND T1.PRO_ORGZ  = #{PRO_ORGZ}
+						    AND T1.CLUB_CODE =#{CLUB_CODE}
+						 ]]>
+						 <if test="S_EVENT_CODE != null and S_EVENT_CODE != ''">
+						    AND  T1.EVENT_CODE = #{S_EVENT_CODE}
+						 </if>
+						 <if test="S_PLAYER_STATE != null and S_PLAYER_STATE != ''">
+						    AND  T1.PLAYER_STATE = #{S_PLAYER_STATE}
+						 </if>
+						 <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'NAME'">
+				           AND   UPPER(T1.PLAYER_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+				         </if>
+				         <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'ADAMSID'">
+				           AND   UPPER(T1.ADAMS_ID) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+				         </if>
+		<![CDATA[
+						  ORDER BY T1.PLAYER_NAME
+        ]]>
+	</select>
+     
+</mapper>

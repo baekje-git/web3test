@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="api">
+
+<select id="selectKeyCheck"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[BakRcptMapper.xml][apisaleinfo.selectKeyCheck][인증키체크]+*/
+    SELECT CODE FROM T_CODE
+     WHERE P_CODE='578'
+       AND USER_STRING2=#{OrdServiceNo}
+       AND USER_STRING3=#{Key}
+       AND USER_STRING4=#{ComGb}
+</select>
+    
+<select id="selectSlaeMstInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+/*+[BakRcptMapper.xml][apisaleinfo.selectSlaeMstInfo][마스터정보]+*/
+    
+SELECT V.DLV_SERVICE_NO
+<if test="ComGb != 'bjpddm03'">
+        ,V.DLV_NAME
+</if>
+        ,V.ORD_SERVICE_NO
+        ,V.ORD_APRV_DT
+        ,SUM(V.MST_CNT) AS MST_CNT
+        ,SUM(MST_TOT_AMT) AS MST_TOT_AMT
+        ,V.BIGO
+FROM
+(    
+ SELECT DISTINCT(C.SERVICE_NO)   AS DLV_SERVICE_NO
+       <if test="ComGb != 'bjpddm03'">
+      , C.BRCH_SNM AS DLV_NAME
+      </if>
+      , B.SERVICE_NO   AS ORD_SERVICE_NO
+      , A.APRV_DT      AS ORD_APRV_DT
+      , COUNT(*)      AS MST_CNT
+      , SUM(A.TOTAL_AMT ) AS MST_TOT_AMT
+      , '' AS BIGO            
+  FROM T_SALE A 
+   JOIN T_CUST B 
+     ON B.CUST_CD =A.CUST_CD
+    AND B.SERVICE_NO=#{OrdServiceNo} 
+    LEFT OUTER JOIN T_BRANCH C
+    <if test="ComGb == 'bjpddm04'">
+     ON C.BRCH_CD =B.DLV_BRCH_CD
+     </if> 
+     <if test="ComGb != 'bjpddm04'">
+     ON C.BRCH_CD =A.DLV_BRCH_CD
+     </if>         
+  WHERE A.APRV_DT = #{OrdAprvDt}
+  <if test="ComGb == 'bjpddm03'">
+  AND A.ORD_TYPE_CD='07'
+  </if>
+  <if test='AprvTmFR != null and AprvTmFR != "" and AprvTmTo != null and AprvTmTo != "" '>
+   AND A.APRV_TM BETWEEN  #{AprvTmFR} ||'00' AND  #{AprvTmTo} ||'00'
+  </if>
+  GROUP BY C.SERVICE_NO   
+      <if test="ComGb != 'bjpddm03'">
+      , C.BRCH_SNM
+      </if>  
+      , B.SERVICE_NO   
+      , A.APRV_DT    
+  
+  UNION ALL    
+  
+  SELECT DISTINCT(C.SERVICE_NO)   AS DLV_SERVICE_NO
+       <if test="ComGb != 'bjpddm03'">
+      , C.BRCH_SNM AS DLV_NAME
+      </if>
+      , B.SERVICE_NO   AS ORD_SERVICE_NO
+      , A.APRV_DT      AS ORD_APRV_DT
+      , COUNT(*)      AS MST_CNT
+      , SUM(A.TOTAL_AMT ) AS MST_TOT_AMT
+      , '' AS BIGO            
+  FROM T_SALEBACK A 
+   JOIN T_CUST B 
+     ON B.CUST_CD =A.CUST_CD
+    AND B.SERVICE_NO=#{OrdServiceNo} 
+    LEFT OUTER JOIN T_BRANCH C
+     <if test="ComGb == 'bjpddm04'">
+     ON C.BRCH_CD =B.DLV_BRCH_CD
+     </if> 
+     <if test="ComGb != 'bjpddm04'">
+     ON C.BRCH_CD =A.DLV_BRCH_CD
+     </if>         
+  WHERE A.APRV_DT = #{OrdAprvDt}
+  <if test="ComGb == 'bjpddm03'">
+  AND A.ORD_TYPE_CD='07'
+  </if>
+  <if test='AprvTmFR != null and AprvTmFR != "" and AprvTmTo != null and AprvTmTo != "" '>
+   AND A.APRV_TM BETWEEN  #{AprvTmFR} ||'00' AND  #{AprvTmTo} ||'00'
+  </if>
+  GROUP BY C.SERVICE_NO   
+      <if test="ComGb != 'bjpddm03'">
+      , C.BRCH_SNM
+      </if>  
+      , B.SERVICE_NO   
+      , A.APRV_DT    
+)V
+GROUP BY V.DLV_SERVICE_NO
+        <if test="ComGb != 'bjpddm03'">
+        ,V.DLV_NAME
+        </if>
+        ,V.ORD_SERVICE_NO
+        ,V.ORD_APRV_DT
+        ,V.BIGO        
+ORDER BY  V.DLV_SERVICE_NO      
+      , V.ORD_SERVICE_NO          
+ </select>
+    
+ <select id="selectSlaeMstDtlInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[BakRcptMapper.xml][apisaleinfo.selectSlaeMstDtlInfo][마스터정보리스트]+*/
+ SELECT A.SN
+      <if test="ComGb == 'bjpddm03'">
+      , CASE WHEN IFNULL((SELECT COUNT(*) FROM T_SALE_SERIAL WHERE SN=A.CONN_SN),0)>0 THEN 'Y' ELSE 'N' END as QC_CFM_YN
+      </if>
+      <if test="ComGb != 'bjpddm03'">
+      , CASE WHEN IFNULL((SELECT COUNT(*) FROM T_SALE_SERIAL WHERE SN=A.SN),0)>0 THEN 'Y' ELSE 'N' END as QC_CFM_YN
+      </if>
+      , A.TOTAL_AMT
+      <if test="ComGb == 'bjpddm03'">
+      , D.SERVICE_NO AS CUST_SERVICE_NO
+      </if>
+      , A.ITEM_CNT 
+      , A.ORD_MEMO 
+  FROM T_SALE A 
+   JOIN T_CUST B 
+     ON B.CUST_CD =A.CUST_CD
+    AND B.SERVICE_NO=#{OrdServiceNo} 
+    <if test="ComGb == 'bjpddm03'">
+   JOIN T_SALE C ON C.SN=A.CONN_SN  JOIN T_CUST D ON D.CUST_CD=C.CUST_CD
+   </if>
+  WHERE A.APRV_DT = #{OrdAprvDt}
+  <if test='AprvTmFR != null and AprvTmFR != "" and AprvTmTo != null and AprvTmTo != "" '>
+   AND A.APRV_TM BETWEEN  #{AprvTmFR} ||'00' AND  #{AprvTmTo} ||'00'
+  </if>
+  
+  UNION ALL
+  
+  SELECT A.SN
+      <if test="ComGb == 'bjpddm03'">
+      , CASE WHEN IFNULL((SELECT COUNT(*) FROM T_SALEBACK_SERIAL WHERE SN=A.CONN_SN),0)>0 THEN 'Y' ELSE 'N' END as QC_CFM_YN
+      </if>
+      <if test="ComGb != 'bjpddm03'">
+      , CASE WHEN IFNULL((SELECT COUNT(*) FROM T_SALEBACK_SERIAL WHERE SN=A.SN),0)>0 THEN 'Y' ELSE 'N' END as QC_CFM_YN
+      </if>
+      , A.TOTAL_AMT
+      <if test="ComGb == 'bjpddm03'">
+      , D.SERVICE_NO AS CUST_SERVICE_NO
+      </if>
+      , A.ITEM_CNT 
+      , A.ORD_MEMO 
+  FROM T_SALEBACK A 
+   JOIN T_CUST B 
+     ON B.CUST_CD =A.CUST_CD
+    AND B.SERVICE_NO=#{OrdServiceNo} 
+    <if test="ComGb == 'bjpddm03'">
+   JOIN T_SALEBACK C ON C.SN=A.CONN_SN  JOIN T_CUST D ON D.CUST_CD=C.CUST_CD
+   </if>
+  WHERE A.APRV_DT = #{OrdAprvDt}
+  <if test='AprvTmFR != null and AprvTmFR != "" and AprvTmTo != null and AprvTmTo != "" '>
+   AND A.APRV_TM BETWEEN  #{AprvTmFR} ||'00' AND  #{AprvTmTo} ||'00'
+  </if>
+  ORDER BY     
+   <if test="ComGb == 'bjpddm03'">
+       CUST_SERVICE_NO
+       ,SN
+      </if>   
+   <if test="ComGb != 'bjpddm03'">   
+      SN
+   </if>   
+</select>
+    
+ <select id="selectSlaeDtlInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[BakRcptMapper.xml][apisaleinfo.selectSlaeDtlInfo][상세정보리스트]+*/
+ SELECT A.SNO
+      , A.ITEM_CD
+      , C.ITEM_NM
+      , C.ITEM_PYOJUN_CD
+      , F_S_MASTER('MAKER', C.MAKER_CD, 'NM')  AS MAKER_NM
+      , C.UNIT  AS UNIT 
+      , A.ORD_WP2_AMT AS DANGA
+      , A.ITEM_QTY
+      , A.SUPPLY_AMT
+      , A.TOTAL_AMT
+      , '' AS BIGO
+  FROM T_SALE_DTL A
+   JOIN T_SALE B
+     ON B.SN =A.SN  
+   JOIN T_ITEM C
+     ON C.ITEM_CD=A.ITEM_CD   
+   JOIN T_CUST D 
+     ON D.CUST_CD =B.CUST_CD
+    AND D.SERVICE_NO=#{OrdServiceNo}
+ WHERE A.SN =#{OrdSn}
+ 
+ UNION ALL
+ 
+ SELECT A.SNO
+      , A.ITEM_CD
+      , C.ITEM_NM
+      , C.ITEM_PYOJUN_CD
+      , F_S_MASTER('MAKER', C.MAKER_CD, 'NM')  AS MAKER_NM
+      , C.UNIT  AS UNIT 
+      , A.ORD_WP2_AMT AS DANGA
+      , A.ITEM_QTY
+      , A.SUPPLY_AMT
+      , A.TOTAL_AMT
+      , '' AS BIGO
+  FROM T_SALEBACK_DTL A
+   JOIN T_SALEBACK B
+     ON B.SN =A.SN  
+   JOIN T_ITEM C
+     ON C.ITEM_CD=A.ITEM_CD   
+   JOIN T_CUST D 
+     ON D.CUST_CD =B.CUST_CD
+    AND D.SERVICE_NO=#{OrdServiceNo}
+ WHERE A.SN =#{OrdSn}
+ ORDER BY SNO
+ </select>
+    
+    <select id="selectSlaeDtlSerialInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[BakRcptMapper.xml][apisaleinfo.selectSlaeDtlSerialInfo][상세시리얼정보리스트]+*/
+    <if test="ComGb == 'bjpddm03'">
+     SELECT B.SN
+      , B.SNO
+      , B.EXP_DT AS EXP_DT
+      , B.PROD_NO AS PROD_NO
+      , B.SERIAL_NO AS SERIAL_NO
+    FROM T_SALE A JOIN T_SALE_SERIAL B ON A.CONN_SN=B.SN
+    WHERE     
+     A.SN =#{OrdSn}
+     
+     UNION ALL
+     
+     SELECT B.SN
+      , B.SNO
+      , B.EXP_DT AS EXP_DT
+      , B.PROD_NO AS PROD_NO
+      , B.SERIAL_NO AS SERIAL_NO
+    FROM T_SALEBACK A JOIN T_SALEBACK_SERIAL B ON A.CONN_SN=B.SN
+    WHERE     
+     A.SN =#{OrdSn}
+    ORDER BY SN, SNO, EXP_DT, PROD_NO, SERIAL_NO
+    </if>
+    <if test="ComGb != 'bjpddm03'">
+  SELECT A.SN
+      , A.SNO
+      , A.EXP_DT AS EXP_DT
+      , A.PROD_NO AS PROD_NO
+      , A.SERIAL_NO AS SERIAL_NO
+  FROM T_SALE_SERIAL A
+  WHERE     
+     A.SN =#{OrdSn}
+  UNION ALL   
+      SELECT A.SN
+      , A.SNO
+      , A.EXP_DT AS EXP_DT
+      , A.PROD_NO AS PROD_NO
+      , A.SERIAL_NO AS SERIAL_NO
+  FROM T_SALEBACK_SERIAL A
+  WHERE     
+     A.SN =#{OrdSn}
+  ORDER BY SN, SNO, EXP_DT, PROD_NO, SERIAL_NO
+ </if>
+    </select>
+    
+   <select id="selectInicisUser"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+       /*+[BakRcptMapper.xml][api.selectInicisUser][사용자조회]+*/
+        SELECT B.SERVICE_NO AS "noComp"
+              ,'1' AS "userType"
+              ,REGEXP_REPLACE(A.USER_NM,'[&amp;,]',1,1) AS "userNm"
+              ,A.BRCH_CD AS "branchCode"
+              ,'' AS "stepGbn"
+          FROM T_USER A
+          JOIN T_BRANCH B
+            ON B.BRCH_CD = #{branchCode}
+           AND B.SERVICE_NO = #{noComp}
+        WHERE A.LOGIN_ID  = #{userId}
+          AND A.PASSWORD  = #{pwd}           
+   </select>
+
+   <select id="selectInicisCompany"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+       /*+[BakRcptMapper.xml][api.selectInicisCompany][회사정보조회]+*/
+        SELECT B.SERVICE_NO AS "noComp"
+              ,B.BRCH_NM AS "nmComp"
+              ,REGEXP_REPLACE(DAMO.SCP_DECB64('SCP_ALL',B.ADDR),'[&amp;,]',1,1) AS "noAddr"
+              ,REGEXP_REPLACE(DAMO.SCP_DECB64('SCP_ALL',B.TAXBILL_EMAIL),'[&amp;,]',1,1) AS "nmEmail"
+              ,REGEXP_REPLACE(DAMO.SCP_DECB64('SCP_ALL',B.TEL_NO),'[&amp;,]',1,1) AS "noTel"
+              ,B.CEO_NM AS "nmBoss"
+          FROM T_USER A
+          JOIN T_BRANCH B
+            ON B.BRCH_CD = #{branchCode}
+           AND B.SERVICE_NO = #{noComp}
+        WHERE A.LOGIN_ID  = #{userId}
+          AND A.PASSWORD  = #{pwd}           
+   </select>
+
+   <select id="selectInicisStoreItems"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+       /*+[ApiMapper.xml][api.selectInicisStoreItems][약국리스트조회]+*/
+        SELECT
+               A.CUST_CD AS "seqStore"
+             , A.SERVICE_NO  AS "noStore" 
+             , A.CUST_CD AS "noProduct"
+             , REGEXP_REPLACE(A.CUST_NM,'[&amp;,]',1,1) AS "nmProduct"
+             , case when A.EMAIL_USE_YN ='Y' then REGEXP_REPLACE(DAMO.SCP_DECB64('SCP_ALL',a.EMAIL),'[&amp;,]',1,1) else '' end AS "email"
+             , IFNULL(REGEXP_REPLACE(DAMO.SCP_DECB64('SCP_ALL',a.HP_NO),'[^0-9]'),'') as "phone"
+             , IFNULL(REGEXP_REPLACE(a.FAX_NO,'[^0-9]'),'') as "fax"
+          FROM T_CUST A
+          JOIN T_USER B
+            ON B.LOGIN_ID = #{userId}
+          JOIN T_EMP C
+            ON C.EMP_ID = B.USER_ID
+           AND C.EMP_ID = (CASE WHEN B.ROLE_CD = '003' THEN C.EMP_ID ELSE  A.EMP_ID END)
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = #{branchCode}
+           AND A.BRCH_CD = D.BRCH_CD
+         WHERE 1=1
+           AND A.DEAL_END_YN = 'N'
+           AND A.SB_GB_CD IN ('02','03')
+           AND A.WEB_USE_YN   = 'Y'
+           AND A.CUST_GB_CD NOT IN('09','10','11','12','13','15','18','19')
+        ORDER BY A.CUST_NM    
+   </select>
+
+</mapper>

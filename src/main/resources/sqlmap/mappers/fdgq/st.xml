@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgq.st">
+   	<select id="selectFdgqStList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgq.st.selectFdgqStList (st.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+	      ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+	      ,FN_FMT_DT(K.A06_DT) 	   AS CHARGE_DT  /* 담당자확인일 */
+	      ,FN_FMT_DT(K.A07_DT)     AS CONFIRM_DT /* 확인자확인일 */
+	      ,FN_FMT_DT(K.A08_DT)     AS MANDATE_DT /* 지시자확인일 */
+	      ,K.A06               AS CHARGE_NM  /* 담당자 */
+	      ,K.A07              AS CONFIRM_NM /* 확인자 */
+	      ,K.A08               AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgq-st' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+      FROM T_FDGP_BPR A
+      JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_PACK E
+        ON E.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNINS G
+        ON G.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREC H
+        ON H.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREP I
+        ON I.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_CS J
+        ON J.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_ST K
+        ON K.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND J.PROD_DIRECTOR_ID IS NOT NULL
+	   <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+       AND A.PROD_DT between REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="CHARGE_NM != null and CHARGE_NM != ''">
+       AND K.A06 LIKE CONCAT('%',#{CHARGE_NM},'%')
+       </if>
+       <if test="CONFIRM_NM != null and CONFIRM_NM != ''">
+       AND K.A07 LIKE CONCAT('%',#{CONFIRM_NM},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND K.A08 LIKE CONCAT('%',#{MANDATE_NM},'%')
+       </if><if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgqSt" parameterType="HashMap">
+    /* fdgq.st.insertFdgqSt */
+
+                INSERT INTO T_FDGQ_ST
+                SET PROD_NO= #{eData.PROD_NO}
+				   ,A04    = #{eData.A04}
+				   ,A05    = #{eData.A05}
+				   ,A06    = #{eData.A06}
+				   ,A06_DT = #{eData.A06_DT}
+				   ,A07    = #{eData.A07}
+				   ,A07_DT = #{eData.A07_DT}
+				   ,A08    = #{eData.A08}
+				   ,A08_DT = #{eData.A08_DT}
+				   ,B0104  = #{eData.B0104}
+				   ,B0105  = #{eData.B0105}
+				   ,B0204  = #{eData.B0204}
+				   ,B0205  = #{eData.B0205}
+				   ,B0304  = #{eData.B0304}
+				   ,B0305  = #{eData.B0305}
+				   ,B0306  = #{eData.B0306}
+				   ,B0307  = #{eData.B0307}
+				   ,B0308  = #{eData.B0308}
+				   ,B0404  = #{eData.B0404}
+				   ,B0405  = #{eData.B0405}
+				   ,B0406  = #{eData.B0406}
+				   ,B0407  = #{eData.B0407}
+				   ,B0408  = #{eData.B0408}
+				   ,B0504  = #{eData.B0504}
+				   ,B0505  = #{eData.B0505}
+				   ,B0506  = #{eData.B0506}
+				   ,B0507  = #{eData.B0507}
+				   ,B0508  = #{eData.B0508}
+				   ,B0604  = #{eData.B0604}
+				   ,B0605  = #{eData.B0605}
+				   ,B0606  = #{eData.B0606}
+				   ,B0607  = #{eData.B0607}
+				   ,B0608  = #{eData.B0608}
+				   ,B0704  = #{eData.B0704}
+				   ,B0705  = #{eData.B0705}
+				   ,B0706  = #{eData.B0706}
+				   ,B0707  = #{eData.B0707}
+				   ,B0708  = #{eData.B0708}
+				   ,B0804  = #{eData.B0804}
+				   ,B0805  = #{eData.B0805}
+				   ,B0806  = #{eData.B0806}
+				   ,B0807  = #{eData.B0807}
+				   ,B0808  = #{eData.B0808}
+				   ,B0904  = #{eData.B0904}
+				   ,B0905  = #{eData.B0905}
+				   ,B0906  = #{eData.B0906}
+				   ,B0907  = #{eData.B0907}
+				   ,B0908  = #{eData.B0908}
+				   ,B1004  = #{eData.B1004}
+				   ,B1005  = #{eData.B1005}
+				   ,B1006  = #{eData.B1006}
+				   ,B1007  = #{eData.B1007}
+				   ,B1008  = #{eData.B1008}
+				   ,C0103  = #{eData.C0103}
+				   ,C0104  = #{eData.C0104}
+				   ,C0105  = #{eData.C0105}
+				   ,C0106  = #{eData.C0106}
+				   ,C0203  = #{eData.C0203}
+				   ,C0204  = #{eData.C0204}
+				   ,C0205  = #{eData.C0205}
+				   ,C0206  = #{eData.C0206}
+				   ,C0303  = #{eData.C0303}
+				   ,C0304  = #{eData.C0304}
+				   ,C0305  = #{eData.C0305}
+				   ,C0306  = #{eData.C0306}
+				   ,C0403  = #{eData.C0403}
+				   ,C0404  = #{eData.C0404}
+				   ,C0405  = #{eData.C0405}
+				   ,C0406  = #{eData.C0406}
+				   ,D0102  = #{eData.D0102}
+				   ,REG_ID = #{userData.USER_ID}
+				   ,REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+				    A04    = #{eData.A04}
+				   ,A05    = #{eData.A05}
+				   ,A06    = #{eData.A06}
+				   ,A06_DT = #{eData.A06_DT}
+				   ,A07    = #{eData.A07}
+				   ,A07_DT = #{eData.A07_DT}
+				   ,A08    = #{eData.A08}
+				   ,A08_DT = #{eData.A08_DT}
+				   ,B0104  = #{eData.B0104}
+				   ,B0105  = #{eData.B0105}
+				   ,B0204  = #{eData.B0204}
+				   ,B0205  = #{eData.B0205}
+				   ,B0304  = #{eData.B0304}
+				   ,B0305  = #{eData.B0305}
+				   ,B0306  = #{eData.B0306}
+				   ,B0307  = #{eData.B0307}
+				   ,B0308  = #{eData.B0308}
+				   ,B0404  = #{eData.B0404}
+				   ,B0405  = #{eData.B0405}
+				   ,B0406  = #{eData.B0406}
+				   ,B0407  = #{eData.B0407}
+				   ,B0408  = #{eData.B0408}
+				   ,B0504  = #{eData.B0504}
+				   ,B0505  = #{eData.B0505}
+				   ,B0506  = #{eData.B0506}
+				   ,B0507  = #{eData.B0507}
+				   ,B0508  = #{eData.B0508}
+				   ,B0604  = #{eData.B0604}
+				   ,B0605  = #{eData.B0605}
+				   ,B0606  = #{eData.B0606}
+				   ,B0607  = #{eData.B0607}
+				   ,B0608  = #{eData.B0608}
+				   ,B0704  = #{eData.B0704}
+				   ,B0705  = #{eData.B0705}
+				   ,B0706  = #{eData.B0706}
+				   ,B0707  = #{eData.B0707}
+				   ,B0708  = #{eData.B0708}
+				   ,B0804  = #{eData.B0804}
+				   ,B0805  = #{eData.B0805}
+				   ,B0806  = #{eData.B0806}
+				   ,B0807  = #{eData.B0807}
+				   ,B0808  = #{eData.B0808}
+				   ,B0904  = #{eData.B0904}
+				   ,B0905  = #{eData.B0905}
+				   ,B0906  = #{eData.B0906}
+				   ,B0907  = #{eData.B0907}
+				   ,B0908  = #{eData.B0908}
+				   ,B1004  = #{eData.B1004}
+				   ,B1005  = #{eData.B1005}
+				   ,B1006  = #{eData.B1006}
+				   ,B1007  = #{eData.B1007}
+				   ,B1008  = #{eData.B1008}
+				   ,C0103  = #{eData.C0103}
+				   ,C0104  = #{eData.C0104}
+				   ,C0105  = #{eData.C0105}
+				   ,C0106  = #{eData.C0106}
+				   ,C0203  = #{eData.C0203}
+				   ,C0204  = #{eData.C0204}
+				   ,C0205  = #{eData.C0205}
+				   ,C0206  = #{eData.C0206}
+				   ,C0303  = #{eData.C0303}
+				   ,C0304  = #{eData.C0304}
+				   ,C0305  = #{eData.C0305}
+				   ,C0306  = #{eData.C0306}
+				   ,C0403  = #{eData.C0403}
+				   ,C0404  = #{eData.C0404}
+				   ,C0405  = #{eData.C0405}
+				   ,C0406  = #{eData.C0406}
+				   ,D0102  = #{eData.D0102}
+			       ,EDT_ID = #{userData.USER_ID}
+			       ,EDT_DTM = NOW()
+    </insert>
+</mapper>

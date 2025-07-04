@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdg.apqr">
+   	<select id="selectFdgApqrList" parameterType="HashMap" resultType="HashMap" >
+     /* fdg.apqr.selectFdgApqrList (apqr.xml) */
+	SELECT A.PROD_NO               	AS PROD_NO  /* 제조번호 */
+		  ,C.C03               		AS C03    	/* 반감기(분) */
+	      ,C.E03              	 	AS E03    	/* PH */
+	      ,C.D0601               	AS D0601    /* 확인시험 */
+	      ,C.D0602               	AS D0602    /* 순도 */
+	      ,C.B0401               	AS B0401    /* 주피크1 */
+	      ,C.B0402               	AS B0402    /* 주피크2 */
+	      ,C.J03               		AS J03    	/* 잔류유기용매 */
+	      ,C.G04               		AS G04    	/* 엔도톡신 */
+	      ,C.I03               		AS I03    	/* 정량법 */
+	      ,B.E0104 					AS E0104	/* 수율 */
+	      ,A.C0304               	AS C0304    /* 수량 */
+	  FROM T_FDGP_BPR A
+	  LEFT JOIN T_FDGP_DSPS B
+	    ON B.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDGQ_FNREC C
+	    ON C.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND DEL_NY = 'N'
+	   <if test="YEAR != null and YEAR != ''">
+       AND LEFT(A.PROD_DT,4) = #{YEAR}
+       </if>
+       <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+	 ORDER BY A.PROD_DT DESC
+    </select>
+</mapper>

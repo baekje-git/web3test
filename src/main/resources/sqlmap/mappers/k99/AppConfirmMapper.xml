@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.appConfirm">
+
+
+    <select id="selectCERT01TB" parameterType="HashMap" resultType="HashMap">
+            /* AppConfirmMapper.xml -selectCERT01TB -  AppCOnfirm.vue - 확인서신청관리*/
+        <![CDATA[
+                        SELECT  T1.SEQ
+                                ,T1.CERT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CERT_TYPE' AND DTL_CODE = T1.CERT_TYPE) AS CERT_TYPE_NAME
+                                ,T1.REQ_USER
+                                ,T1.PHONE
+                                ,T1.EMAIL
+                                ,T1.ZIPCODE
+                                ,T1.ADDRESS1
+                                ,T1.ADDRESS2
+                                ,T1.BIRTH_DT
+                                ,T1.ISSUE_USE
+                                ,T1.PRESENT_LOCATION
+                                ,T1.REQ_COUNT
+                                ,T1.CONFIRM_STATUS
+                                ,TO_CHAR(T1.CONFIRM_DATE, 'YYYYMMDD') AS CONFIRM_DATE
+                                ,T1.USE_YN
+                                ,T1.REG_USER
+		                        ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+		                        ,T1.EDT_USER
+		                        ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+		                        ,T1.CONFIRM_USER  AS CONFIRM_USER
+				                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.CONFIRM_USER) AS CONFIRM_USER_NAME
+				                ,T1.CONFIRM_NO
+                				,CASE WHEN T1.CERT_TYPE = 'CERT01' THEN '도핑검사부'
+                                      WHEN T1.CERT_TYPE = 'CERT02' THEN '교육지원부' 
+                                      ELSE '' END AS CONFIRM_DEPT
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    K99_CERT_LIST T1
+                        WHERE   1 = 1
+                        AND     T1.USE_YN = 'Y'
+                ]]>
+                	<if test="USER_ID != null and USER_ID != ''">
+			            AND   T1.REG_USER = #{USER_ID}
+			        </if>
+	                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                   	 	AND   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') BETWEEN #{START_DATE} AND #{END_DATE}
+                	</if>
+                    <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'CONFIRM_STATUS'">
+	                    <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+			                AND   CONFIRM_STATUS LIKE '%' || #{CONDITION_TEXT} || '%'
+		       		    </if>
+		       		</if>
+                <![CDATA[
+                        ORDER BY T1.REG_DATE
+        ]]>
+    </select>
+    <select id="selectCERT01TB_DETAIL" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+            /* AppConfirmMapper.xml - selectCERT01TB_DETAIL -  AppCOnfirm.vue - 확인서신청관리*/
+                        SELECT  T1.SEQ
+                                ,T1.CERT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CERT_TYPE' AND DTL_CODE = T1.CERT_TYPE) AS CERT_TYPE_NAME
+                                ,T1.REQ_USER
+                                ,T1.PHONE
+                                ,T1.EMAIL
+                                ,T1.ZIPCODE
+                                ,T1.ADDRESS1
+                                ,T1.ADDRESS2
+                                ,T1.BIRTH_DT
+                                ,T1.ISSUE_USE
+                                ,T1.PRESENT_LOCATION
+                                ,T1.REQ_COUNT
+                                ,T1.CONFIRM_STATUS
+                                ,TO_CHAR(T1.CONFIRM_DATE, 'YYYYMMDD') AS CONFIRM_DATE
+                                ,T1.USE_YN
+                                ,T1.REG_USER
+		                        ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+		                        ,T1.EDT_USER
+		                        ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+		                        ,T1.CONFIRM_USER  AS CONFIRM_USER
+				                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.CONFIRM_USER) AS CONFIRM_USER_NAME
+				                ,T1.CONFIRM_NO
+                				,CASE WHEN T1.CERT_TYPE = 'CERT01' THEN '도핑검사부'
+                                      WHEN T1.CERT_TYPE = 'CERT02' THEN '교육지원부' 
+                                      ELSE '' END AS CONFIRM_DEPT
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,CASE WHEN T1.CERT_TYPE = 'CERT01' THEN REPLACE(T2.AUTH_DCO_YMD,'-','')
+                                 WHEN T1.CERT_TYPE = 'CERT02' THEN REPLACE(T2.AUTH_EDU_YMD,'-','')
+                                 ELSE '' END AS AUTH_CERT_YMD
+                                 ,T2.AUTH_ID
+                        FROM    K99_CERT_LIST T1
+                        LEFT OUTER JOIN
+                        USER01TB T2
+                        ON   T2.USER_ID = T1.REG_USER
+                        WHERE   1 = 1
+                        AND     T1.SEQ = #{SEQ}
+                        AND     T1.USE_YN = 'Y'
+                ]]>
+                	<if test="USER_ID != null and USER_ID != ''">
+			            AND   T1.REG_USER = #{USER_ID}
+			        </if>
+	                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                   	 	AND   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') BETWEEN #{START_DATE} AND #{END_DATE}
+                	</if>
+                    <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'CONFIRM_STATUS'">
+	                    <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+			                AND   CONFIRM_STATUS LIKE '%' || #{CONDITION_TEXT} || '%'
+		       		    </if>
+		       		</if>
+                <![CDATA[
+                        ORDER BY T1.REG_DATE
+        ]]>
+    </select>
+	<select id="selectCERT01TBByPK" parameterType="HashMap" resultType="HashMap">
+	/* AppConfirmMapper.xml - selectCERT01TBByPK -  AppCOnfirm.vue - 확인서신청관리*/
+    <![CDATA[
+        SELECT  T1.SEQ
+                ,T1.CERT_TYPE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CERT_TYPE' AND DTL_CODE = T1.CERT_TYPE) AS CERT_TYPE_NAME
+                ,T1.REQ_USER
+                ,T1.PHONE
+                ,T1.EMAIL
+                ,T1.ZIPCODE
+                ,T1.ADDRESS1
+                ,T1.ADDRESS2
+                ,T1.BIRTH_DT
+                ,T1.ISSUE_USE
+                ,T1.PRESENT_LOCATION
+                ,T1.REQ_COUNT
+                ,T1.CONFIRM_STATUS
+                ,TO_CHAR(T1.CONFIRM_DATE, 'YYYYMMDD') AS CONFIRM_DATE
+                ,T1.USE_YN
+                ,T1.REG_USER
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER_NAME
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,T1.EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T1.CONFIRM_USER AS CONFIRM_USER
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.CONFIRM_USER) AS CONFIRM_USER_NAME
+                ,(SELECT USER_COMPANY_PHONE FROM USER01TB WHERE USER_ID = T1.CONFIRM_USER) AS USER_COMPANY_PHONE
+                ,T1.CONFIRM_NO
+                ,T2.AUTH_ID
+                ,CASE WHEN T1.CERT_TYPE = 'CERT01' THEN '도핑검사부'
+                      WHEN T1.CERT_TYPE = 'CERT02' THEN '교육지원부' 
+                      ELSE '' END AS CONFIRM_DEPT
+                ,CASE WHEN T1.CERT_TYPE = 'CERT01' THEN REPLACE(T2.AUTH_DCO_YMD,'-','')
+                      WHEN T1.CERT_TYPE = 'CERT02' THEN REPLACE(T2.AUTH_EDU_YMD,'-','')
+                      ELSE '' END AS AUTH_CERT_YMD
+        FROM    K99_CERT_LIST T1
+                LEFT OUTER JOIN
+                USER01TB T2
+           ON   T2.USER_ID = T1.REG_USER
+        WHERE   T1.SEQ = #{SEQ}
+        AND     T1.USE_YN = 'Y'
+        ]]>
+    </select>
+    
+    <select id="selectUSER01TBByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* (AppConfirmMapper.xml) - k05.notice.selectUSER01TBByPK.일반공지등록 시퀀스조회 */
+        SELECT T1.USER_ID
+              ,T1.AUTH_ID
+              ,T1.USER_NAME
+              ,T1.USER_EN_NAME
+              ,T1.USER_PWD
+              ,T1.USER_SEX
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = T1.USER_SEX) AS USER_SEX_NAME
+              ,T1.USER_PHONE
+              ,T1.SMS_AGREE_YN
+              ,T1.USER_COMPANY_PHONE
+              ,T1.USER_HOME_PHONE
+              ,T1.ADDRESS_TYPE1
+              ,T1.USER_ZIPCODE1
+              ,T1.USER_ADDRESS1
+              ,T1.USER_DETAIL_ADDRESS1
+              ,T1.IS_ROAD_ADDRESS1
+              ,T1.USER_ADDRESS_LATITUDE1
+              ,T1.USER_ADDRESS_LONGITUDE1
+              ,T1.ADDRESS_TYPE2
+              ,T1.USER_ZIPCODE2
+              ,T1.USER_ADDRESS2
+              ,T1.USER_DETAIL_ADDRESS2
+              ,T1.IS_ROAD_ADDRESS2
+              ,T1.USER_ADDRESS_LATITUDE2
+              ,T1.USER_ADDRESS_LONGITUDE2
+              ,T1.USER_EMAIL_PREFIX
+              ,T1.USER_EMAIL_SUFFIX
+              ,T1.EMAIL_AGREE_YN
+              ,T1.COMPANY_NAME
+              ,T1.COMPANY_POSITION
+              ,T1.BANK_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'BANK_CODE' AND DTL_CODE = T1.BANK_CODE) AS BANK_NAME
+              ,T1.BANK_ACCOUNT_NO
+              ,T1.BANK_OWNER_NAME
+              ,T1.UNIFORM_SIZE
+              ,T1.CHARGER_YN
+              ,T1.BCO_YN
+              ,T1.DCO_YN
+              ,T1.EDU_YN
+              ,T1.TEST_CODE
+              ,T1.EDU_CHARGER_YN
+              ,T1.HOMEPAGE_USE_YN
+              ,T1.AUTH_STAGE_NO
+              ,NVL((SELECT AUTH_STAGE_NAME FROM AUTH_STAGE WHERE AUTH_STAGE_NO = T1.AUTH_ID),'기타') AS AUTH_STAGE_NAME
+              ,T1.IP_ADDR
+              ,T1.USER_AGENT
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+              ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+              ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+              ,T1.USER_FILE_PATH
+              ,T1.USER_FILE_NAME
+              ,TO_CHAR(T1.CHANGE_PWD_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CHANGE_PWD_DATE
+              ,CASE WHEN T1.CHANGE_PWD_DATE IS NULL OR SYSDATE - T1.CHANGE_PWD_DATE >= 180 THEN 'Y' ELSE 'N' END AS NEED_CHANGE_PWD
+              ,NVL((
+              SELECT	MIN(AUTH_CODE)
+              FROM		USER02TB
+              WHERE		AUTH_ID = T1.AUTH_ID
+              ), '2') AS SUPERVISOR_YN
+              ,NVL((
+              SELECT	CASE WHEN COUNT(1) >= 1 THEN 'Y' ELSE 'N' END
+              FROM		IPER01TB
+              WHERE		USER_ID = T1.USER_ID
+              AND		USE_YN = 'Y'
+              AND		TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+              ), 'N') AS APPROVE_YN
+              ,T1.AUTH_DCO_YMD
+              ,T1.AUTH_EDU_YMD
+              ,T1.INSPECTOR_POOL
+      FROM    USER01TB T1
+      WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </select>
+    <!-- 확인서 신청 등록 -->
+    <select id="selectCertificateSequence" resultType="Integer">
+        <![CDATA[
+        SELECT  NVL(MAX(T1.SEQ), 0) + 1 AS SEQ
+        FROM    K99_CERT_LIST T1
+        ]]>
+    </select>
+    
+    <insert id="insertCertificateList" parameterType="hashMap">
+        <![CDATA[
+        INSERT  INTO K99_CERT_LIST
+                (
+                SEQ
+                ,CERT_TYPE
+                ,REQ_USER
+                ,PHONE
+                ,EMAIL
+                ,ZIPCODE
+                ,ADDRESS1
+                ,ADDRESS2
+                ,BIRTH_DT
+                ,ISSUE_USE
+                ,PRESENT_LOCATION
+                ,REQ_COUNT
+                ,CONFIRM_STATUS
+                ,USE_YN
+                ,REG_USER
+                ,REG_DATE
+                ,IP_ADDR
+                ,USER_AGENT
+                )
+        VALUES  (
+                #{SEQ}
+                ,#{CERT_TYPE}
+                ,#{REQ_USER}
+                ,#{PHONE}
+                ,#{EMAIL}
+                ,#{ZIPCODE}
+                ,#{ADDRESS1}
+                ,#{ADDRESS2}
+                ,#{BIRTH_DT}
+                ,#{ISSUE_USE}
+                ,#{PRESENT_LOCATION}
+                ,#{REQ_COUNT}
+                ,'I'
+                ,'Y'
+                ,#{REG_USER_ID}
+                ,SYSDATE
+                ,#{IP_ADDR}
+                ,#{USER_AGENT}
+                )
+        ]]>
+    </insert>
+    
+    <!-- 확인서 수정 -->
+    <update id="updateCertificateList" parameterType="hashMap">
+        <![CDATA[
+        UPDATE  K99_CERT_LIST
+        SET     CERT_TYPE = #{CERT_TYPE}
+                ,PHONE = #{PHONE}
+                ,EMAIL = #{EMAIL}
+                ,ZIPCODE = #{ZIPCODE}
+                ,ADDRESS1 = #{ADDRESS1}
+                ,ADDRESS2 = #{ADDRESS2}
+                ,BIRTH_DT = #{BIRTH_DT}
+                ,ISSUE_USE = #{ISSUE_USE}
+                ,PRESENT_LOCATION = #{PRESENT_LOCATION}
+                ,REQ_COUNT = #{REQ_COUNT}
+                ,EDT_USER = #{EDT_USER}
+                ,EDT_DATE = SYSDATE
+        WHERE   SEQ = #{SEQ}
+        ]]>
+    </update>  
+    <!-- 확인서삭제 -->
+    <update id="deleteCertificateList" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	K99_CERT_LIST
+        SET		USE_YN = 'N'
+        WHERE	SEQ = #{SEQ}
+        ]]>
+    </update>
+    
+    <update id="deleteCERT02TB" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	CERT02TB
+        SET		USE_YN = 'N'
+        WHERE	SEQ = #{SEQ}
+        ]]>
+        <if test="FILE_SEQ != null and FILE_SEQ != ''">
+            AND   FILE_SEQ = #{FILE_SEQ}
+        </if>
+    </update>
+    
+    <update id="updateCertificateListConfirmStatusR" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	K99_CERT_LIST
+        SET		CONFIRM_STATUS = 'R'
+                ,CONFIRM_USER = #{CONFIRM_USER}
+                ,CONFIRM_DATE = SYSDATE
+                ,CONFIRM_NO   = (SELECT CONCAT(TO_CHAR(SYSDATE,'YYYY'),LPAD(NVL(SUBSTR(MAX(CONFIRM_NO),-3),0)+1,3,'0')) AS CONFIRM_NO 
+                				   FROM K99_CERT_LIST 
+                				  WHERE CONFIRM_NO LIKE TO_CHAR(SYSDATE,'YYYY')||'%')
+        WHERE	SEQ = #{SEQ}
+        ]]>
+    </update>
+    
+    <update id="updateCertificateListConfirmStatusI" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	K99_CERT_LIST
+        SET		CONFIRM_STATUS = 'I'
+                ,CONFIRM_USER = #{CONFIRM_USER}
+                ,CONFIRM_DATE = SYSDATE
+        WHERE	SEQ = #{SEQ}
+        ]]>
+    </update>
+    
+    <update id="updateCertificateListConfirmStatusD" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	K99_CERT_LIST
+        SET		CONFIRM_STATUS = 'D'
+                ,CONFIRM_USER = #{CONFIRM_USER}
+                ,CONFIRM_DATE = SYSDATE
+        WHERE	SEQ = #{SEQ}
+        ]]>
+    </update>
+    
+    <update id="updateAuthYMDByUserID" parameterType="hashMap">
+        <![CDATA[
+        UPDATE  USER01TB
+        SET     AUTH_DCO_YMD = NVL(#{AUTH_DCO_YMD}, AUTH_DCO_YMD)
+                ,AUTH_EDU_YMD = NVL(#{AUTH_EDU_YMD}, AUTH_EDU_YMD)
+        WHERE   USER_ID = #{REG_USER_ID}
+        ]]>
+    </update>
+    
+    </mapper>

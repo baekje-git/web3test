@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiMdPharm">
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiMdPharmMapper.xml][apiMdPharmMapper.insertApiHistory][API연동이력(T_API_LOG) ]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+        , MOD_ID
+        , ERR_MSG
+    ) VALUES (
+          #{API_IP}
+        , #{API_ID}
+        , #{API_TXT}
+        , #{API_INS}
+        , CURRENT TIMESTAMP
+        , #{API_MOD}
+        , #{ERR_MSG}
+        )
+</insert>
+
+<select id="checkAuth"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiMdPharmMapper.xml][apiMdPharmMapper.selectAuthCheck][인증체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_KEY},'') = '' THEN 'API키값이 누락되었습니다'
+                           WHEN USER_STRING1 != #{API_KEY} THEN 'API키값이 일치하지 않습니다'
+                           WHEN IFNULL(#{API_IP},'') = '' THEN 'IP가 확인되지 않습니다'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE='581'
+       AND CODE = #{API_BRCH_CD}
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="selectItem"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiMdPharmMapper.xml][apiMdPharmMapper.selectItem][품목조회]+*/
+    SELECT A.ITEM_CD AS ITEM_CODE
+          ,A.ITEM_NM AS ITEM_NAME
+          ,A.UNIT AS ITEM_UNIT
+          ,IFNULL(A.ITEM_PYOJUN_CD,'') AS PYOJUN_CODE
+          ,IFNULL(A.BOHUM_CD,'') AS BOHUM_CODE
+          ,B.MAKER_NM AS MAKER_NAME
+          ,C.CD_NM    AS MED_NAME
+          ,CASE WHEN A.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END PAY_ITEM_NAME
+          ,CASE WHEN A.TAX_YN = 'Y' THEN '과세' WHEN A.TAX_YN = 'N' THEN '비과세' ELSE '' END  AS TAX_NAME
+          ,D.CD_NM    AS SPEC_NAME
+          ,CAST(ROUND(A.WP2_AMT*(100-IFNULL(H.WP2_RATE,CASE WHEN B.GB_CD IN('2','3') THEN 5 ELSE 8 END))*0.01,0) AS DECIMAL(12,0)) AS ITEM_AMT
+          /*
+          ,CEIL(
+             (
+               CAST(100
+                   - (CASE WHEN G.OUT_CD != '' THEN F.PROFIT_OUT_COMP
+                      WHEN A.ITEM_PYOJUN_CD LIKE '880%' THEN F.PROFIT_IN_COMP
+                      ELSE F.PROFIT_OTHER_COMP END) AS DECIMAL(20,5)
+                   ) / 100 
+             ) * A.WP2_AMT
+           ) AS ITEM_AMT
+          ,A.WP2_AMT
+          */
+      FROM T_ITEM A
+      JOIN T_MAKER B
+        ON B.MAKER_CD = A.MAKER_CD
+      JOIN T_CODE C
+        ON C.P_CODE = '101'
+       AND C.CODE = A.MED_CD
+      JOIN T_CODE D
+        ON D.P_CODE = '109'
+       AND D.CODE = A.SPEC_CD
+      JOIN T_MALL_RULE F
+        ON 1 = 1
+       AND F.MALL_CD = #{API_BRCH_CD}
+       AND (1-A.BP1_AMT/A.WP2_AMT)*100 > F.PROFIT_MIN
+      LEFT JOIN T_ITEM_WP2_RATE H
+        ON H.ITEM_CD = A.ITEM_CD
+       AND H.BRCH_CD = F.MALL_CD
+     WHERE 1=1
+       AND A.USE_YN = 'Y'
+       AND A.FORBID_YN = 'N'
+       AND A.SUBDIV_YN = 'N'
+       AND A.MED_CD IN ('01','02')
+       AND A.WP2_AMT > 1
+       AND (H.WP2_RATE != 0 OR H.BP_RATE != 0)
+    <if test='ITEM_CODE_LIKE != null and ITEM_CODE_LIKE != ""'>
+       AND A.ITEM_CD LIKE CONCAT(#{ITEM_CODE_LIKE},'%')
+    </if>
+     <if test='MAKER_NM != null and MAKER_NM != ""'>
+      <bind name="MAKER_NM" value='"%" +MAKER_NM + "%"'/>
+        AND B.MAKER_NM LIKE #{MAKER_NM}
+    </if>
+    <if test='ITEM_PYOJUN_CD != null and ITEM_PYOJUN_CD != ""'>
+       AND A.ITEM_PYOJUN_CD LIKE CONCAT(#{ITEM_PYOJUN_CD},'%')
+    </if>
+     <if test='BOHUM_CD != null and BOHUM_CD != ""'>
+       AND A.BOHUM_CD LIKE CONCAT(#{BOHUM_CD},'%')
+    </if>
+</select>
+
+<select id="selectStock"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiMdPharmMapper.xml][apiMdPharmMapper.selectStock][재고조회]+*/
+    SELECT STOCK_CODE
+          ,ITEM_CODE
+          ,SALE_AMT
+          ,COALESCE(STOCK_QTY,0) AS STOCK_QTY
+          ,COALESCE(MIN(COALESCE(MAX_ORD_QTY,STOCK_QTY),STOCK_QTY),0) AS MAX_QTY
+      FROM (
+            SELECT A.BRCH_CD     AS STOCK_CODE
+                  ,A.ITEM_CD     AS ITEM_CODE
+                  ,(CASE WHEN A.AVAIL_STOCK = 0 THEN 0
+                         WHEN F.RATE_STOCK IS NULL THEN 0
+                         ELSE FLOOR(A.AVAIL_STOCK*CAST(1.0*F.RATE_STOCK/100 AS DECIMAL(10,2)))
+                         END)    AS STOCK_QTY
+                  ,(CASE WHEN COALESCE(H.WP2_AMT,0)=0 THEN B.WP2_AMT ELSE H.WP2_AMT END) AS SALE_AMT
+                  ,(CASE WHEN H.MAX_ORD_QTY > 0 THEN H.MAX_ORD_QTY END) AS MAX_ORD_QTY
+              FROM T_ITEM_STOCK A
+              JOIN T_ITEM B
+                ON B.ITEM_CD = A.ITEM_CD
+               AND B.USE_YN = 'Y'
+               AND B.FORBID_YN = 'N'
+               AND B.SUBDIV_YN = 'N'
+               AND B.MED_CD IN ('01','02')
+               AND B.WP2_AMT > 1
+              JOIN T_MAKER C
+                ON C.MAKER_CD = B.MAKER_CD
+              JOIN T_CODE D
+                ON D.P_CODE = '101'
+               AND D.CODE = B.MED_CD
+              JOIN T_CODE E
+                ON E.P_CODE = '109'
+               AND E.CODE = B.SPEC_CD
+              JOIN T_MALL_RULE F
+                ON F.MALL_CD = #{API_BRCH_CD}
+              JOIN T_CODE G
+                ON G.P_CODE = '581'
+               AND G.CODE = #{API_BRCH_CD}
+               AND G.USER_STRING7 LIKE '%'||#{STOCK_CODE}||'%'
+              LEFT JOIN T_ITEM_PRICE H
+                ON H.BRCH_CD = A.BRCH_CD
+               AND H.ITEM_CD = A.ITEM_CD
+              LEFT JOIN T_ITEM_WP2_RATE K
+                ON K.ITEM_CD = B.ITEM_CD
+                AND K.BRCH_CD = F.MALL_CD 
+             WHERE 1=1
+               AND A.USE_YN = 'Y'
+               AND A.AVAIL_STOCK > -1
+               AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_SPEC Z WHERE Z.MALL_CD = F.MALL_CD AND Z.SPEC_CD = B.SPEC_CD)
+               AND NOT EXISTS (SELECT 1 FROM T_MALL_NOT_ITEM Y WHERE Y.MALL_CD = F.MALL_CD AND Y.ITEM_CD = B.ITEM_CD)
+               AND A.BRCH_CD = #{STOCK_CODE}
+               AND (K.WP2_RATE != 0 OR K.BP_RATE != 0)
+            <if test='ITEM_CODE_LIKE != null and ITEM_CODE_LIKE != ""'>        
+               AND A.ITEM_CD IN (${ITEM_CODE_LIKE})
+            </if>
+            <if test='MAKER_NM != null and MAKER_NM != ""'>
+            <bind name="MAKER_NM" value='"%" +MAKER_NM + "%"'/>
+               AND C.MAKER_NM LIKE #{MAKER_NM}
+            </if>
+            <if test='ITEM_NM != null and ITEM_NM != ""'>
+            <bind name="ITEM_NM" value='"%" +ITEM_NM + "%"'/>
+               AND B.ITEM_NM LIKE #{ITEM_NM}
+            </if>            
+           ) A
+     --WHERE A.STOCK_QTY > 0
+     ORDER BY A.STOCK_CODE, A.ITEM_CODE
+</select>
+
+</mapper>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.acctestresult">
+
+    <select id="selectAccTestResult" parameterType="HashMap" resultType="HashMap">
+        /* k03.acctestresult.selectAccTestResult - 검사실적(누적)현황 */
+    
+        <![CDATA[ 
+         SELECT  'N' AS CHK
+                ,T1.IPNT_UPPER_SEQ
+                ,T1.IPNT_KIND_CODE
+                ,F_CODE_NM('IPNT_KIND_CODE', T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                ,T1.IPNT_TYPE
+                ,F_CODE_NM('IPNT_TYPE',T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                ,T1.IPNT_PERIOD_CODE
+                ,F_CODE_NM('IPNT_PERIOD_CODE', T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                ,T1.IPNT_EVENT_CODE
+                ,F_CODE_NM('EVENT_CODE',T1.IPNT_EVENT_CODE) AS EVENT_NAME
+                ,T1.IPNT_EVENT_DET_CODE
+                ,F_CODE_NM('EVENT_DET_CODE', T1.IPNT_EVENT_DET_CODE) AS EVENT_DET_NAME
+                ,T1.IPNT_NO
+                ,T1.IPNT_DATE
+                ,T1.IPNT_TIME
+                ,T1.IPNT_NAME
+                ,T3.SUCCESS_STATUS
+                ,T3.IPNT_SEX_M
+                ,T3.IPNT_SEX_F
+                ,T3.CHAPERON_QTY
+                ,T3.ARRIVE_DATE
+                ,T3.ARRIVE_TIME
+                ,T3.FINISH_DATE
+                ,T3.FINISH_TIME
+                --,CEIL((TO_DATE(T3.FINISH_DATE || T3.FINISH_TIME, 'YYYYMMDDHH24:MI') - TO_DATE(T3.ARRIVE_DATE || T3.ARRIVE_TIME, 'YYYYMMDDHH24:MI')) * 24 * 60) AS WORK_TIME
+                ,T1.IPNT_DCO
+                ,T1.IPNT_BCO
+                ,T2.DCO_COUNT
+                ,T2.BCO_COUNT
+                ,T2.DCOBCO_COUNT
+                ,T2.PREDECESSOR_NAME
+                ,T2.DCO_NAME
+                ,T2.BCO_NAME
+                ,T2.DCOBCO_NAME
+                ,NVL(T4.IPNT_FLAG_11_M, 0) + NVL(T4.IPNT_FLAG_11_F, 0) + NVL(T4.IPNT_FLAG_12_M, 0) + NVL(T4.IPNT_FLAG_12_F, 0)
+                    + NVL(T4.IPNT_FLAG_13_M, 0) + NVL(T4.IPNT_FLAG_13_F, 0) + NVL(T4.IPNT_FLAG_14_M, 0) + NVL(T4.IPNT_FLAG_14_F, 0) AS IPNT_FLAG_1
+                ,T4.IPNT_FLAG_11_M
+                ,T4.IPNT_FLAG_11_F
+                ,T4.IPNT_FLAG_12_M
+                ,T4.IPNT_FLAG_12_F
+                ,T4.IPNT_FLAG_13_M
+                ,T4.IPNT_FLAG_13_F
+                ,T4.IPNT_FLAG_14_M
+                ,T4.IPNT_FLAG_14_F
+                ,NVL(T4.IPNT_FLAG_21_M, 0) + NVL(T4.IPNT_FLAG_21_F, 0) + NVL(T4.IPNT_FLAG_22_M, 0) + NVL(T4.IPNT_FLAG_22_F, 0)
+                    + NVL(T4.IPNT_FLAG_23_M, 0) + NVL(T4.IPNT_FLAG_23_F, 0) + NVL(T4.IPNT_FLAG_24_M, 0) + NVL(T4.IPNT_FLAG_24_F, 0) + NVL(T4.IPNT_FLAG_25_M, 0) + NVL(T4.IPNT_FLAG_25_F, 0) AS IPNT_FLAG_2
+                ,T4.IPNT_FLAG_21_M
+                ,T4.IPNT_FLAG_21_F
+                ,T4.IPNT_FLAG_22_M
+                ,T4.IPNT_FLAG_22_F
+                ,T4.IPNT_FLAG_23_M
+                ,T4.IPNT_FLAG_23_F
+                ,T4.IPNT_FLAG_24_M
+                ,T4.IPNT_FLAG_24_F
+                ,T4.IPNT_FLAG_25_M
+                ,T4.IPNT_FLAG_25_F
+                ,NVL(T4.IPNT_FLAG_31_M, 0) + NVL(T4.IPNT_FLAG_31_F, 0) AS IPNT_FLAG_3
+                ,T4.IPNT_FLAG_31_M
+                ,T4.IPNT_FLAG_31_F
+                ,NVL(T3.CHAPERON_QTY, 0) * 30000 AS CHAPERON_AMOUNT
+                ,NVL(T5.IPNT_ADDED_QTY_1,0) AS IPNT_ADDED_QTY_1
+                ,NVL(T5.IPNT_ADDED_QTY_2,0) AS IPNT_ADDED_QTY_2
+                ,CASE WHEN T3.SUCCESS_STATUS = 'S' THEN
+                                CASE WHEN T1.IPNT_TYPE = '1' THEN NVL(T5.IPNT_ADDED_AMOUNT, 0) + NVL(T5.IPNT_NOT_ADDED_AMOUNT, 0)
+                                     WHEN T1.IPNT_TYPE = '0' THEN NVL(T5.IPNT_NOT_ADDED_AMOUNT, 0)
+                                END
+                        ELSE NULL
+                END AS IPNT_FLAG_PAY
+                ,T2.EXTRA_PAY
+                ,T2.ETC_PAY
+                ,TO_CHAR(T1.LAB_BALANCE) AS LAB_BALANCE
+                ,TO_CHAR(T3.MANAGER_MEMO) AS MANAGER_MEMO
+        FROM    K03_DOPING_INSPECT_REG T1
+                ,(
+                SELECT  T.IPNT_UPPER_SEQ
+                        ,MAX(CASE WHEN T.PREDECESSOR_YN = 'Y' THEN T.USER_NAME ELSE NULL END) AS PREDECESSOR_NAME
+                        ,TO_CHAR(WM_CONCAT(CASE WHEN T.CHOOSE_DCO_YN = 'Y' AND T.PREDECESSOR_YN <> 'Y' THEN T.USER_NAME ELSE NULL END)) AS DCO_NAME
+                        ,TO_CHAR(WM_CONCAT(CASE WHEN T.CHOOSE_BCO_YN = 'Y' AND T.PREDECESSOR_YN <> 'Y' THEN T.USER_NAME ELSE NULL END)) AS BCO_NAME
+                        ,TO_CHAR(WM_CONCAT(CASE WHEN T.CHOOSE_DCOBCO_YN = 'Y' AND T.PREDECESSOR_YN <> 'Y' THEN T.USER_NAME ELSE NULL END)) AS DCOBCO_NAME
+                        ,SUM(CASE WHEN T.CHOOSE_DCO_YN = 'Y' THEN 1 ELSE 0 END) AS DCO_COUNT
+                        ,SUM(CASE WHEN T.CHOOSE_BCO_YN = 'Y' THEN 1 ELSE 0 END) AS BCO_COUNT
+                        ,SUM(CASE WHEN T.CHOOSE_DCOBCO_YN = 'Y' THEN 1 ELSE 0 END) AS DCOBCO_COUNT
+                        ,SUM(NVL(T.EXTRA_PAY, 0)) AS EXTRA_PAY
+                        ,SUM(NVL(T.TRANSFER_PAY, 0)) + SUM(NVL(T.TRANSFER_ORG_PAY, 0)) + SUM(NVL(T.DAILY_PAY, 0)) + SUM(NVL(T.FOOD_PAY, 0)) + SUM(NVL(T.INN_PAY, 0)) + SUM(NVL(T.INN_ORG_PAY, 0)) AS ETC_PAY
+                FROM    (
+                        SELECT  B.IPNT_UPPER_SEQ
+                                ,A.IPNT_NO
+                                ,A.USER_ID
+                                ,C.USER_NAME
+                                ,A.CHOOSE_BCO_YN
+                                ,A.CHOOSE_DCO_YN
+                                ,A.CHOOSE_DCOBCO_YN
+                                ,A.PREDECESSOR_YN
+                                ,B.EXTRA_PAY
+                                ,B.TRANSFER_PAY
+                                ,B.TRANSFER_ORG_PAY
+                                ,B.DAILY_PAY
+                                ,B.FOOD_PAY
+                                ,B.INN_PAY
+                                ,B.INN_ORG_PAY
+                                ,B.DISTANCE_DEFAULT_PAY
+                        FROM    K03_DOPING_INSPECT_DCO A
+                                ,K03_DOPING_INSPECT_PAY  B
+                                ,USER01TB C
+                        WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                        AND     A.USER_ID = B.USER_ID
+                        AND     B.USER_ID = C.USER_ID
+                        AND     A.USE_YN = 'Y'
+                        ) T
+                GROUP BY T.IPNT_UPPER_SEQ
+                ) T2
+                ,K03_INSPECT_ORDER T3
+                ,(
+                SELECT  A.IPNT_UPPER_SEQ
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('11', '12', '13', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_11_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('11', '12', '13', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_11_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('12', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_12_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('12', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_12_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('13', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_13_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('13', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_13_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '14' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_14_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '14' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_14_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '21' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_21_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '21' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_21_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '22' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_22_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '22' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_22_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '23' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_23_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '23' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_23_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '24' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_24_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '24' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_24_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '25' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_25_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '25' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_25_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '3' AND A.IPNT_SUB_FLAG = '31' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_31_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '3' AND A.IPNT_SUB_FLAG = '31' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_31_F
+                FROM    K03_INSPECT_DIR_SAMPLE A
+                        ,K03_DOPING_INSPECT_REG B
+                WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                AND     B.IPNT_TYPE = '1'
+                GROUP BY A.IPNT_UPPER_SEQ
+                UNION ALL
+                SELECT  A.IPNT_UPPER_SEQ
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('11', '12', '13', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_11_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('11', '12', '13', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_11_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('12', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_12_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('12', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_12_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('13', '15') THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_13_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG IN ('13', '15') THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_13_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '14' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_14_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '14' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_14_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '21' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_21_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '21' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_21_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '22' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_22_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '22' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_22_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '23' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_23_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '23' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_23_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '24' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_24_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '24' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_24_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '25' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_25_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '25' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_25_F
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '3' AND A.IPNT_SUB_FLAG = '31' THEN NVL(A.IPNT_FLAG_QTY, 0) ELSE NULL END) AS IPNT_FLAG_31_M
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '3' AND A.IPNT_SUB_FLAG = '31' THEN NVL(A.IPNT_FLAG_QTY_F, 0) ELSE NULL END) AS IPNT_FLAG_31_F
+                FROM    K03_INSPECT_DIR_SAMPLE A
+                        ,K03_DOPING_INSPECT_REG B
+                WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                AND     B.IPNT_TYPE = '0'
+                AND     (A.IPNT_ADDED IS NULL OR A.IPNT_ADDED <> 'Y')
+                GROUP BY A.IPNT_UPPER_SEQ
+                ) T4
+                ,(
+                SELECT  A.IPNT_UPPER_SEQ
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_ADDED = 'Y' THEN A.IPNT_QTY ELSE NULL END) AS IPNT_ADDED_QTY_1
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_ADDED = 'Y' THEN A.IPNT_QTY ELSE NULL END) AS IPNT_ADDED_QTY_2
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '11' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_11
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '12' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_12
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '13' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_13
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '1' AND A.IPNT_SUB_FLAG = '14' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_14
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '21' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_21
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '22' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_22
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '23' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_23
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '24' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_24
+                        ,SUM(CASE WHEN A.IPNT_FLAG = '2' AND A.IPNT_SUB_FLAG = '25' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_AMOUNT_25
+                        ,SUM(CASE WHEN A.IPNT_ADDED = 'Y' THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_ADDED_AMOUNT
+                        ,SUM(CASE WHEN (A.IPNT_ADDED IS NULL OR A.IPNT_ADDED <> 'Y') THEN NVL(A.IPNT_QTY, 0) * NVL(A.UNIT_AMOUNT, 0) ELSE NULL END) AS IPNT_NOT_ADDED_AMOUNT
+                FROM    K02_PERF_PAY_BY_SAMPLE A
+                GROUP BY A.IPNT_UPPER_SEQ
+                ) T5
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = T4.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = T5.IPNT_UPPER_SEQ(+)
+        AND     T3.PROCESS_STATUS = 'C'
+        AND     T1.IPNT_DATE BETWEEN REPLACE(#{START_DATE}, '-', '') AND REPLACE(#{END_DATE}, '-', '')
+        ]]>
+        AND     ( #{IPNT_KIND_CODE} IS NULL OR T1.IPNT_KIND_CODE = #{IPNT_KIND_CODE} )
+        AND     ( #{IPNT_TYPE} IS NULL OR T1.IPNT_TYPE = #{IPNT_TYPE} )
+        AND     ( #{IPNT_EVENT_CODE} IS NULL OR T1.IPNT_EVENT_CODE = #{IPNT_EVENT_CODE} )        
+        ORDER BY T1.IPNT_DATE       
+      
+    </select>
+    
+    <select id="select0315IPDN04TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k03.acctestresult.select0315IPDN04TB - 시료분석비용 상세 */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T1.IPNT_NO
+                ,T1.IPNT_FLAG
+                ,F_CODE_NM('IPNT_FLAG', T1.IPNT_FLAG) AS IPNT_FLAG_NAME
+                ,T1.IPNT_SUB_FLAG
+                ,F_CODE_NM('IPNT_SUB_FLAG', T1.IPNT_SUB_FLAG) AS IPNT_SUB_FLAG_NAME
+                ,T1.IPNT_ADDED
+                ,T1.IPNT_QTY
+                ,T1.UNIT_AMOUNT
+        FROM    K02_PERF_PAY_BY_SAMPLE T1
+        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ORDER BY T1.IPNT_FLAG
+                ,T1.IPNT_SUB_FLAG
+        ]]>
+    </select>
+    
+    <update id="update0515IPDN04TB" parameterType="HashMap">
+        <![CDATA[
+        /* k03.acctestresult.update0515IPDN04TB - 시료별 단가 저장 */
+        
+        UPDATE K02_PERF_PAY_BY_SAMPLE
+           SET UNIT_AMOUNT = #{UNIT_AMOUNT}
+         WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+           AND IPNT_NO = #{IPNT_NO}
+	       AND IPNT_FLAG = #{IPNT_FLAG}
+	       AND IPNT_SUB_FLAG = #{IPNT_SUB_FLAG}
+	       AND IPNT_ADDED = #{IPNT_ADDED}
+        ]]>
+    </update>
+    
+    <update id="update0315IPNT01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k03.acctestresult.update0315IPNT01TB - LAB정산 */
+        
+        UPDATE  K03_DOPING_INSPECT_REG
+        SET     LAB_BALANCE = #{LAB_BALANCE}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </update>
+</mapper>

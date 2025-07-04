@@ -1,0 +1,2697 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="finish">
+<select id="selectFnReqList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnReqList (finish.xml) */
+                  SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                         ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                         ,FN_FMT_DT(F.AE03)       AS WORK_DT    /* 작업일 */
+                         ,(CASE WHEN F.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNREQ_YN
+                         ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                         ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                         ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+                         ,F.AE03
+                         ,F.BB03
+                         ,F.BD03
+                         ,F.BE03
+                   FROM T_FDG_BPR A
+                   JOIN T_FDG_CSFM B
+                     ON B.PROD_NO = A.PROD_NO
+                    AND B.WORK_DT != ''
+                   JOIN T_FDG_CMPS C
+                     ON C.PROD_NO = A.PROD_NO
+                    AND C.WORK_DT != ''
+                   JOIN T_FDG_DSPS D
+                     ON D.PROD_NO = A.PROD_NO
+                   JOIN t_fdg_pack E
+                     ON E.PROD_NO = A.PROD_NO
+              LEFT JOIN t_qul_fnreq F
+                     ON F.PROD_NO = A.PROD_NO
+              LEFT JOIN Z_USER Z
+                     ON Z.USER_ID = C.CHARGE_ID
+              LEFT JOIN Z_USER Y
+                     ON Y.USER_ID = C.CONFIRM_ID
+              LEFT JOIN Z_USER X
+                     ON X.USER_ID = C.MANDATE_ID
+                  WHERE A.CHARGE_DT != '' 
+                    AND A.CONFIRM_DT != ''  
+                    
+                     AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+                     AND A.DEL_NY = 'N'
+               ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC
+</select>
+<select id="selectFnReqDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnReqDetail (finish.xml) */
+          SELECT A.PROD_NO,
+            A.Z01,
+            A.Z02,
+            B.AA01,
+	        B.AA02, 
+	        B.AB01, 
+	        B.AB02,
+	        B.AB03,
+	        B.AC01,
+	        B.AC02,
+	        B.AD01,
+	        B.AD02,
+	        B.AD0201,
+	        B.AE01,
+	        B.AE02,
+	        B.AE03,
+	        B.BA01,
+	        B.TEST_REQ_NO,
+	        B.BB01,
+	        B.BB02,
+	        B.BB03,
+	        B.BC01,
+	        B.BC02,
+	        B.BD01,
+	        B.BD02,
+	        B.BD03,
+	        B.BE01,
+	        B.BE02,
+	        B.BE03,
+	        B.REG_DATE,
+	        B.AE04,
+	        B.BB04,
+	        B.BD04,
+	        B.BE04,
+	        B.INS_NM,
+            B.INS_DTM,
+            B.MODE_NM,
+            B.MODE_DTM
+       FROM T_FDG_BPR A
+       LEFT JOIN T_QUL_FNREQ B
+         ON B.PROD_NO = A.PROD_NO
+       WHERE 1=1 
+       AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnReq" parameterType="HashMap">
+    /* finish.InsertFnReq (finish.xml) */
+    INSERT INTO T_QUL_FNREQ (
+    PROD_NO
+    ,AA01 
+    ,AA02 
+    ,AB01 
+    ,AB02
+    ,AB03 
+    ,AC01 
+    ,AC02 
+    ,AD01
+    ,AD02 
+    ,AD0201
+    ,AE01 
+    ,AE02
+    ,AE03 
+    ,BA01
+    ,TEST_REQ_NO
+    ,BB01 
+    ,BB02
+    ,BB03 
+    ,BC01 
+    ,BC02
+    ,BD01 
+    ,BD02 
+    ,BD03 
+    ,BE01 
+    ,BE02 
+    ,BE03 
+    ,REG_DATE
+    ,AE04
+	,BB04
+	,BD04
+	,BE04
+    ,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM 
+    )
+    VALUES(
+    #{PROD_NO}
+    ,#{AA01}
+    ,#{AA02} 
+    ,#{AB01} 
+    ,#{AB02}
+    ,#{AB03}
+    ,#{AC01}
+    ,#{AC02}
+    ,#{AD01}
+    ,#{AD02}
+    ,#{AD0201}
+    ,#{AE01}
+    ,#{AE02}
+    ,REPLACE(#{AE03},'-','')
+    ,#{BA01}
+    ,FN_QCTS_NO('')
+    ,#{BB01}
+    ,#{BB02}
+    ,REPLACE(#{BB03},'-','')
+    ,#{BC01}
+    ,#{BC02}
+    ,#{BD01}
+    ,#{BD02}
+    ,REPLACE(#{BD03},'-','')     
+    ,#{BE01}
+    ,#{BE02}
+    ,REPLACE(#{BE03},'-','')
+    ,DEFAULT
+    ,#{B.AE04}
+	,#{B.BB04}
+	,#{B.BD04}
+	,#{B.BE04}
+    ,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnReq" parameterType="HashMap">
+    /* finish.updateFnReq (finish.xml) */
+    UPDATE T_QUL_FNREQ
+    SET AA01 = #{AA01},
+        AA02 = #{AA02}, 
+        AB01 = #{AB01}, 
+        AB02 = #{AB02},
+        AB03 = #{AB03},
+        AC01 = #{AC01},
+        AC02 = #{AC02},
+        AD01 = #{AD01},
+        AD02 = #{AD02},
+        AD0201 = #{AD0201},
+        AE01 = #{AE01},
+        AE02 = #{AE02},
+        AE03 = REPLACE(#{AE03},'-',''),
+        BA01 = #{BA01},
+        TEST_REQ_NO = #{TEST_REQ_NO},
+        BB01 = #{BB01},
+        BB02 = #{BB02},
+        BB03 = REPLACE(#{BB03},'-',''),
+        BC01 = #{BC01},
+        BC02 = #{BC02},
+        BD01 = #{BD01},
+        BD02 = #{BD02},
+        BD03 = REPLACE(#{BD03},'-',''),
+        BE01 = #{BE01},
+        BE02 = #{BE02},
+        BE03 = REPLACE(#{BE03},'-',''),
+        AE04 = #{AE04},
+        BB04 = #{BB04},
+        BD04 = #{BD04},
+        BE04 = #{BE04},
+        INS_DTM = DEFAULT,
+		INS_NM = #{INS_NM},
+		MODE_DTM = DEFAULT,
+		MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnReq" parameterType="hashMap">
+    DELETE FROM T_QUL_FNREQ
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+ 
+    
+<select id="selectFnInsList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnInsList (finish.xml) */
+           SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+             ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+             ,FN_FMT_DT(G.BE03)       AS WORK_DT    /* 작업일 */
+             ,(CASE WHEN G.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNINS_YN
+             ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+             ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+             ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+             ,G.BE03
+	       FROM T_FDG_BPR A
+	       JOIN T_FDG_CSFM B
+	         ON B.PROD_NO = A.PROD_NO
+	        AND B.WORK_DT != ''
+	       JOIN T_FDG_CMPS C
+	         ON C.PROD_NO = A.PROD_NO
+	        AND C.WORK_DT != ''
+	       JOIN T_FDG_DSPS D
+	         ON D.PROD_NO = A.PROD_NO
+	       JOIN t_fdg_pack E
+	         ON E.PROD_NO = A.PROD_NO
+	       JOIN t_qul_fnreq F
+	         ON F.PROD_NO = A.PROD_NO
+	  LEFT JOIN t_qul_fnins G
+	         ON G.PROD_NO = A.PROD_NO
+	  LEFT JOIN Z_USER Z
+	         ON Z.USER_ID = C.CHARGE_ID
+	  LEFT JOIN Z_USER Y
+	         ON Y.USER_ID = C.CONFIRM_ID
+	  LEFT JOIN Z_USER X
+	         ON X.USER_ID = C.MANDATE_ID
+	      WHERE A.CHARGE_DT != '' 
+	        AND A.CONFIRM_DT != ''  
+	        
+	         AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+	         AND A.DEL_NY = 'N'
+	   ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC
+</select>
+<select id="selectFnInsDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnInsDetail (finish.xml) */
+     SELECT A.PROD_NO
+            ,A.Z01
+            ,A.Z02
+            ,A.Z06
+            ,C.TEST_REQ_NO
+			,B.A01
+			,B.A02
+			,B.TEST_REQ_NO
+			,B.A04
+			,B.TEST_GRD_NO
+			,B.A06
+			,B.B0101
+			,B.B0102
+			,B.B0103
+			,B.B02
+			,B.B0201
+			,B.B0202
+			,B.B0203_A
+			,B.B0203_B
+			,B.B0301
+			,B.B0302
+			,B.B0303
+			,B.B0401
+			,B.B0402
+			,B.B0403
+			,B.B0501
+			,B.B0502
+			,B.B0503
+			,B.B06
+			,B.B0601
+			,B.B0602
+			,B.B0603_A
+			,B.B0603_B
+			,B.B0701
+			,B.B0702
+			,B.B0703_A
+			,B.B0703_B
+			,B.B0801
+			,B.B0802
+			,B.B0803
+			,B.B0901
+			,B.B0902
+			,B.B0903
+			,B.B1001
+			,B.B1002
+			,B.B1003
+			,B.B1101
+			,B.B1102
+			,B.B1103
+			,B.B1201
+			,B.B1202
+			,B.B1203
+			,B.C0101
+			,B.C0102
+			,B.C0103
+			,B.BE02
+			,B.BE03
+			,B.BE04
+			,B.INS_NM
+            ,B.INS_DTM
+            ,B.MODE_NM
+            ,B.MODE_DTM
+       FROM T_FDG_BPR A
+       JOIN T_QUL_FNREQ C
+         ON C.PROD_NO = A.PROD_NO 
+       LEFT JOIN T_QUL_FNINS B
+         ON B.PROD_NO = A.PROD_NO
+       WHERE 1=1 
+       AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnIns" parameterType="HashMap">
+    /* finish.insertFnIns (finish.xml) */
+    INSERT INTO T_QUL_FNINS (
+            PROD_NO
+            ,A01
+			,A02
+			,TEST_REQ_NO
+			,A04
+			,TEST_GRD_NO
+			,A06
+			,BE02
+		    ,BE03
+		    ,BE04
+			,B0101
+			,B0102
+			,B0103
+			,B02
+			,B0201
+			,B0202
+			,B0203_A
+			,B0203_B
+			,B0301
+			,B0302
+			,B0303
+			,B0401
+			,B0402
+			,B0403
+			,B0501
+			,B0502
+			,B0503
+			,B06
+			,B0601
+			,B0602
+			,B0603_A
+			,B0603_B
+			,B0701
+			,B0702
+			,B0703_A
+			,B0703_B
+			,B0801
+			,B0802
+			,B0803
+			,B0901
+			,B0902
+			,B0903
+			,B1001
+			,B1002
+			,B1003
+			,B1101
+			,B1102
+			,B1103
+			,B1201
+			,B1202
+			,B1203
+			,C0101
+			,C0102
+			,C0103
+		    ,INS_DTM
+		    ,INS_NM 
+		    ,MODE_DTM 
+		    ,MODE_NM 
+    )
+    VALUES(
+             #{PROD_NO}
+            ,#{A01}
+			,#{A02}
+			,#{TEST_REQ_NO}
+			,#{A04}
+			,FN_QCTC_NO('')
+			,#{A06}
+			,#{BE02}
+			,REPLACE(#{BE03},'-','')
+			,#{BE04}
+			,#{B0101}
+			,#{B0102}
+			,#{B0103}
+			,#{B02}
+			,#{B0201}
+			,#{B0202}
+			,#{B0203_A}
+			,#{B0203_B}
+			,#{B0301}
+			,#{B0302}
+			,#{B0303}
+			,#{B0401}
+			,#{B0402}
+			,#{B0403}
+			,#{B0501}
+			,#{B0502}
+			,#{B0503}
+			,#{B06}
+			,#{B0601}
+			,#{B0602}
+			,#{B0603_A}
+			,#{B0603_B}
+			,#{B0701}
+			,#{B0702}
+			,#{B0703_A}
+			,#{B0703_B}
+			,#{B0801}
+			,#{B0802}
+			,#{B0803}
+			,#{B0901}
+			,#{B0902}
+			,#{B0903}
+			,#{B1001}
+			,#{B1002}
+			,#{B1003}
+			,#{B1101}
+			,#{B1102}
+			,#{B1103}
+			,#{B1201}
+			,#{B1202}
+			,#{B1203}
+			,#{C0101}
+			,#{C0102}
+			,#{C0103}
+			,DEFAULT
+		    ,#{INS_NM}
+		    ,DEFAULT
+		    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <insert id="FnInsInsertDuo" parameterType="HashMap">
+             insert into T_QUL_FNINS
+             SELECT A.PROD_NO
+                    ,A.Z01
+                    ,A.Z02
+                    ,A.Z06
+                    ,C.TEST_REQ_NO
+                    ,B.A01
+                    ,B.A02
+                    ,B.TEST_REQ_NO
+                    ,B.A04
+                    ,B.TEST_GRD_NO
+                    ,B.A06
+                    ,B.B0101
+                    ,B.B0102
+                    ,B.B0103
+                    ,B.B02
+                    ,B.B0201
+                    ,B.B0202
+                    ,B.B0203_A
+                    ,B.B0203_B
+                    ,B.B0301
+                    ,B.B0302
+                    ,B.B0303
+                    ,B.B0401
+                    ,B.B0402
+                    ,B.B0403
+                    ,B.B0501
+                    ,B.B0502
+                    ,B.B0503
+                    ,B.B06
+                    ,B.B0601
+                    ,B.B0602
+                    ,B.B0603_A
+                    ,B.B0603_B
+                    ,B.B0701
+                    ,B.B0702
+                    ,B.B0703_A
+                    ,B.B0703_B
+                    ,B.B0801
+                    ,B.B0802
+                    ,B.B0803
+                    ,B.B0901
+                    ,B.B0902
+                    ,B.B0903
+                    ,B.B1001
+                    ,B.B1002
+                    ,B.B1003
+                    ,B.B1101
+                    ,B.B1102
+                    ,B.B1103
+                    ,B.B1201
+                    ,B.B1202
+                    ,B.B1203
+                    ,B.C0101
+                    ,B.C0102
+                    ,B.C0103
+                    ,C.BE02
+                    ,C.BE03
+                    ,C.BE04
+               FROM  T_QUL_FNREQ C
+               JOIN T_FDG_BPR A
+                 ON  A.PROD_NO=C.PROD_NO 
+               LEFT JOIN T_QUL_FNINS B
+                 ON B.PROD_NO = A.PROD_NO
+               WHERE 1=1 
+               AND  C.BE03 = #{BE03}
+    </insert>
+    
+    <update id="updateFnIns" parameterType="HashMap">
+    /* finish.updateFnIns (finish.xml) */
+    UPDATE T_QUL_FNINS
+   SET   A01 = #{A01}
+		,A02 = #{A02}
+		,A04 = #{A04}
+		,A06 = #{A06}
+		,BE02 = #{BE02}
+		,BE03 = REPLACE(#{BE03},'-','')
+		,BE04 = #{BE04}
+		,B0101 = #{B0101}
+		,B0102 = #{B0102}
+		,B0103 = #{B0103}
+		,B02 = #{B02}
+		,B0201 = #{B0201}
+		,B0202 = #{B0202}
+		,B0203_A = #{B0203_A}
+		,B0203_B = #{B0203_B}
+		,B0301 = #{B0301}
+		,B0302 = #{B0302}
+		,B0303 = #{B0303}
+		,B0401 = #{B0401}
+		,B0402 = #{B0402}
+		,B0403 = #{B0403}
+		,B0501 = #{B0501}
+		,B0502 = #{B0502}
+		,B0503 = #{B0503}
+		,B06 = #{B06}
+		,B0601 = #{B0601}
+		,B0602 = #{B0602}
+		,B0603_A = #{B0603_A}
+		,B0603_B = #{B0603_B}
+		,B0701 = #{B0701}
+		,B0702 = #{B0702} 
+		,B0703_A = #{B0703_A}
+		,B0703_B = #{B0703_B}
+		,B0801 = #{B0801}
+		,B0802 = #{B0802}
+		,B0803 = #{B0803}
+		,B0901 = #{B0901}
+		,B0902 = #{B0902}
+		,B0903 = #{B0903}
+		,B1001 = #{B1001}
+		,B1002 = #{B1002}
+		,B1003 = #{B1003}
+		,B1101 = #{B1101}
+		,B1102 = #{B1102}
+		,B1103 = #{B1103}
+		,B1201 = #{B1201}
+		,B1202 = #{B1202}
+		,B1203 = #{B1203}
+		,C0101 = #{C0101}
+		,C0102 = #{C0102}
+		,C0103 = #{C0103}
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnIns" parameterType="hashMap">
+    DELETE FROM T_QUL_FNINS
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    
+    
+<select id="selectFnRepList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnRepList (finish.xml) */
+                 SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                       ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                       ,H.PROD_NO
+                       ,FN_FMT_DT(H.TESTER_DT)       AS WORK_DT    /* 작업일 */
+                       ,(CASE WHEN H.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNREP_YN
+                       ,H.BB03
+                       ,H.BE03
+                       ,H.WRITER_DT
+                       ,H.VIEWER_DT
+                       ,H.MANAGER_DT
+                  FROM T_FDG_BPR A
+                  JOIN T_FDG_CSFM B
+                    ON B.PROD_NO = A.PROD_NO
+                   AND B.WORK_DT != ''
+                  JOIN T_FDG_CMPS C
+                    ON C.PROD_NO = A.PROD_NO
+                   AND C.WORK_DT != ''
+                  JOIN T_FDG_DSPS D
+                    ON D.PROD_NO = A.PROD_NO
+                   
+                  JOIN t_fdg_pack E
+                    ON E.PROD_NO = A.PROD_NO
+                  
+                   
+                  JOIN t_qul_fnreq F
+                    ON F.PROD_NO = A.PROD_NO
+                  JOIN t_qul_fnins G
+                    ON G.PROD_NO = A.PROD_NO
+                  JOIN t_qul_fnrec I
+                   ON I.PROD_NO = A.PROD_NO
+             LEFT JOIN t_qul_fnrep H
+                    ON H.PROD_NO = A.PROD_NO
+             LEFT JOIN Z_USER Z
+                    ON Z.USER_ID = C.CHARGE_ID
+             LEFT JOIN Z_USER Y
+                    ON Y.USER_ID = C.CONFIRM_ID
+             LEFT JOIN Z_USER X
+                    ON X.USER_ID = C.MANDATE_ID
+                 WHERE A.CHARGE_DT != '' 
+                   AND A.CONFIRM_DT != ''  
+                   
+                    AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}
+                    AND A.DEL_NY = 'N'
+              ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC,I.TESTER_DT DESC, H.A05 DESC
+</select>
+<select id="selectFnRepDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnRepDetail (finish.xml) */
+     SELECT A.PROD_NO
+            ,A.Z01
+            ,A.Z02
+            ,C.TEST_REQ_NO
+            ,B.TEST_GRD_NO
+			,D.A01
+			,D.A02
+			,D.A03
+			,D.A04
+			,D.A05
+			,C.BB04
+			,C.BB02
+			,C.BB03
+			,C.BE04
+			,C.BE02
+			,C.BE03
+			,D.A08
+			,D.A09
+			,D.B0101
+			,D.B0102
+			,D.B0103
+			,D.B0104
+			,D.B02
+			,D.B0201
+			,D.B0202
+			,D.B0203
+			,D.B0204
+			,D.B0301
+			,D.B0302
+			,D.B0303
+			,D.B0304
+			,D.B0401
+			,D.B0402
+			,D.B0403
+			,D.B0404
+			,D.B0501
+			,D.B0502
+			,D.B0503
+			,D.B0504
+			,D.B06
+			,D.B0701
+			,D.B0702
+			,D.B0703
+			,D.B0704
+			,D.B0801
+			,D.B0802
+			,D.B0803
+			,D.B0804
+			,D.B0901
+			,D.B0902
+			,D.B0903
+			,D.B0904
+			,D.B1001
+			,D.B1002
+			,D.B1003
+			,D.B1004
+			,D.B1101
+			,D.B1102
+			,D.B1103
+			,D.B1104
+			,D.B1201
+			,D.B1202
+			,D.B1203
+			,D.B1204
+			,D.B1301
+			,D.B1302
+			,D.B1303
+			,D.B1304
+			,D.C0101
+			,D.C0102
+			,D.C0103
+			,D.TESTER
+			,D.TESTER_NM
+			,D.TESTER_DT
+			,D.WRITER
+			,D.WRITER_NM
+			,D.WRITER_DT
+			,D.VIEWER
+			,D.VIEWER_NM
+			,D.VIEWER_DT
+			,D.MANAGER
+			,D.MANAGER_NM
+			,D.MANAGER_DT
+			,D.INS_NM
+            ,D.INS_DTM
+            ,D.MODE_NM
+             ,D.MODE_DTM
+        FROM T_FDG_BPR A
+        JOIN T_QUL_FNREQ C
+          ON C.PROD_NO = A.PROD_NO 
+        JOIN T_QUL_FNINS B
+          ON B.PROD_NO = A.PROD_NO
+        JOIN T_QUL_FNREC E
+          ON E.PROD_NO = A.PROD_NO 
+        LEFT JOIN T_QUL_FNREP D
+          ON D.PROD_NO = A.PROD_NO
+        WHERE 1=1 
+       AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnRep" parameterType="HashMap">
+    /* finish.insertFnRep (finish.xml) */
+    INSERT INTO T_QUL_FNREP (
+             PROD_NO
+            ,A01
+			,A02
+			,A03
+			,A04
+			,A05
+			,BB04
+			,BB02
+			,BB03
+			,BE04
+			,BE02
+			,BE03
+			,A08
+			,A09
+			,B0101
+			,B0102
+			,B0103
+			,B0104
+			,B02
+			,B0201
+			,B0202
+			,B0203
+			,B0204
+			,B0301
+			,B0302
+			,B0303
+			,B0304
+			,B0401
+			,B0402
+			,B0403
+			,B0404
+			,B0501
+			,B0502
+			,B0503
+			,B0504
+			,B06
+			,B0701
+			,B0702
+			,B0703
+			,B0704
+			,B0801
+			,B0802
+			,B0803
+			,B0804
+			,B0901
+			,B0902
+			,B0903
+			,B0904
+			,B1001
+			,B1002
+			,B1003
+			,B1004
+			,B1101
+			,B1102
+			,B1103
+			,B1104
+			,B1201
+			,B1202
+			,B1203
+			,B1204
+			,B1301
+			,B1302
+			,B1303
+			,B1304
+			,C0101
+			,C0102
+			,C0103
+			,TESTER
+			,TESTER_NM
+			,TESTER_DT
+			,WRITER
+			,WRITER_NM
+			,WRITER_DT
+			,VIEWER
+			,VIEWER_NM
+			,VIEWER_DT
+			,MANAGER
+			,MANAGER_NM
+			,MANAGER_DT
+    ,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM
+    )
+    VALUES(
+             #{PROD_NO}
+            ,#{A01}
+			,#{A02}
+			,#{A03}
+			,#{A04}
+			,#{A05}
+			,#{BB04}
+			,#{BB02}
+			,REPLACE(#{BB03},'-','')
+			,#{BE04}
+			,#{BE02}
+			,REPLACE(#{BE03},'-','')
+			,#{A08}
+			,#{A09}
+			,#{B0101}
+			,#{B0102}
+			,#{B0103}
+			,#{B0104}
+			,#{B02}
+			,#{B0201}
+			,#{B0202}
+			,#{B0203}
+			,#{B0204}
+			,#{B0301}
+			,#{B0302}
+			,#{B0303}
+			,#{B0304}
+			,#{B0401}
+			,#{B0402}
+			,#{B0403}
+			,#{B0404}
+			,#{B0501}
+			,#{B0502}
+			,#{B0503}
+			,#{B0504}
+			,#{B06}
+			,#{B0701}
+			,#{B0702}
+			,#{B0703}
+			,#{B0704}
+			,#{B0801}
+			,#{B0802}
+			,#{B0803}
+			,#{B0804}
+			,#{B0901}
+			,#{B0902}
+			,#{B0903}
+			,#{B0904}
+			,#{B1001}
+			,#{B1002}
+			,#{B1003}
+			,#{B1004}
+			,#{B1101}
+			,#{B1102}
+			,#{B1103}
+			,#{B1104}
+			,#{B1201}
+			,#{B1202}
+			,#{B1203}
+			,#{B1204}
+			,#{B1301}
+			,#{B1302}
+			,#{B1303}
+			,#{B1304}
+			,#{C0101}
+			,#{C0102}
+			,#{C0103}
+			,#{TESTER}
+			,#{TESTER_NM}
+			,REPLACE(#{TESTER_DT},'-','')
+			,#{WRITER}
+			,#{WRITER_NM}
+			,REPLACE(#{WRITER_DT},'-','')
+			,#{VIEWER}
+			,#{VIEWER_NM}
+			,REPLACE(#{VIEWER_DT},'-','')
+			,#{MANAGER}
+			,#{MANAGER_NM}
+			,REPLACE(#{MANAGER_DT},'-','')
+			,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnRep" parameterType="HashMap">
+    /* finish.updateFnRep (finish.xml) */
+    UPDATE T_QUL_FNREP
+   SET       A01 = #{A01}
+			,A02 = #{A02}
+			,A03 = #{A03}
+			,A04 = #{A04}
+			,A05 = #{A05}
+			,BB04 = #{BB04}
+			,BB02 = #{BB02}
+			,BB03 = REPLACE(#{BB03},'-','')
+			,BE04 = #{BE04}
+			,BE02 = #{BE02}
+			,BE03 = REPLACE(#{BE03},'-','')
+			,A08 = #{A08}
+			,A09 = #{A09}
+			,B0101 = #{B0101}
+			,B0102 = #{B0102}
+			,B0103 = #{B0103}
+			,B0104 = #{B0104}
+			,B02 = #{B02}
+			,B0201 = #{B0201}
+			,B0202 = #{B0202}
+			,B0203 = #{B0203}
+			,B0204 = #{B0204}
+			,B0301 = #{B0301}
+			,B0302 = #{B0302}
+			,B0303 = #{B0303}
+			,B0304 = #{B0304}
+			,B0401 = #{B0401}
+			,B0402 = #{B0402}
+			,B0403 = #{B0403}
+			,B0404 = #{B0404}
+			,B0501 = #{B0501}
+			,B0502 = #{B0502}
+			,B0503 = #{B0503}
+			,B0504 = #{B0504}
+			,B06 = #{B06}
+			,B0701 = #{B0701}
+			,B0702 = #{B0702}
+			,B0703 = #{B0703}
+			,B0704 = #{B0704}
+			,B0801 = #{B0801}
+			,B0802 = #{B0802}
+			,B0803 = #{B0803}
+			,B0804 = #{B0804}
+			,B0901 = #{B0901}
+			,B0902 = #{B0902}
+			,B0903 = #{B0903}
+			,B0904 = #{B0904}
+			,B1001 = #{B1001}
+			,B1002 = #{B1002}
+			,B1003 = #{B1003}
+			,B1004 = #{B1004}
+			,B1101 = #{B1101}
+			,B1102 = #{B1102}
+			,B1103 = #{B1103}
+			,B1104 = #{B1104}
+			,B1201 = #{B1201}
+			,B1202 = #{B1202}
+			,B1203 = #{B1203}
+			,B1204 = #{B1204}
+			,B1301 = #{B1301}
+			,B1302 = #{B1302}
+			,B1303 = #{B1303}
+			,B1304 = #{B1304}
+			,C0101 = #{C0101}
+			,C0102 = #{C0102}
+			,C0103 = #{C0103}
+			,TESTER = #{TESTER}
+			,TESTER_NM = #{TESTER_NM}
+			,TESTER_DT = REPLACE(#{TESTER_DT},'-','')
+			,WRITER = #{WRITER} 
+			,WRITER_NM = #{WRITER_NM}
+			,WRITER_DT = REPLACE(#{WRITER_DT},'-','')
+			,VIEWER = #{VIEWER}
+			,VIEWER_NM = #{VIEWER_NM}
+			,VIEWER_DT = REPLACE(#{VIEWER_DT},'-','')
+			,MANAGER = #{MANAGER}
+			,MANAGER_NM = #{MANAGER_NM}
+			,MANAGER_DT = REPLACE(#{MANAGER_DT},'-','')
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnRep" parameterType="hashMap">
+    DELETE FROM T_QUL_FNREP
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    
+    
+<select id="selectFnRecList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnRecList (finish.xml) */
+                         SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                       ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                       ,I.PROD_NO
+                       ,FN_FMT_DT(I.TESTER_DT)       AS WORK_DT    /* 작업일 */
+                       ,(CASE WHEN I.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNREC_YN
+                       ,I.FILE_SEQ
+                       ,I.TESTER_DT
+                       ,I.CONFIRM_DT
+                 FROM T_FDG_BPR A
+                 JOIN T_FDG_CSFM B
+                   ON B.PROD_NO = A.PROD_NO
+                  AND B.WORK_DT != ''
+                 JOIN T_FDG_CMPS C
+                   ON C.PROD_NO = A.PROD_NO
+                  AND C.WORK_DT != ''
+                 JOIN T_FDG_DSPS D
+                   ON D.PROD_NO = A.PROD_NO
+             
+                 JOIN t_fdg_pack E
+                   ON E.PROD_NO = A.PROD_NO
+                  
+                  
+                 JOIN t_qul_fnreq F
+                   ON F.PROD_NO = A.PROD_NO
+                 JOIN t_qul_fnins G
+                   ON G.PROD_NO = A.PROD_NO
+            LEFT JOIN t_qul_fnrec I
+                   ON I.PROD_NO = A.PROD_NO
+            LEFT JOIN Z_USER Z
+                   ON Z.USER_ID = C.CHARGE_ID
+            LEFT JOIN Z_USER Y
+                   ON Y.USER_ID = C.CONFIRM_ID
+            LEFT JOIN Z_USER X
+                   ON X.USER_ID = C.MANDATE_ID
+                WHERE A.CHARGE_DT != '' 
+                  AND A.CONFIRM_DT != ''  
+                  
+                  AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}  
+                  AND A.DEL_NY = 'N'
+             ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC,  I.TESTER_DT DESC
+</select>
+<select id="selectFnRecDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnRecDetail (finish.xml) */
+	   SELECT 
+	         A.PROD_NO
+	        ,A.Z01
+    	    ,A.Z02
+	        ,C.TEST_REQ_NO
+	        ,B.TEST_GRD_NO 
+	        ,E.PROD_NO 
+			,E.A01
+			,E.A02
+			,E.A03
+			,E.B01
+			,E.B02
+			,E.B03
+			,E.B0301
+			,E.B0302
+			,E.B0303
+			,E.B030301
+			,E.B030302
+			,E.B030303
+			,E.B030304
+			,E.B0401 
+			,E.B0402 
+			,E.B0403 
+			,E.B0501 
+			,E.C01 
+			,E.C02 
+			,E.C0201 
+			,E.C0202 
+			,E.C020201 
+			,E.C020202 
+			,E.C020203 
+			,E.C020204 
+			,E.C03 
+			,E.C0301 
+			,E.D01 
+			,E.D02 
+			,E.D03 
+			,E.D0301 
+			,E.D0302 
+			,E.D0303 
+			,E.D0304 
+			,E.D0305 
+			,E.D030501 
+			,E.D030502 
+			,E.D030503 
+			,E.D030504 
+			,E.D030505 
+			,E.D030506 
+			,E.D030507 
+			,E.D030508 
+			,E.D0601 
+			,E.D0602 
+			,E.D07 
+			,E.E01 
+			,E.E02 
+			,E.E0201 
+			,E.E0202 
+			,E.E0203 
+			,E.E0204 
+			,E.E0205 
+			,E.E0206 
+			,E.E0207 
+			,E.E0208 
+			,E.E0209 
+			,E.E0210 
+			,E.E0211 
+			,E.E0212 
+			,E.E0213 
+			,E.E0214 
+			,E.E0215 
+			,E.E0216 
+			,E.E03 
+			,E.E0301 
+			,E.F01 
+			,E.F02 
+			,E.F0201 
+			,E.F0202 
+			,E.F0203 
+			,E.F0204 
+			,E.F0205 
+			,E.F020501 
+			,E.F020502 
+			,E.F020503 
+			,E.F020504 
+			,E.F03 
+			,E.F0301 
+			,E.G01 
+			,E.G02 
+			,E.G03 
+			,E.G0301 
+			,E.G0302 
+			,E.G0303 
+			,E.G0304 
+			,E.G0305 
+			,E.G030501 
+			,E.G030502 
+			,E.G030503 
+			,E.G030504 
+			,E.G04 
+			,E.G0401 
+			,E.H01 
+			,E.H02 
+			,E.H0201 
+			,E.H0202 
+			,E.H020201 
+			,E.H020202 
+			,E.H020203 
+			,E.H020204 
+			,E.H03 
+			,E.I01 
+			,E.I02 
+			,E.I0201 
+			,E.I03 
+			,E.I04 
+			,E.J01 
+			,E.J02 
+			,E.J0201 
+			,E.J0202 
+			,E.J0203 
+			,E.J0204 
+			,E.J020401 
+			,E.J020402 
+			,E.J020403 
+			,E.J020404 
+			,E.J020405 
+			,E.J020406 
+			,E.J020407 
+			,E.J020408 
+			,E.J020409 
+			,E.J020410 
+			,E.J020411 
+			,E.J020412 
+			,E.J020413 
+			,E.J020414 
+			,E.J020415 
+			,E.J020416 
+			,E.J020417 
+			,E.J020418 
+			,E.J020419 
+			,E.J020420 
+			,E.J03 
+			,E.J0301 
+			,E.TESTER
+			,E.TESTER_NM
+			,E.TESTER_DT
+			,E.CONFIRM
+			,E.CONFIRM_NM
+			,E.CONFIRM_DT
+			,E.FILE_SEQ
+			,E.INS_NM
+            ,E.INS_DTM
+            ,E.MODE_NM
+             ,E.MODE_DTM
+        FROM T_FDG_BPR A
+        JOIN T_QUL_FNREQ C
+          ON C.PROD_NO = A.PROD_NO 
+        JOIN T_QUL_FNINS B
+          ON B.PROD_NO = A.PROD_NO
+     LEFT JOIN T_QUL_FNREC E
+          ON E.PROD_NO = A.PROD_NO
+        WHERE 1=1 
+      AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnRec" parameterType="HashMap">
+    /* finish.insertFnRec (finish.xml) */
+    INSERT INTO T_QUL_FNREC (
+            PROD_NO
+            ,A01
+			,A02
+			,A03
+			,B01
+			,B02
+			,B03
+			,B0301
+			,B0302
+			,B0303
+			,B030301
+			,B030302
+			,B030303
+			,B030304
+			,B0401 
+			,B0402 
+			,B0403 
+			,B0501 
+			,C01 
+			,C02 
+			,C0201 
+			,C0202 
+			,C020201 
+			,C020202 
+			,C020203 
+			,C020204 
+			,C03 
+			,C0301 
+			,D01 
+			,D02 
+			,D03 
+			,D0301 
+			,D0302 
+			,D0303 
+			,D0304 
+			,D0305 
+			,D030501 
+			,D030502 
+			,D030503 
+			,D030504 
+			,D030505 
+			,D030506 
+			,D030507 
+			,D030508 
+			,D0601 
+			,D0602 
+			,D07 
+			,E01 
+			,E02 
+			,E0201 
+			,E0202 
+			,E0203 
+			,E0204 
+			,E0205 
+			,E0206 
+			,E0207 
+			,E0208 
+			,E0209 
+			,E0210 
+			,E0211 
+			,E0212 
+			,E0213 
+			,E0214 
+			,E0215 
+			,E0216 
+			,E03 
+			,E0301 
+			,F01 
+			,F02 
+			,F0201 
+			,F0202 
+			,F0203 
+			,F0204 
+			,F0205 
+			,F020501 
+			,F020502 
+			,F020503 
+			,F020504 
+			,F03 
+			,F0301 
+			,G01 
+			,G02 
+			,G03 
+			,G0301 
+			,G0302 
+			,G0303 
+			,G0304 
+			,G0305 
+			,G030501 
+			,G030502 
+			,G030503 
+			,G030504 
+			,G04 
+			,G0401 
+			,H01 
+			,H02 
+			,H0201 
+			,H0202 
+			,H020201 
+			,H020202 
+			,H020203 
+			,H020204 
+			,H03 
+			,I01 
+			,I02 
+			,I0201 
+			,I03 
+			,I04 
+			,J01 
+			,J02 
+			,J0201 
+			,J0202 
+			,J0203 
+			,J0204 
+			,J020401 
+			,J020402 
+			,J020403 
+			,J020404 
+			,J020405 
+			,J020406 
+			,J020407 
+			,J020408 
+			,J020409 
+			,J020410 
+			,J020411 
+			,J020412 
+			,J020413 
+			,J020414 
+			,J020415 
+			,J020416 
+			,J020417 
+			,J020418 
+			,J020419 
+			,J020420 
+			,J03 
+			,J0301 
+			,TESTER
+			,TESTER_NM
+			,TESTER_DT
+			,CONFIRM
+			,CONFIRM_NM
+			,CONFIRM_DT
+			,FILE_SEQ
+			,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM 
+    )
+    VALUES(
+             #{PROD_NO} 
+            ,#{A01}
+			,#{A02}
+			,#{A03}
+			,#{B01}
+			,#{B02}
+			,#{B03}
+			,#{B0301}
+			,#{B0302}
+			,#{B0303}
+			,#{B030301}
+			,#{B030302}
+			,#{B030303}
+			,#{B030304}
+			,#{B0401}
+			,#{B0402} 
+			,#{B0403}
+			,#{B0501} 
+			,#{C01} 
+			,#{C02} 
+			,#{C0201} 
+			,#{C0202} 
+			,#{C020201} 
+			,#{C020202} 
+			,#{C020203} 
+			,#{C020204} 
+			,#{C03} 
+			,#{C0301} 
+			,#{D01} 
+			,#{D02} 
+			,#{D03} 
+			,#{D0301} 
+			,#{D0302} 
+			,#{D0303} 
+			,#{D0304} 
+			,#{D0305} 
+			,#{D030501}
+			,#{D030502} 
+			,#{D030503}
+			,#{D030504} 
+			,#{D030505} 
+			,#{D030506} 
+			,#{D030507} 
+			,#{D030508} 
+			,#{D0601} 
+			,#{D0602} 
+			,#{D07} 
+			,#{E01} 
+			,#{E02} 
+			,#{E0201} 
+			,#{E0202} 
+			,#{E0203} 
+			,#{E0204} 
+			,#{E0205} 
+			,#{E0206} 
+			,#{E0207} 
+			,#{E0208} 
+			,#{E0209} 
+			,#{E0210} 
+			,#{E0211} 
+			,#{E0212} 
+			,#{E0213} 
+			,#{E0214} 
+			,#{E0215} 
+			,#{E0216} 
+			,#{E03} 
+			,#{E0301} 
+			,#{F01} 
+			,#{F02} 
+			,#{F0201} 
+			,#{F0202} 
+			,#{F0203} 
+			,#{F0204} 
+			,#{F0205} 
+			,#{F020501} 
+			,#{F020502}
+			,#{F020503} 
+			,#{F020504} 
+			,#{F03} 
+			,#{F0301} 
+			,#{G01} 
+			,#{G02} 
+			,#{G03} 
+			,#{G0301} 
+			,#{G0302} 
+			,#{G0303} 
+			,#{G0304} 
+			,#{G0305} 
+			,#{G030501} 
+			,#{G030502} 
+			,#{G030503} 
+			,#{G030504} 
+			,#{G04} 
+			,#{G0401} 
+			,#{H01} 
+			,#{H02} 
+			,#{H0201} 
+			,#{H0202} 
+			,#{H020201} 
+			,#{H020202} 
+			,#{H020203} 
+			,#{H020204} 
+			,#{H03} 
+			,#{I01} 
+			,#{I02} 
+			,#{I0201} 
+			,#{I03} 
+			,#{I04} 
+			,#{J01} 
+			,#{J02} 
+			,#{J0201} 
+			,#{J0202} 
+			,#{J0203} 
+			,#{J0204} 
+			,#{J020401} 
+			,#{J020402} 
+			,#{J020403} 
+			,#{J020404} 
+			,#{J020405} 
+			,#{J020406} 
+			,#{J020407} 
+			,#{J020408} 
+			,#{J020409} 
+			,#{J020410} 
+			,#{J020411} 
+			,#{J020412} 
+			,#{J020413} 
+			,#{J020414} 
+			,#{J020415} 
+			,#{J020416} 
+			,#{J020417} 
+			,#{J020418} 
+			,#{J020419} 
+			,#{J020420} 
+			,#{J03} 
+			,#{J0301} 
+			,#{TESTER}
+			,#{TESTER_NM}
+			,REPLACE(#{TESTER_DT},'-','')
+			,#{CONFIRM}
+			,#{CONFIRM_NM}
+			,REPLACE(#{CONFIRM_DT},'-','')
+			,#{FILE_SEQ}
+			,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnRec" parameterType="HashMap">
+    /* finish.updateFnRec (finish.xml) */
+    UPDATE T_QUL_FNREC
+   SET       A01 = #{A01}
+			,A02 = #{A02}
+			,A03 = #{A03}
+			,B01 = #{B01}
+			,B02 = #{B02}
+			,B03 = #{B03}
+			,B0301 = #{B0301}
+			,B0302 = #{B0302}
+			,B0303 = #{B0303}
+			,B030301 = #{B030301}
+			,B030302 = #{B030302}
+			,B030303 = #{B030303}
+			,B030304 = #{B030304}
+			,B0401  = #{B0401}
+			,B0402  = #{B0402}
+			,B0403  = #{B0403}
+			,B0501  = #{B0501}
+			,C01  = #{C01}
+			,C02  = #{C02}
+			,C0201  = #{C0201}
+			,C0202  = #{C0202}
+			,C020201  = #{C020201} 
+			,C020202  = #{C020202}
+			,C020203  = #{C020203}
+			,C020204  = #{C020204}
+			,C03  = #{C03}
+			,C0301  = #{C0301}
+			,D01  = #{D01}
+			,D02  = #{D02}
+			,D03  = #{D03}
+			,D0301  = #{D0301}
+			,D0302  = #{D0302}
+			,D0303  = #{D0303}
+			,D0304  = #{D0304}
+			,D0305  = #{D0305}
+			,D030501  = #{D030501}
+			,D030502  = #{D030502}
+			,D030503  = #{D030503}
+			,D030504  = #{D030504}
+			,D030505  = #{D030505}
+			,D030506  = #{D030506}
+			,D030507  = #{D030507}
+			,D030508  = #{D030508}
+			,D0601  = #{D0601}
+			,D0602  = #{D0602}
+			,D07  = #{D07}
+			,E01  = #{E01}
+			,E02  = #{E02}
+			,E0201  = #{E0201}
+			,E0202  = #{E0202}
+			,E0203  = #{E0203}
+			,E0204  = #{E0204}
+			,E0205  = #{E0205}
+			,E0206  = #{E0206}
+			,E0207  = #{E0207}
+			,E0208  = #{E0208}
+			,E0209  = #{E0209}
+			,E0210  = #{E0210}
+			,E0211  = #{E0211}
+			,E0212  = #{E0212}
+			,E0213  = #{E0213}
+			,E0214  = #{E0214}
+			,E0215  = #{E0215}
+			,E0216  = #{E0216}
+			,E03  = #{E03}
+			,E0301  = #{E0301}
+			,F01  = #{F01}
+			,F02  = #{F02}
+			,F0201  = #{F0201}
+			,F0202  = #{F0202}
+			,F0203  = #{F0203}
+			,F0204  = #{F0204}
+			,F0205  = #{F0205}
+			,F020501  = #{F020501}
+			,F020502  = #{F020502}
+			,F020503  = #{F020503}
+			,F020504  = #{F020504}
+			,F03  = #{F03}
+			,F0301  = #{F0301}
+			,G01  = #{G01}
+			,G02  = #{G02}
+			,G03  = #{G03}
+			,G0301  = #{G0301}
+			,G0302  = #{G0302}
+			,G0303  = #{G0303}
+			,G0304  = #{G0304}
+			,G0305  = #{G0305}
+			,G030501  = #{G030501}
+			,G030502  = #{G030502}
+			,G030503  = #{G030503}
+			,G030504  = #{G030504}
+			,G04  = #{G04}
+			,G0401  = #{G0401}
+			,H01  = #{H01}
+			,H02  = #{H02}
+			,H0201  = #{H0201}
+			,H0202  = #{H0202}
+			,H020201  = #{H020201}
+			,H020202  = #{H020202}
+			,H020203  = #{H020203}
+			,H020204  = #{H020204}
+			,H03  = #{H03}
+			,I01  = #{I01}
+			,I02  = #{I02}
+			,I0201  = #{I0201}
+			,I03  = #{I03}
+			,I04  = #{I04}
+			,J01  = #{J01}
+			,J02  = #{J02}
+			,J0201  = #{J0201}
+			,J0202  = #{J0202}
+			,J0203  = #{J0203}
+			,J0204  = #{J0204}
+			,J020401  = #{J020401}
+			,J020402  = #{J020402}
+			,J020403  = #{J020403} 
+			,J020404  = #{J020404}
+			,J020405  = #{J020405}
+			,J020406  = #{J020406}
+			,J020407  = #{J020407}
+			,J020408  = #{J020408}
+			,J020409  = #{J020409}
+			,J020410  = #{J020410}
+			,J020411  = #{J020411}
+			,J020412  = #{J020412}
+			,J020413  = #{J020413}
+			,J020414  = #{J020414}
+			,J020415  = #{J020415} 
+			,J020416  = #{J020416}
+			,J020417  = #{J020417}
+			,J020418  = #{J020418}
+			,J020419  = #{J020419}
+			,J020420  = #{J020420}
+			,J03  = #{J03}
+			,J0301  = #{J0301}
+			,TESTER = #{TESTER}
+			,TESTER_NM = #{TESTER_NM}
+			,TESTER_DT = REPLACE(#{TESTER_DT},'-','')
+			,CONFIRM = #{CONFIRM}
+			,CONFIRM_NM = #{CONFIRM_NM}
+			,CONFIRM_DT = REPLACE(#{CONFIRM_DT},'-','')
+			,FILE_SEQ = #{FILE_SEQ}
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnRec" parameterType="hashMap">
+    DELETE FROM T_QUL_FNREC
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    
+    
+<select id="selectFnStList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnStList (finish.xml) */
+        SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                    ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                    ,J.PROD_NO
+                    ,FN_FMT_DT(J.A06_DT)       AS WORK_DT    /* 작업일 */
+                    ,(CASE WHEN J.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNST_YN
+                    ,J.FILE_SEQ
+                    ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                    ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                    ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+                    ,J.A06_DT
+                    ,J.A07_DT
+                    ,J.A08_DT
+              FROM T_FDG_BPR A
+              JOIN T_FDG_CSFM B
+                ON B.PROD_NO = A.PROD_NO
+               AND B.WORK_DT != ''
+              JOIN T_FDG_CMPS C
+                ON C.PROD_NO = A.PROD_NO
+               AND C.WORK_DT != ''
+              JOIN T_FDG_DSPS D
+                ON D.PROD_NO = A.PROD_NO
+              
+              JOIN t_fdg_pack E
+                ON E.PROD_NO = A.PROD_NO
+              
+               
+              JOIN t_qul_fnreq F
+                ON F.PROD_NO = A.PROD_NO
+              JOIN t_qul_fnins G
+                ON G.PROD_NO = A.PROD_NO
+              JOIN t_qul_fnrep H
+                ON H.PROD_NO = A.PROD_NO
+              JOIN t_qul_fnrec I
+                ON I.PROD_NO = A.PROD_NO
+              JOIN t_qul_cs K
+                        ON K.PROD_NO = A.PROD_NO                       
+         LEFT JOIN t_qul_st J
+                ON J.PROD_NO = A.PROD_NO
+         LEFT JOIN Z_USER Z
+                ON Z.USER_ID = C.CHARGE_ID
+         LEFT JOIN Z_USER Y
+                ON Y.USER_ID = C.CONFIRM_ID
+         LEFT JOIN Z_USER X
+                ON X.USER_ID = C.MANDATE_ID
+             WHERE A.CHARGE_DT != '' 
+               AND A.CONFIRM_DT != ''  
+               
+               AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}  
+               AND A.DEL_NY = 'N'
+          ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC, H.A05 DESC, I.TESTER_DT DESC, J.A05 DESC , K.A0503 DESC
+</select>
+<select id="selectFnStDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnStDetail (finish.xml) */
+      SELECT  
+            A.PROD_NO
+	        ,A.Z01
+    	    ,A.Z02
+	        ,C.TEST_REQ_NO
+	        ,B.TEST_GRD_NO 
+			,F.A01 
+			,F.A02 
+			,F.A03 
+			,F.A04 
+			,F.A05 
+			,F.A06 
+			,F.A06_NM
+			,F.A06_DT
+			,F.A07 
+			,F.A07_NM
+			,F.A07_DT
+			,F.A08 
+			,F.A08_NM
+			,F.A08_DT
+			,F.B0101 
+			,F.B0102 
+			,F.B0103 
+			,F.B0104 
+			,F.B0105 
+			,F.B0201 
+			,F.B0202 
+			,F.B0203 
+			,F.B0204 
+			,F.B0205 
+			,F.B0301 
+			,F.B0302 
+			,F.B0303 
+			,F.B0304 
+			,F.B0305 
+			,F.B0306 
+			,F.B0307 
+			,F.B0308 
+			,F.B0401 
+			,F.B0402 
+			,F.B0403 
+			,F.B0404 
+			,F.B0405 
+			,F.B0406 
+			,F.B0407 
+			,F.B0408 
+			,F.B0501 
+			,F.B0502 
+			,F.B0503 
+			,F.B0504 
+			,F.B0505 
+			,F.B0506 
+			,F.B0507 
+			,F.B0508 
+			,F.B0601 
+			,F.B0602 
+			,F.B0603 
+			,F.B0604 
+			,F.B0605 
+			,F.B0606 
+			,F.B0607 
+			,F.B0608 
+			,F.B0701 
+			,F.B0702 
+			,F.B0703 
+			,F.B0704 
+		    ,F.B0705 
+			,F.B0706 
+			,F.B0707 
+			,F.B0708 
+			,F.B0801 
+			,F.B0802 
+			,F.B0803 
+			,F.B0804 
+			,F.B0805 
+			,F.B0806 
+			,F.B0807 
+			,F.B0808 
+			,F.B0901 
+			,F.B0902 
+			,F.B0903 
+			,F.B0904 
+			,F.B0905 
+			,F.B0906 
+			,F.B0907 
+			,F.B0908 
+			,F.B1001 
+			,F.B1002 
+			,F.B1003 
+			,F.B1004 
+			,F.B1005 
+			,F.B1006 
+			,F.B1007 
+			,F.B1008 
+			,F.C0101 
+			,F.C0102 
+			,F.C0103 
+			,F.C0104 
+			,F.C0105 
+			,F.C0106 
+			,F.C0201 
+			,F.C0202 
+			,F.C0203 
+			,F.C0204 
+			,F.C0205 
+			,F.C0206 
+			,F.C0301 
+			,F.C0302 
+			,F.C0303 
+			,F.C0304 
+			,F.C0305 
+			,F.C0306 
+			,F.C0401 
+			,F.C0402 
+			,F.C0403 
+			,F.C0404 
+			,F.C0405 
+			,F.C0406 
+			,F.D0101 
+			,F.D0102 
+			,F.D0201 
+			,F.D0202 
+			,F.INS_NM
+            ,F.INS_DTM
+            ,F.MODE_NM
+            , F.MODE_DTM
+        FROM T_FDG_BPR A
+        JOIN T_QUL_FNREQ C
+          ON C.PROD_NO = A.PROD_NO 
+        JOIN T_QUL_FNINS B
+          ON B.PROD_NO = A.PROD_NO
+        JOIN T_QUL_FNREC E
+          ON E.PROD_NO = A.PROD_NO
+        JOIN T_QUL_FNREP D
+          ON D.PROD_NO = A.PROD_NO
+        JOIN t_qul_cs G
+          ON G.PROD_NO = A.PROD_NO 
+   LEFT JOIN T_QUL_ST F
+          ON F.PROD_NO = A.PROD_NO
+        WHERE 1=1 
+     AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnSt" parameterType="HashMap">
+    /* finish.insertFnSt (finish.xml) */
+    INSERT INTO T_QUL_ST (
+             PROD_NO
+            ,A01 
+			,A02 
+			,A03 
+			,A04 
+			,A05 
+			,A06 
+			,A06_NM
+			,A06_DT
+			,A07 
+			,A07_NM
+			,A07_DT
+			,A08 
+			,A08_NM
+			,A08_DT
+			,B0101 
+			,B0102 
+			,B0103 
+			,B0104 
+			,B0105 
+			,B0201 
+			,B0202 
+			,B0203 
+			,B0204 
+			,B0205 
+			,B0301 
+			,B0302 
+			,B0303 
+			,B0304 
+			,B0305 
+			,B0306 
+			,B0307 
+			,B0308 
+			,B0401 
+			,B0402 
+			,B0403 
+			,B0404 
+			,B0405 
+			,B0406 
+			,B0407 
+			,B0408 
+			,B0501 
+			,B0502 
+			,B0503 
+			,B0504 
+			,B0505 
+			,B0506 
+			,B0507 
+			,B0508 
+			,B0601 
+			,B0602 
+			,B0603 
+			,B0604 
+			,B0605 
+			,B0606 
+			,B0607 
+			,B0608 
+			,B0701 
+			,B0702 
+			,B0703 
+			,B0704 
+		    ,B0705 
+			,B0706 
+			,B0707 
+			,B0708 
+			,B0801 
+			,B0802 
+			,B0803 
+			,B0804 
+			,B0805 
+			,B0806 
+			,B0807 
+			,B0808 
+			,B0901 
+			,B0902 
+			,B0903 
+			,B0904 
+			,B0905 
+			,B0906 
+			,B0907 
+			,B0908 
+			,B1001 
+			,B1002 
+			,B1003 
+			,B1004 
+			,B1005 
+			,B1006 
+			,B1007 
+			,B1008 
+			,C0101 
+			,C0102 
+			,C0103 
+			,C0104 
+			,C0105 
+			,C0106 
+			,C0201 
+			,C0202 
+			,C0203 
+			,C0204 
+			,C0205 
+			,C0206 
+			,C0301 
+			,C0302 
+			,C0303 
+			,C0304 
+			,C0305 
+			,C0306 
+			,C0401 
+			,C0402 
+			,C0403 
+			,C0404 
+			,C0405 
+			,C0406 
+			,D0101 
+			,D0102 
+			,D0201 
+			,D0202 
+			,FILE_SEQ
+			    ,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM
+    )
+    VALUES(
+             #{PROD_NO}
+            ,#{A01} 
+			,#{A02} 
+			,#{A03}
+			,#{A04} 
+			,#{A05} 
+			,#{A06} 
+			,#{A06_NM}
+			,#{A06_DT}
+			,#{A07} 
+			,#{A07_NM}
+			,#{A07_DT}
+			,#{A08} 
+			,#{A08_NM}
+			,#{A08_DT}
+			,#{B0101} 
+			,#{B0102} 
+			,#{B0103}
+			,#{B0104}
+			,#{B0105} 
+			,#{B0201} 
+			,#{B0202}
+			,#{B0203} 
+			,#{B0204} 
+			,#{B0205} 
+			,#{B0301} 
+			,#{B0302} 
+			,#{B0303} 
+			,#{B0304} 
+			,#{B0305} 
+			,#{B0306} 
+			,#{B0307} 
+			,#{B0308} 
+			,#{B0401} 
+			,#{B0402} 
+			,#{B0403} 
+			,#{B0404} 
+			,#{B0405} 
+			,#{B0406} 
+			,#{B0407} 
+			,#{B0408} 
+			,#{B0501} 
+			,#{B0502} 
+			,#{B0503} 
+			,#{B0504} 
+			,#{B0505} 
+			,#{B0506} 
+			,#{B0507} 
+			,#{B0508} 
+			,#{B0601} 
+			,#{B0602} 
+			,#{B0603} 
+			,#{B0604} 
+			,#{B0605} 
+			,#{B0606} 
+			,#{B0607} 
+			,#{B0608} 
+			,#{B0701} 
+			,#{B0702} 
+			,#{B0703} 
+			,#{B0704} 
+		    ,#{B0705} 
+			,#{B0706} 
+			,#{B0707} 
+			,#{B0708} 
+			,#{B0801} 
+			,#{B0802} 
+			,#{B0803} 
+			,#{B0804} 
+			,#{B0805} 
+			,#{B0806} 
+			,#{B0807} 
+			,#{B0808} 
+			,#{B0901} 
+			,#{B0902} 
+			,#{B0903} 
+			,#{B0904} 
+			,#{B0905} 
+			,#{B0906} 
+			,#{B0907} 
+			,#{B0908} 
+			,#{B1001} 
+			,#{B1002} 
+			,#{B1003} 
+			,#{B1004} 
+			,#{B1005} 
+			,#{B1006} 
+			,#{B1007} 
+			,#{B1008} 
+			,#{C0101} 
+			,#{C0102} 
+			,#{C0103} 
+			,#{C0104}
+			,#{C0105} 
+			,#{C0106} 
+			,#{C0201} 
+			,#{C0202} 
+			,#{C0203} 
+			,#{C0204} 
+			,#{C0205} 
+			,#{C0206} 
+			,#{C0301} 
+			,#{C0302} 
+			,#{C0303} 
+			,#{C0304} 
+			,#{C0305} 
+			,#{C0306} 
+			,#{C0401} 
+			,#{C0402} 
+			,#{C0403} 
+			,#{C0404} 
+			,#{C0405} 
+			,#{C0406} 
+			,#{D0101} 
+			,#{D0102} 
+			,#{D0201} 
+			,#{D0202} 
+			,#{FILE_SEQ}
+			,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnSt" parameterType="HashMap">
+    /* finish.updateFnSt (finish.xml) */
+    UPDATE T_QUL_ST
+   SET       A01 = #{A01}
+			,A02  = #{A02}
+			,A03  = #{A03}
+			,A04  = #{A04}
+			,A05  = #{A05}
+			,A06  = #{A06}
+			,A06_NM  = #{A06_NM}
+			,A06_DT  = #{A06_DT}
+			,A07  = #{A07}
+			,A07_NM  = #{A07_NM}
+			,A07_DT  = #{A07_DT}
+			,A08  = #{A08}
+			,A08_NM  = #{A08_NM}
+			,A08_DT  = #{A08_DT}
+			,B0101  = #{B0101}
+			,B0102   = #{B0102}
+			,B0103  = #{B0103}
+			,B0104  = #{B0104}
+			,B0105  = #{B0105}
+			,B0201  = #{B0201}
+			,B0202  = #{B0202}
+			,B0203  = #{B0203}
+			,B0204  = #{B0204}
+			,B0205  = #{B0205}
+			,B0301  = #{B0301}
+			,B0302  = #{B0302}
+			,B0303  = #{B0303}
+			,B0304  = #{B0304}
+			,B0305  = #{B0305}
+			,B0306  = #{B0306}
+			,B0307  = #{B0307}
+			,B0308  = #{B0308}
+			,B0401  = #{B0401}
+			,B0402  = #{B0402}
+			,B0403  = #{B0403}
+			,B0404  = #{B0404}
+			,B0405  = #{B0405}
+			,B0406  = #{B0406}
+			,B0407  = #{B0407}
+			,B0408  = #{B0408}
+			,B0501  = #{B0501}
+			,B0502  = #{B0502}
+			,B0503  = #{B0503}
+			,B0504  = #{B0504}
+			,B0505  = #{B0505}
+			,B0506  = #{B0506}
+			,B0507  = #{B0507}
+			,B0508  = #{B0508}
+			,B0601  = #{B0601}
+			,B0602  = #{B0602}
+			,B0603  = #{B0603}
+			,B0604  = #{B0604}
+			,B0605  = #{B0605}
+			,B0606  = #{B0606}
+			,B0607  = #{B0607}
+			,B0608  = #{B0608}
+			,B0701  = #{B0701}
+			,B0702  = #{B0702}
+			,B0703  = #{B0703}
+			,B0704  = #{B0704}
+		    ,B0705  = #{B0705}
+			,B0706  = #{B0706}
+			,B0707  = #{B0707}
+			,B0708  = #{B0708}
+			,B0801  = #{B0801}
+			,B0802  = #{B0802} 
+			,B0803  = #{B0803} 
+			,B0804  = #{B0804}
+			,B0805  = #{B0805}
+			,B0806  = #{B0806} 
+			,B0807  = #{B0807}
+			,B0808  = #{B0808}
+			,B0901  = #{B0901}
+			,B0902  = #{B0902}
+			,B0903  = #{B0903}
+			,B0904  = #{B0904}
+			,B0905  = #{B0905}
+			,B0906  = #{B0906}
+			,B0907  = #{B0907}
+			,B0908 = #{B0908} 
+			,B1001  = #{B1001}
+			,B1002  = #{B1002}
+			,B1003  = #{B1003} 
+			,B1004  = #{B1004}
+			,B1005  = #{B1005}
+			,B1006  = #{B1006}
+			,B1007  = #{B1007}
+			,B1008  = #{B1008}
+			,C0101  = #{C0101}
+			,C0102  = #{C0102}
+			,C0103  = #{C0103}
+			,C0104  = #{C0104}
+			,C0105  = #{C0105}
+			,C0106  = #{C0106}
+			,C0201  = #{C0201}
+			,C0202  = #{C0202}
+			,C0203  = #{C0203}
+			,C0204  = #{C0204}
+			,C0205  = #{C0205}
+			,C0206  = #{C0206}
+			,C0301  = #{C0301}
+			,C0302  = #{C0302}
+			,C0303  = #{C0303}
+			,C0304  = #{C0304}
+			,C0305  = #{C0305}
+			,C0306  = #{C0306}
+			,C0401  = #{C0401}
+			,C0402  = #{C0402}
+			,C0403  = #{C0403}
+			,C0404  = #{C0404}
+			,C0405  = #{C0405}
+			,C0406  = #{C0406}
+			,D0101  = #{D0101}
+			,D0102  = #{D0102}
+			,D0201  = #{D0201}
+			,D0202  = #{D0202}
+			,FILE_SEQ = #{FILE_SEQ}
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnSt" parameterType="hashMap">
+    DELETE FROM T_QUL_ST
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    
+    
+<select id="selectFnCsList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnCsList (finish.xml) */
+                          SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                            ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                            ,K.PROD_NO
+                            ,FN_FMT_DT(K.A0503)       AS WORK_DT    /* 작업일 */
+                            ,(CASE WHEN K.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNCS_YN
+                            ,K.FILE_SEQ
+                            ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                       ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                       ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+                       ,K.A0503
+                       ,K.B0703
+                      FROM T_FDG_BPR A
+                      JOIN T_FDG_CSFM B
+                        ON B.PROD_NO = A.PROD_NO
+                       AND B.WORK_DT != ''
+                      JOIN T_FDG_CMPS C
+                        ON C.PROD_NO = A.PROD_NO
+                       AND C.WORK_DT != ''
+                      JOIN T_FDG_DSPS D
+                        ON D.PROD_NO = A.PROD_NO
+                      
+                      JOIN t_fdg_pack E
+                        ON E.PROD_NO = A.PROD_NO
+                     
+                       
+                      JOIN t_qul_fnreq F
+                        ON F.PROD_NO = A.PROD_NO
+                      JOIN t_qul_fnins G
+                        ON G.PROD_NO = A.PROD_NO
+                      JOIN t_qul_fnrep H
+                        ON H.PROD_NO = A.PROD_NO
+                      JOIN t_qul_fnrec I
+                        ON I.PROD_NO = A.PROD_NO
+
+                  LEFT JOIN t_qul_cs K
+                        ON K.PROD_NO = A.PROD_NO
+                 LEFT JOIN Z_USER Z
+                        ON Z.USER_ID = C.CHARGE_ID
+                 LEFT JOIN Z_USER Y
+                        ON Y.USER_ID = C.CONFIRM_ID
+                 LEFT JOIN Z_USER X
+                        ON X.USER_ID = C.MANDATE_ID
+                     WHERE A.CHARGE_DT != '' 
+                       AND A.CONFIRM_DT != ''  
+                       
+                       AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}  
+                       AND A.DEL_NY = 'N'
+                  ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC, H.A05 DESC, I.TESTER_DT DESC,  K.A0503 DESC
+</select>
+<select id="selectFnCsDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnCsDetail (finish.xml) */
+  SELECT             A.PROD_NO 
+                    ,A.Z01
+                    ,A.Z02
+                    ,A.Z06
+                    ,G.A0101 
+                    ,G.A0102 
+                    ,G.A0201 
+                    ,G.A0202 
+                    ,G.A0203 
+                    ,G.A0301 
+                    ,G.A0302 
+                    ,G.A0401 
+                    ,G.A0402 
+                    ,G.A0501 
+                    ,G.A0502 
+                    ,G.A0502_NM
+                    ,G.A0503 
+                    ,G.B0101 
+                    ,G.B0102 
+                    ,G.B0201 
+                    ,G.B0202 
+                    ,G.B0203 
+                    ,G.B0301 
+                    ,G.B0302 
+                    ,G.B0401 
+                    ,G.B0402 
+                    ,G.B0501 
+                    ,G.B0502 
+                    ,G.B0601 
+                    ,G.B0602 
+                    ,G.B0701 
+                    ,G.B0702 
+                    ,G.B0702_NM
+                    ,G.B0703
+                    ,G.B0801 
+                    ,G.B0802 
+                    ,G.FILE_SEQ
+			,G.INS_NM
+            ,G.INS_DTM
+            ,G.MODE_NM
+             ,G.MODE_DTM
+			,G.INS_NM
+            ,G.INS_DTM
+            ,G.MODE_NM
+            ,G.MODE_DTM
+                FROM T_FDG_BPR A
+                JOIN T_QUL_FNREQ C
+                  ON C.PROD_NO = A.PROD_NO 
+                JOIN T_QUL_FNINS B
+                  ON B.PROD_NO = A.PROD_NO
+                JOIN T_QUL_FNREC E
+                  ON E.PROD_NO = A.PROD_NO
+                JOIN T_QUL_FNREP D
+                  ON D.PROD_NO = A.PROD_NO
+           LEFT JOIN t_qul_cs G
+                  ON G.PROD_NO = A.PROD_NO
+                WHERE 1=1 
+             AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnCs" parameterType="HashMap">
+    /* finish.insertFnSt (finish.xml) */
+    INSERT INTO T_QUL_CS (
+             PROD_NO
+            ,A0101 
+			,A0102 
+			,A0201 
+			,A0202 
+			,A0203 
+			,A0301 
+			,A0302 
+			,A0401 
+			,A0402 
+			,A0501 
+			,A0502 
+			,A0502_NM
+			,A0503 
+			,B0101 
+			,B0102 
+			,B0201 
+			,B0202 
+			,B0203 
+			,B0301 
+			,B0302 
+			,B0401 
+			,B0402 
+			,B0501 
+			,B0502 
+			,B0601 
+			,B0602 
+			,B0701 
+			,B0702 
+			,B0702_NM
+			,B0703
+			,B0801 
+			,B0802 
+			,FILE_SEQ
+    ,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM
+    )
+    VALUES(
+             #{PROD_NO}
+            ,#{A0101} 
+			,#{A0102} 
+			,#{A0201} 
+			,#{A0202} 
+			,#{A0203} 
+			,#{A0301} 
+			,#{A0302} 
+			,#{A0401} 
+			,#{A0402} 
+			,#{A0501} 
+			,#{A0502}
+			,#{A0502_NM} 
+			,#{A0503} 
+			,#{B0101} 
+			,#{B0102} 
+			,#{B0201} 
+			,#{B0202} 
+			,#{B0203} 
+			,#{B0301} 
+			,#{B0302} 
+			,#{B0401} 
+			,#{B0402} 
+			,#{B0501} 
+			,#{B0502} 
+			,#{B0601} 
+			,#{B0602} 
+			,#{B0701} 
+			,#{B0702}
+			,#{B0702_NM} 
+			,#{B0703}
+			,#{B0801} 
+			,#{B0802} 
+			,#{FILE_SEQ}
+	    ,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnCs" parameterType="HashMap">
+    /* finish.updateFnCs (finish.xml) */
+    UPDATE T_QUL_CS
+   SET      A0101 = #{A0101}
+			,A0102 = #{A0102} 
+			,A0201 = #{A0201} 
+			,A0202 = #{A0202} 
+			,A0203  = #{A0203}
+			,A0301  = #{A0301}
+			,A0302  = #{A0302}
+			,A0401  = #{A0401}
+			,A0402  = #{A0402}
+			,A0501  = #{A0501}
+			,A0502  = #{A0502}
+			,A0502_NM = #{A0502_NM}
+			,A0503  = #{A0503}
+			,B0101  = #{B0101}
+			,B0102  = #{B0102}
+			,B0201  = #{B0201}
+			,B0202  = #{B0202}
+			,B0203  = #{B0203}
+			,B0301  = #{B0301}
+			,B0302  = #{B0302}
+			,B0401  = #{B0401}
+			,B0402  = #{B0402}
+			,B0501  = #{B0501}
+			,B0502  = #{B0502}
+			,B0601  = #{B0601}
+			,B0602  = #{B0602}
+			,B0701  = #{B0701}
+			,B0702  = #{B0702}
+			,B0702_NM = #{B0702_NM}
+			,B0703  = #{B0703}
+			,B0801  = #{B0801}
+			,B0802  = #{B0802}
+			,FILE_SEQ = #{FILE_SEQ}
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnCs" parameterType="hashMap">
+    DELETE FROM T_QUL_CS
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+    
+    
+<select id="selectFnFcList" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnFcList (finish.xml) */
+        SELECT A.PROD_NO               AS PROD_NO    /* 제조번호 */
+                     ,FN_FMT_DT(A.Z06)        AS PROD_DT    /* 제조일 */
+                     ,L.PROD_NO
+                     ,FN_FMT_DT(L.A0703)       AS WORK_DT    /* 작업일 */
+                     ,(CASE WHEN L.PROD_NO IS NULL THEN 'N' ELSE 'Y' END) AS FNCS_YN
+                     ,FN_FMT_DT(A.CHARGE_DT)  AS CHARGE_DT  /* 담당자확인일 */
+                       ,FN_FMT_DT(A.CONFIRM_DT) AS CONFIRM_DT /* 확인자확인일 */
+                       ,FN_FMT_DT(A.MANDATE_DT) AS MANDATE_DT /* 지시자확인일 */
+                       ,L.A0703
+               FROM T_FDG_BPR A
+               JOIN T_FDG_CSFM B
+                 ON B.PROD_NO = A.PROD_NO
+                AND B.WORK_DT != ''
+               JOIN T_FDG_CMPS C
+                 ON C.PROD_NO = A.PROD_NO
+                AND C.WORK_DT != ''
+               JOIN T_FDG_DSPS D
+                 ON D.PROD_NO = A.PROD_NO
+               
+               JOIN t_fdg_pack E
+                 ON E.PROD_NO = A.PROD_NO
+               
+                
+               JOIN t_qul_fnreq F
+                 ON F.PROD_NO = A.PROD_NO
+               JOIN t_qul_fnins G
+                 ON G.PROD_NO = A.PROD_NO
+               JOIN t_qul_fnrep H
+                 ON H.PROD_NO = A.PROD_NO
+               JOIN t_qul_fnrec I
+                 ON I.PROD_NO = A.PROD_NO
+               JOIN t_qul_st J
+                 ON J.PROD_NO = A.PROD_NO
+               JOIN t_qul_cs K
+                 ON K.PROD_NO = A.PROD_NO
+         LEFT JOIN t_qul_fc L
+                 ON L.PROD_NO = A.PROD_NO
+          LEFT JOIN Z_USER Z
+                 ON Z.USER_ID = C.CHARGE_ID
+          LEFT JOIN Z_USER Y
+                 ON Y.USER_ID = C.CONFIRM_ID
+          LEFT JOIN Z_USER X
+                 ON X.USER_ID = C.MANDATE_ID
+              WHERE A.CHARGE_DT != '' 
+                AND A.CONFIRM_DT != ''  
+                
+                AND FN_FMT_DT(A.Z06) between #{START_DATE} AND #{END_DATE}  
+                AND A.DEL_NY = 'N'
+           ORDER BY A.Z06 DESC, B.WORK_DT DESC, C.WORK_DT DESC, D.WORK_DT DESC, E.WORK_DT DESC , F.AE03 DESC, G.BE03 DESC, H.A05 DESC, I.TESTER_DT DESC, J.A05 DESC, K.A0503 DESC, L.A0703 DESC
+
+</select>
+<select id="selectFnFcDetail" parameterType="HashMap" resultType="HashMap" >
+     /* finish.selectFnFcDetail (finish.xml) */
+                           SELECT  A.PROD_NO 
+                           ,A.Z01
+                           ,A.Z02
+                           ,A.Z06
+                  			,H.A0101 
+                  			,H.A0102 
+                  			,H.A0201 
+                  			,H.A0202 
+                  			,H.A0203 
+                  			,H.A0301 
+                  			,H.A0302 
+                  			,H.A0401 
+                  			,H.A0402 
+                  			,H.A0501 
+                  			,H.A0502 
+                  			,H.A0601 
+                  			,H.A0602 
+                  			,H.A0701 
+                  			,H.A0702 
+                  			,H.A0702_NM
+                  			,H.A0703
+                  			,H.A0801 
+                  			,H.A0802 
+			,H.INS_NM
+            ,H.INS_DTM
+            ,H.MODE_NM
+             ,H.MODE_DTM
+                        FROM T_FDG_BPR A
+                        JOIN T_QUL_FNREQ C
+                          ON C.PROD_NO = A.PROD_NO 
+                        JOIN T_QUL_FNINS B
+                          ON B.PROD_NO = A.PROD_NO
+                        JOIN T_QUL_FNREP D
+                          ON D.PROD_NO = A.PROD_NO
+                        JOIN T_QUL_FNREC E
+                          ON E.PROD_NO = A.PROD_NO
+                        JOIN T_QUL_ST F
+                          ON F.PROD_NO = A.PROD_NO
+                        JOIN t_qul_cs G
+                          ON G.PROD_NO = A.PROD_NO
+                        LEFT JOIN t_qul_fc H
+                          ON H.PROD_NO = A.PROD_NO
+                        WHERE 1=1 
+                     AND A.PROD_NO = #{PROD_NO}
+</select>
+
+    <insert id="insertFnFc" parameterType="HashMap">
+    /* finish.insertFnSt (finish.xml) */
+    INSERT INTO T_QUL_FC (
+             PROD_NO
+            ,A0101 
+			,A0102 
+			,A0201 
+			,A0202 
+			,A0203 
+			,A0301 
+			,A0302 
+			,A0401 
+			,A0402 
+			,A0501 
+			,A0502 
+			,A0601 
+			,A0602 
+			,A0701 
+			,A0702 
+			,A0702_NM
+			,A0703
+			,A0801 
+			,A0802
+    ,INS_DTM
+    ,INS_NM 
+    ,MODE_DTM 
+    ,MODE_NM 
+    )
+    VALUES(
+             #{PROD_NO}
+            ,#{A0101} 
+			,#{A0102} 
+			,#{A0201}
+			,#{A0202} 
+			,#{A0203} 
+			,#{A0301} 
+			,#{A0302} 
+			,#{A0401} 
+			,#{A0402} 
+			,#{A0501} 
+			,#{A0502} 
+			,#{A0601} 
+			,#{A0602} 
+			,#{A0701} 
+			,#{A0702} 
+			,#{A0702_NM}
+			,#{A0703}
+			,#{A0801} 
+			,#{A0802}
+	    ,DEFAULT
+    ,#{INS_NM}
+    ,DEFAULT
+    ,#{MODE_NM}
+	)		
+    </insert>
+    
+    <update id="updateFnFc" parameterType="HashMap">
+    /* finish.updateFnSt (finish.xml) */
+    UPDATE T_QUL_FC
+   SET       A0101 = #{A0101}
+			,A0102 = #{A0102} 
+			,A0201  = #{A0201}
+			,A0202  = #{A0202}
+			,A0203  = #{A0203}
+			,A0301  = #{A0301}
+			,A0302  = #{A0302}
+			,A0401  = #{A0401}
+			,A0402  = #{A0402}
+			,A0501  = #{A0501}
+			,A0502  = #{A0502}
+			,A0601  = #{A0601}
+			,A0602  = #{A0602}
+			,A0701  = #{A0701}
+			,A0702  = #{A0702}
+			,A0702_NM = #{A0702_NM}
+			,A0703  = #{A0703}
+			,A0801  = #{A0801}
+			,A0802 = #{A0802}
+			    ,INS_DTM = DEFAULT
+				,INS_NM = #{INS_NM}
+				,MODE_DTM = DEFAULT
+				,MODE_NM = #{MODE_NM}
+    WHERE PROD_NO = #{PROD_NO}
+    </update>
+    
+    <delete id="deleteFnFc" parameterType="hashMap">
+    DELETE FROM T_QUL_FC
+    WHERE PROD_NO = #{PROD_NO}
+    </delete>
+</mapper>

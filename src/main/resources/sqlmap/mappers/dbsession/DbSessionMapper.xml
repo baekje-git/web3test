@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dbSession">
+    
+    <sql id="reg_getConnectionInfoListSearch">
+        <if test = 'LOGIN_ID != NULL and LOGIN_ID != "" '>AND LOGIN_ID = #{LOGIN_ID} </if>
+    </sql>
+    
+    <select id="getConnectionInfoList"   parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT 
+            * 
+        FROM tbl_session_master      
+        WHERE 1 = 1
+        <include refid="reg_getConnectionInfoListSearch"/>                  
+    </select>       
+     <select id="getConnectionDetailInfoList"   parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT 
+            * 
+        FROM tbl_session_detail      
+        WHERE 1 = 1
+        <include refid="reg_getConnectionInfoListSearch"/>                  
+    </select>       
+    
+    
+    <delete id="deleteSessionMaster" parameterType="java.util.HashMap">
+        DELETE 
+          FROM tbl_session_master
+         WHERE login_id = #{LOGIN_ID}
+    </delete>     
+    <delete id="deleteSessionDetail" parameterType="java.util.HashMap">
+        DELETE 
+          FROM tbl_session_detail
+         WHERE login_id = #{LOGIN_ID}
+    </delete>     
+
+    <insert id="insertSessionMaster" parameterType="java.util.HashMap">
+		INSERT INTO tbl_session_master 
+		    (
+		        login_id
+		        ,user_pc_ip
+		        ,session_endtime
+		    )
+		VALUES
+		    (
+		         #{LOGIN_ID}
+		        ,#{USER_PC_IP}
+		        ,DATE_ADD(NOW(), INTERVAL #{ADD_SESSION_ENDTIME}  MINUTE) 
+		    )
+    </insert>
+    <insert id="insertSessionDetail" parameterType="java.util.HashMap">
+		INSERT INTO tbl_session_detail 
+		    (
+		        login_id
+		        ,session_key
+		        ,session_value
+		    )
+		VALUES
+		    (
+		        #{LOGIN_ID}
+		        ,#{SESSION_KEY}
+		        ,#{SESSION_VALUE} 
+		    )
+		
+	</insert>
+
+    <select id="getSessionMasterBySessionId"   parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT * 
+		FROM tbl_session_master
+		WHERE
+		    login_id 
+		    IN
+		    (
+		        SELECT login_id FROM tbl_session_detail
+		        WHERE
+		                session_key = 'SESSION_ID' 
+		            AND session_value = #{SESSION_ID}
+		    )        
+    </select>   
+    
+</mapper>

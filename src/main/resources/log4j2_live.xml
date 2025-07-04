@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info">
+ 
+    <Appenders>
+        <!-- 콜솔 -->
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-5p: [%tid] %c - %m%n"/>
+        </Console>
+        <RollingFile name="dailyout" fileName="C:/log/web3Dao.log"
+                    filePattern="C:/CHEM/log/$${date:yyyy-MM}/chem-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout>
+                <Pattern>%t> [%d{yyyy-MM-dd HH:mm:ss}] [%c{1}] [%L line] [%p] %m %n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+    
+    <loggers>
+        <logger name="kada"                 additivity="false" level="info"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="ever"                 additivity="false" level="info"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="org.springframework"  additivity="false" level="info"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="org.mybatis.spring"   additivity="false" level="warn"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="com.zaxxer.hikari"    additivity="false" level="warn"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.sqlonly"         additivity="false" level="info"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.sqltiming"       additivity="false" level="warn"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.audit"           additivity="false" level="off"> <AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.resultset"       additivity="false" level="off"> <AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.resultsettable"  additivity="false" level="off"> <AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>
+        <logger name="jdbc.connection"      additivity="false" level="warn"><AppenderRef ref="console" /><AppenderRef ref="dailyout" /></logger>    
+            
+        <root level="info" additivity="true">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="dailyout"/>
+        </root>
+    </loggers>
+ 
+</configuration>

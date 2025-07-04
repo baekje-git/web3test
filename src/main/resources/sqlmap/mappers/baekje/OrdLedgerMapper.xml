@@ -1,0 +1,1308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="ordLedger">
+
+    <select id="selectOrdLedgerSearchMaster" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.selectOrdLedgerSearchMaster 마스터 판매금액, 입금액 조회 */
+        SELECT IFNULL(SUM(TOTAL_AMT), 0) AS TOTAL_AMT
+             , IFNULL(SUM(PAY_AMT), 0) AS PAY_AMT
+          FROM (
+            <if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y"' >
+                SELECT A.TOTAL_AMT
+                     , 0 PAY_AMT
+                  FROM V_SALE A
+                 WHERE CUST_CD = #{custCd}
+                   AND A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+                   AND A.ORD_TYPE_CD != '34'
+                   <if test='searchAll != "Y"'>
+                   <choose>
+                   	<when test='salesYn == "Y" and returnYn == "Y"'></when>
+                   	<when test='salesYn == "Y"'>
+                   		AND GUBUN = '1'
+                   	</when>
+                   	<when test='returnYn == "Y"'>
+                   		AND GUBUN = '2'
+                   	</when>
+                   </choose>
+                   </if>
+            </if>
+            <if test='searchAll == "Y" or paymentYn == "Y"' >
+            	<if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y"' >
+                 UNION ALL
+            	</if>
+                SELECT 0 TOTAL_AMT
+                     , PAY_AMT
+                  FROM V_PAY A
+                 WHERE CUST_CD = #{custCd}
+                   AND APRV_DT BETWEEN #{startDt} AND #{endDt}
+            </if>
+            <if test='searchAll == "Y" or compensationYn == "Y"' >
+            	<if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y" or paymentYn == "Y"' >
+                 UNION ALL
+           		</if>
+                SELECT A.TOTAL_AMT
+                     , 0 PAY_AMT
+                  FROM V_SALE A
+                 WHERE CUST_CD = #{custCd}
+                   AND A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+                   AND A.ORD_TYPE_CD = '34'
+            </if>
+        ) A
+    </select>
+
+    <select id="selectOrdLedgerSearchMastercust" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.selectOrdLedgerSearchMastercust 매출원장 품목수불 마스터 조회 by.ABJ1 */
+        SELECT IFNULL(SUM(A.BALANCE_A_AMT), 0) AS BALANCE_A_AMT    -- 현금
+             , IFNULL(SUM(A.BALANCE_A_AMT - A.BALANCE_B_AMT), 0) AS BALANCE_B_AMT   -- 어음
+          FROM V_BALANCE_MONTH A
+         WHERE A.CUST_CD = #{custCd}
+           AND A.BALANCE_YM = VARCHAR_FORMAT(CURRENT DATE,'YYYYMM')
+    </select>
+
+    <select id="selectOrdLedgerSearchList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.selectOrdLedgerSearchList 매출원장 리스트조회 */
+        SELECT
+            C.APRV_DT
+            , C.APRV_NO
+            , C.ORD_TYPE_CD
+            , C.ORD_TYPE_NM
+            , C.GUBUN_NM
+            , C.DLV_GUBUN
+            , C.GUBUN
+            , C.ITEM_NM_UNIT
+            , C.ITEM_CNT_TXT
+            , C.TOTAL_AMT
+            , C.PAY_AMT
+            , C.OM_TYPE_NM
+            , C.BILL_DT
+            , C.BALANCE_A_AMT
+            , c.MEMO
+            , C.APRV_TM
+            , C.SN
+            , C.PRCS_SEQ
+            , C.SORT1
+            , C.INS_DTM
+            , C.INVOICE_NO
+            , C.DLV_BRCH_CD
+            , C.A_APRV_DT
+            , CASE WHEN D.SN IS NULL THEN 'N' ELSE 'Y' END AS SIGN_YN
+            , C.BACK_GB_NM
+            , C.PAY_ITEM_NM
+            , C.MED_NM
+            , C.APRV_DT || C.APRV_NO AS SEQ
+            , CASE WHEN C.GUBUN = '1' AND C.INVOICE_NO != '' THEN 'Y' ELSE 'N' END AS RECV_YN
+        FROM
+        (
+            <if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y"' >
+            SELECT
+                   F_S_FORMAT(A.SALE_DT,'YYYY.MM.DD') AS APRV_DT                                                    --일자
+                   , A.APRV_NO                                                             --번호
+                   , A.ORD_TYPE_CD
+                  , A.ORD_PATH_NM AS ORD_TYPE_NM
+                  , A.GUBUN_NM                                                             --종류
+                  , CASE WHEN A.DLV_GUBUN = 'GT' THEN '광역' ELSE '' END AS DLV_GUBUN      --광역구분
+                  , A.GUBUN
+                  , A.ITEM_NM_UNIT                                                         --적요
+                  , A.ITEM_CNT_TXT AS ITEM_CNT_TXT                                         --품목수
+                  , A.TOTAL_AMT
+                  ,0 PAY_AMT
+                  ,'' OM_TYPE_NM
+                  ,'' BILL_DT 
+                  , A.BALANCE_A_AMT AS BALANCE_A_AMT
+                  , A.APRV_TM                                                               --승인시간
+                  , A.SN
+                 -- , 'ORD' AS GUBUN
+                  , A.PRCS_SEQ
+                  , 1 as SORT1
+                  --, A.APRV_TM
+                  , A.INS_DTM
+                  , B.INVOICE_NO
+                  , A.DLV_BRCH_CD
+                  , A.APRV_DT AS A_APRV_DT
+                  , A.ORD_MEMO AS MEMO
+                  , A.BACK_GB_NM
+                  , SUBSTRING(CASE WHEN C.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+                  , SUBSTRING(COALESCE(D.CD_NM,''), 1, 1) AS MED_NM
+              FROM V_SALE A
+             INNER JOIN T_ITEM C
+                ON C.ITEM_CD = A.ITEM_CD
+              LEFT OUTER JOIN T_CODE D
+                ON D.P_CODE = '101'
+               AND D.CODE = C.MED_CD
+              LEFT OUTER JOIN IFSCAN.IF_SALSTATEMENT B
+                ON A.DLV_BRCH_CD = B.CENTER_CD
+               AND A.DLV_BRCH_CD || A.APRV_DT || LPAD(A.APRV_NO, 5, '0') = B.INVOICE_NO
+             WHERE CUST_CD =#{custCd}
+               AND A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+               AND A.ORD_TYPE_CD != '34'
+               <if test='searchAll != "Y"'>
+               <choose>
+               	<when test='salesYn == "Y" and returnYn == "Y"'></when>
+               	<when test='salesYn == "Y"'>
+               AND A.GUBUN = '1'
+               	</when>
+               	<when test='returnYn == "Y"'>
+               AND A.GUBUN = '2'
+               	</when>
+               </choose>
+               </if>
+            </if>
+            <if test='searchAll == "Y" or paymentYn == "Y"' >
+            	<if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y"' >
+                 UNION ALL
+            	</if>
+                SELECT
+                       F_S_FORMAT(A.APRV_DT,'YYYY.MM.DD')  as APRV_DT                            --일자
+                       , A.APRV_NO                                                               --번호
+                       , '' AS ORD_TYPE_CD
+                       , A.ORD_TYPE_NM
+                       , A.GUBUN_NM
+                       ,'' AS DLV_GUBUN
+                       , '' AS GUBUN
+                       , A.ITEM_NM_UNIT                                                          --적요
+                       ,'' ITEM_CNT_TXT
+                       ,0 TOTAL_AMT
+                       ,A.PAY_AMT
+                       , IFNULL(A.OM_TYPE_NM, '') AS OM_TYPE_NM                                      --어음종류
+                       , IFNULL(A.OM_EXP_DT,  '') AS BILL_DT                                       --어음만기일
+                      ,A.BALANCE_A_AMT
+                      ,A.APRV_TM
+                      ,A.SN
+                     -- , 'PAY' AS GUBUN
+                      , A.PRCS_SEQ
+                      , 2 as SORT1
+                     -- , A.APRV_TM
+                      , A.INS_DTM
+                      , '' AS INVOICE_NO
+                      , A.BRCH_CD AS DLV_BRCH_CD
+                      , A.APRV_DT AS A_APRV_DT
+                      , IFNULL(A.MEMO, '') AS MEMO
+                      , '' AS BACK_GB_NM
+                      , '' AS PAY_ITEM_NM
+                      , '' AS MED_NM
+                  FROM V_PAY A
+                 WHERE A.CUST_CD = #{custCd}
+                   AND A.APRV_DT BETWEEN #{startDt} AND #{endDt}
+                   AND A.BRCH_CD != '44'
+            </if>
+            <if test='searchAll == "Y" or compensationYn == "Y"' >
+            <if test='searchAll == "Y" or salesYn == "Y" or returnYn == "Y" or paymentYn == "Y"' >
+            UNION ALL
+         	</if>
+            SELECT
+                   F_S_FORMAT(A.SALE_DT,'YYYY.MM.DD') AS APRV_DT                                                    --일자
+                   , A.APRV_NO                                                             --번호
+                   , A.ORD_TYPE_CD
+                  , A.ORD_TYPE_NM||'('||A.ORD_PATH_NM||')' AS ORD_TYPE_NM
+                  , A.GUBUN_NM                                                             --종류
+                  ,'' AS DLV_GUBUN
+                  , A.GUBUN
+                  , A.ITEM_NM_UNIT                                                         --적요
+                  , A.ITEM_CNT_TXT AS ITEM_CNT_TXT                                         --품목수
+                  , A.TOTAL_AMT
+                  ,0 PAY_AMT
+                  ,'' OM_TYPE_NM
+                  ,'' BILL_DT
+                  , A.BALANCE_A_AMT AS BALANCE_A_AMT
+                  , A.APRV_TM                                                               --승인시간
+                  , A.SN
+                 -- , 'ORD' AS GUBUN
+                  , A.PRCS_SEQ
+                  , 1 as SORT1
+                  --, A.APRV_TM
+                  , A.INS_DTM
+                  , B.INVOICE_NO
+                  , A.DLV_BRCH_CD
+                  , A.APRV_DT AS A_APRV_DT
+                  , A.ORD_MEMO AS MEMO
+                  , A.BACK_GB_NM
+                  , SUBSTRING(CASE WHEN C.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+                  , SUBSTRING(COALESCE(D.CD_NM,''), 1, 1) AS MED_NM
+              FROM V_SALE A
+              INNER JOIN T_ITEM C
+                ON C.ITEM_CD = A.ITEM_CD
+              LEFT OUTER JOIN T_CODE D
+                ON D.P_CODE = '101'
+               AND D.CODE = C.MED_CD
+              LEFT OUTER JOIN IFSCAN.IF_SALSTATEMENT B
+                ON A.DLV_BRCH_CD = B.CENTER_CD
+               AND A.DLV_BRCH_CD || A.APRV_DT || LPAD(A.APRV_NO, 5, '0') = B.INVOICE_NO
+             WHERE CUST_CD =#{custCd}
+               AND A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+               AND A.ORD_TYPE_CD = '34'
+            </if>
+        ) C LEFT OUTER JOIN (SELECT SN FROM T_ORD_LEDGER_SIGN_FILE WHERE DEL_YN = 'N') D
+        ON C.SN = D.SN
+        <!--  
+        ORDER BY APRV_DT DESC, APRV_TM DESC, PRCS_SEQ DESC, SORT1 DESC, APRV_NO DESC, INS_DTM DESC
+        --> 
+        ORDER BY 
+
+        <if test='sortType == "R"'>
+            APRV_DT DESC,
+        </if>
+        <if test='sortType == "P"'>
+            APRV_DT ASC,
+        </if>
+        <if test="sortType == 'Web'">
+            APRV_DT DESC,
+        </if>   
+            APRV_TM DESC, PRCS_SEQ DESC, SORT1 DESC, APRV_NO DESC, INS_DTM DESC
+    </select>
+
+    <select id="selectAcceptanceFileList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.selectAcceptanceFileList 인수증 파일경로 조회 */
+        SELECT
+            A.FILE_DIRECTORY AS FILE_NM
+           ,#{invoiceNo} || '.jpg' AS ORG_FILE_NM
+           ,A.FILE_DIRECTORY
+        FROM
+            IFSCAN.IF_SALSTATEMENT A
+        WHERE
+            A.INVOICE_NO = SUBSTR(#{invoiceNo}, 1, 10)||LPAD(SUBSTR(#{invoiceNo}, 11), 5, '0')
+    </select>
+
+    <select id="itemSearchListDetailMaster" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.itemSearchListDetailMaster 원장매출 상세조회 마스터 */
+        SELECT SUBSTR(ORD_DT,1,4) || '.'||  SUBSTR(ORD_DT,5,2) || '.' ||  SUBSTR(ORD_DT,7,2) AS ORD_DT
+             , A.ORD_TYPE_NM
+             , A.GUBUN_NM
+             , A.APRV_NO
+             , A.ITEM_CNT_TXT
+             , A.ITEM_NM_UNIT
+             , A.ITEM_CNT
+          FROM V_SALE A
+         WHERE A.SN = #{sn}
+    </select>
+
+    <select id="itemSearchListDetail" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.itemSearchListDetail 원장매출 상세조회 */
+        SELECT ROW_NUMBER() OVER(ORDER BY A.SNO) AS ROWNUMBER
+             , A.SNO
+             , A.ITEM_GB_NM
+             , A.PAY_ITEM_NM
+             , A.MAKER_NM
+             , A.ITEM_NM_UNIT
+             , IFNULL(A.BOHUM_CD, '')    AS BOHUM_CD
+             , A.ORD_WP2_AMT
+             , A.EXP_DT           AS EXP_DT
+             , A.PROD_NO          AS PROD_NO
+             , A.SERIAL_NO        AS SERIAL_NO
+             , A.ITEM_QTY         AS ITEM_QTY
+             , A.TOTAL_AMT        AS TOTAL_AMT
+             , SUBSTRING(COALESCE(A.PAY_ITEM_NM,''), 1, 1) AS PAY_ITEM_NM_MOBILE
+             , SUBSTRING(COALESCE(A.MED_NM,''), 1, 1) AS MED_NM
+          FROM V_SALE_DTL A
+         WHERE A.SN = #{sn}
+         ORDER BY A.SNO
+    </select>
+    
+    <select id="selectAgreementFileDownLoadFileName" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+    SELECT FILE_SEQ     /* 파일번호 */
+             , TBL_GB       /* 업무구분(테이블) */
+             , COL_GB1      /* 항목구분1(칼럼) */
+             , COL_GB2      /* 항목구분2(칼럼) */
+             , FILE_NM      /* 파일명 */
+             , ORG_FILE_NM  /* 원파일명 */
+             , FILE_PATH    /* 파일경로 */
+             , FILE_SIZE    /* 파일크기 */
+             , FILE_EXT     /* 파일확장자명 */
+             , DEL_YN       /* 삭제여부 */
+             , INS_ID       /* 등록자ID */
+             , INS_DTM      /* 등록일시 */
+             , MOD_ID       /* 수정자ID */
+             , MOD_DTM      /* 수정일시 */
+          FROM T_COM_MNG_FILE A
+         WHERE 1=1
+           AND TBL_GB   = 'T_CUST'
+           AND COL_GB1  = #{custCd}
+           AND COL_GB2  = #{colGb2}
+           AND DEL_YN   = 'N'
+           ORDER BY FILE_SEQ DESC
+           LIMIT 1
+    </select>
+    
+    <select id="selectOrdLedgerSignFileName" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        /* ordLedger.selectOrdLedgerSignFileName 서명파일 조회 */
+        SELECT SN
+             , FILE_NM
+             , ORG_FILE_NM
+             , FILE_PATH
+             , FILE_SIZE
+             , FILE_EXT
+             , DEL_YN
+             , INS_ID
+             , INS_DTM
+             , MOD_ID
+             , MOD_DTM
+          FROM T_ORD_LEDGER_SIGN_FILE 
+         WHERE SN = #{SN}
+    </select>
+    
+    <insert id="insertOrdLedgerSignFile" parameterType="java.util.HashMap" useGeneratedKeys="false">
+        /* ordLedger.selectOrdLedgerSignFileName 서명파일 저장 */
+        INSERT INTO T_ORD_LEDGER_SIGN_FILE( 
+            SN, 
+            FILE_NM, 
+            ORG_FILE_NM, 
+            FILE_PATH, 
+            FILE_SIZE, 
+            FILE_EXT, 
+            DEL_YN, 
+            INS_ID, 
+            INS_DTM, 
+            MOD_ID, 
+            MOD_DTM
+        ) values ( 
+            #{SN},
+            #{FILE_NM},
+            #{ORG_FILE_NM},
+            #{FILE_PATH},
+            #{FILE_SIZE},
+            #{FILE_EXT},
+            'N',
+            #{USER_ID},
+            F_S_NOW(),
+            #{USER_ID},
+            F_S_NOW()
+        ) 
+    </insert>
+    
+    <update id="updateOrdLedgerSignFile" parameterType="java.util.HashMap">
+        /* ordLedger.updateOrdLedgerSignFile 서명파일 수정 */
+        UPDATE T_ORD_LEDGER_SIGN_FILE 
+           SET FILE_NM     = #{FILE_NM}
+              ,ORG_FILE_NM = #{ORG_FILE_NM} 
+              ,FILE_SIZE   = #{FILE_SIZE}
+         WHERE SN         = #{SN}
+    </update>
+    
+    <!-- 담당자별 영업현황 일별-->
+    <select id="rptnSalesDeptSalesSchDayList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][ordLedger.rptnSalesDeptSalesSchDayList][매출원장 담당자별영업현황 일별 리스트조회][by.ABJ1]+*/
+    SELECT AA.BRCH_CD                                                                                                              AS BRCH_CD         -- 지점코드
+         , AA.DEPT_CD_SUM                                                                                                          AS DEPT_CD         -- 부서코드
+         , (CASE WHEN AA.DEPT_CD_SUM IS NULL OR AA.DEPT_CD_SUM  = '' THEN '전체' ELSE AA.DEPT_NM END)                                AS DEPT_NM         -- 부서명
+         , SUM(IFNULL(BB.SALE    , 0))                                                                                             AS SALE_AMT        -- 매출
+         , SUM(IFNULL(BB.BACK    , 0))                                                                                             AS BACK_AMT        -- 반품
+         , SUM(IFNULL(BB.SALE_2  , 0))                                                                                             AS SALE_TOT        -- 판매
+      FROM ( --집계대상 (BRCH_CD, DEPT_CD, CUST_CD)
+      SELECT A.BRCH_CD, A.DEPT_CD AS DEPT_CD_SUM, B.DEPT_CD, A.DEPT_NM, A.LEVEL, A.RNUM, B.EMP_NM
+        FROM (
+             SELECT BRCH_CD, DEPT_CD, DEPT_NM
+                  , LEVEL, SALE_DEPT_YN, LAST_DEPT_YN, USE_YN, CHAIN, ROOT, RNUM
+               FROM TABLE(F_T_DEPT_CHILD(#{brchCd}, '')) DEPT
+              WHERE USE_YN = 'Y'
+                AND DEPT_CD NOT IN ('21','11','7')
+                AND SUBSTR(DEPT_CD, 1, 2) NOT IN ('34','74')
+             ) A -- 부서 (TREE)
+             JOIN
+             (
+             SELECT BRCH_CD, DEPT_CD
+                  , MAX(EMP_NM)                                                                                                    AS EMP_NM
+               FROM V_CUST
+              WHERE 1=1
+                AND BRCH_CD = #{brchCd}
+                AND CUST_GB_CD NOT IN('18')
+                AND SB_GB_CD IN ('02','03')
+                AND DEPT_CD NOT IN ('21','7')
+                AND SUBSTRING(DEPT_CD,1,2) NOT IN('34','74')
+                AND DEAL_END_YN = 'N'
+                AND CUST_GB_CD IN (SELECT CODE FROM T_CODE WHERE P_CODE = '117' AND USER_STRING3 = 'N')
+               GROUP BY BRCH_CD, DEPT_CD
+             ) B --- 거래처
+             ON B.BRCH_CD = A.BRCH_CD AND B.DEPT_CD LIKE A.DEPT_CD || '%'
+      ) AA ------------------------------------------------------------------------------------------ AA : 대상
+      LEFT OUTER JOIN
+      ( -- 매입/매출/판매
+      SELECT A.DEPT_CD
+             -- 당일
+           , SUM(A.SALE_AMT)              AS SALE     -- 매출
+           , SUM(A.BACK_AMT * (-1))       AS BACK     -- 반품
+           , SUM(A.SALE_AMT + A.BACK_AMT) AS SALE_2   -- 판매
+        FROM (SELECT DEPT_CD, CUST_CD, BALANCE_DT
+                   , SALE_AMT, BACK_AMT
+                FROM T_CUST_BALANCE_DAY
+               WHERE BRCH_CD = #{brchCd}
+                 AND DEPT_CD NOT IN ('21','7')
+                 AND SUBSTRING(DEPT_CD,1,2) NOT IN ('34','74')
+                 AND BALANCE_DT BETWEEN (CASE WHEN LENGTH(IFNULL(#{saleYmd},'')) = 8  THEN IFNULL(#{saleYmd},'') ELSE IFNULL(#{saleYmd},'') || '01' END) AND (CASE WHEN LENGTH(IFNULL(#{saleYmd},'')) = 8  THEN IFNULL(#{saleYmd},'') ELSE F_S_ADDDATE('D','L',IFNULL(#{saleYmd},''),0) END)
+                 AND CUST_CD IN ( SELECT CUST_CD
+                                    FROM T_CUST
+                                   WHERE CUST_GB_CD NOT IN('18')
+                                     AND SB_GB_CD IN ('02','03')
+                                     AND CUST_GB_CD IN (SELECT CODE FROM T_CODE WHERE P_CODE = '117' AND USER_STRING3 = 'N')
+                                )
+             ) A
+       GROUP BY A.DEPT_CD
+      ) BB  ------------------------------------------------------------------------------------------ BB : 매입/매출/판매
+      ON BB.DEPT_CD = AA.DEPT_CD
+     WHERE 1=1
+     GROUP BY AA.BRCH_CD, AA.DEPT_CD_SUM, AA.DEPT_NM, AA.LEVEL,AA.RNUM
+     <if test='sortType == "C" '>
+       ORDER BY AA.RNUM
+     </if>
+     <if test='sortType == "I" '>
+       ORDER BY SALE_AMT DESC, AA.RNUM
+     </if>
+     <if test='sortType == "S" '>
+       ORDER BY SALE_TOT DESC, AA.RNUM
+     </if>
+    </select>
+    
+    <!-- 담당자별 영업현황 월별-->
+    <select id="rptnSalesDeptSalesSchMonthList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][ordLedger.rptnSalesDeptSalesSchMonthList][매출원장 담당자별영업현황 월별 리스트조회][by.ABJ1]+*/
+    SELECT AA.BRCH_CD                                                                                                             AS BRCH_CD         -- 지점코드
+         , AA.DEPT_CD_SUM                                                                                                         AS DEPT_CD         -- 부서코드
+         , (CASE WHEN AA.DEPT_CD_SUM IS NULL OR AA.DEPT_CD_SUM  = '' THEN '전체' ELSE AA.DEPT_NM END)                             AS DEPT_NM         -- 부서명
+         , SUM(IFNULL( EE.SALE_AIM_AMT  ,0))                                                                                      AS SALE_AIM_AMT    -- 매출목표
+         , CAST(ROUND((CASE WHEN SUM(IFNULL(EE.SALE_AIM_AMT,0)) != 0
+                            THEN SUM(BB.SALE_2) * 100.000 / SUM(IFNULL(EE.SALE_AIM_AMT,0))
+                            ELSE 0
+                      END), 2) AS DECIMAL(10,2))                                                                                  AS SALE_AIM_RATE   -- 매출%
+         , SUM(IFNULL(BB.SALE    , 0))                                                                                            AS SALE_AMT        -- 매출
+         , SUM(IFNULL(BB.BACK    , 0))                                                                                            AS BACK_AMT        -- 반품
+         , SUM(IFNULL(BB.SALE_2  , 0))                                                                                            AS SALE_TOT        -- 판매
+         , CAST(CASE WHEN SUM(BB.M_SALE_1) != 0 THEN ROUND(100.000 * SUM(BB.M_PROFIT_1) / SUM(BB.M_SALE_1), 2)
+                     ELSE 0 END AS DECIMAL(10,2))                                                                                 AS M_PROFIT1_RATE  -- 당월_이익율1
+    
+      FROM ( --집계대상 (BRCH_CD, DEPT_CD, CUST_CD)
+      SELECT A.BRCH_CD, A.DEPT_CD AS DEPT_CD_SUM, B.DEPT_CD, A.DEPT_NM, A.LEVEL, A.RNUM, B.EMP_NM
+        FROM (
+             SELECT BRCH_CD, DEPT_CD, DEPT_NM
+                  , LEVEL, SALE_DEPT_YN, LAST_DEPT_YN, USE_YN, CHAIN, ROOT, RNUM
+               FROM TABLE(F_T_DEPT_CHILD(#{brchCd}, '')) DEPT
+              WHERE USE_YN = 'Y'
+                AND DEPT_CD NOT IN ('21','11','7')
+                AND SUBSTR(DEPT_CD, 1, 2) NOT IN ('34','74')
+             ) A -- 부서 (TREE)
+             JOIN
+             (
+             SELECT BRCH_CD, DEPT_CD
+                  , MAX(EMP_NM)                                                                                                    AS EMP_NM
+               FROM V_CUST
+              WHERE 1=1
+                AND BRCH_CD = #{brchCd}
+                AND CUST_GB_CD NOT IN('18')
+                AND SB_GB_CD IN ('02','03')
+                AND DEPT_CD NOT IN ('21','7')
+                AND SUBSTRING(DEPT_CD,1,2) NOT IN('34','74')
+                AND DEAL_END_YN = 'N'
+                AND CUST_GB_CD IN (SELECT CODE FROM T_CODE WHERE P_CODE = '117' AND USER_STRING3 = 'N')
+               GROUP BY BRCH_CD, DEPT_CD
+             ) B --- 거래처
+             ON B.BRCH_CD = A.BRCH_CD AND B.DEPT_CD LIKE A.DEPT_CD || '%'
+      ) AA ------------------------------------------------------------------------------------------ AA : 대상
+      LEFT OUTER JOIN
+      ( -- 당월영업목표 (시작)
+      SELECT A.DEPT_CD           AS DEPT_CD
+           , SUM(A.SALE_AIM_AMT) AS SALE_AIM_AMT
+           , SUM(A.PAY_AIM_AMT)  AS PAY_AIM_AMT
+        FROM T_SALE_AIM A
+       WHERE 1=1
+         AND A.YM = SUBSTRING(F_S_EMPTY(#{saleYmd}), 1, 6)
+         AND A.BRCH_CD =  #{brchCd}
+         AND A.DEPT_CD NOT IN ('21','7')
+         AND SUBSTRING(A.DEPT_CD,1,2) NOT IN('34','74')
+       GROUP BY A.DEPT_CD
+      ) EE ------------------------------------------------------------------------------------------ EE : 월영업목표
+      ON EE.DEPT_CD = AA.DEPT_CD
+
+      LEFT OUTER JOIN
+      ( -- 매입/매출/판매
+      SELECT A.DEPT_CD
+           , SUM(A.SALE_AMT)              AS SALE     -- 매출
+           , SUM(A.BACK_AMT * (-1))       AS BACK     -- 반품
+           , SUM(A.SALE_AMT + A.BACK_AMT) AS SALE_2   -- 판매
+           , SUM(A.SALE_AMT + A.BACK_AMT + A.PAYBACK_AMT) AS M_SALE_1
+           , SUM(A.SALE_AMT + A.BACK_AMT + A.PAYBACK_AMT - A.BPP ) AS M_PROFIT_1
+        FROM (SELECT DEPT_CD, CUST_CD, BALANCE_DT
+                   , SALE_AMT, BACK_AMT
+                   , PAYBACK_AMT, BPP
+                FROM T_CUST_BALANCE_DAY
+               WHERE BRCH_CD = #{brchCd}
+                 AND DEPT_CD NOT IN ('21','7')
+                 AND SUBSTRING(DEPT_CD,1,2) NOT IN ('34','74')
+                 AND BALANCE_DT BETWEEN (CASE WHEN LENGTH(IFNULL(#{saleYmd},'')) = 8  THEN IFNULL(#{saleYmd},'') ELSE IFNULL(#{saleYmd},'') || '01' END) AND (CASE WHEN LENGTH(IFNULL(#{saleYmd},'')) = 8  THEN IFNULL(#{saleYmd},'') ELSE F_S_ADDDATE('D','L',IFNULL(#{saleYmd},''),0) END)
+                 AND CUST_CD IN ( SELECT CUST_CD
+                                    FROM T_CUST
+                                   WHERE CUST_GB_CD NOT IN('18')
+                                     AND SB_GB_CD IN ('02','03')
+                                     AND CUST_GB_CD IN (SELECT CODE FROM T_CODE WHERE P_CODE = '117' AND USER_STRING3 = 'N')
+                                )
+             ) A
+       GROUP BY A.DEPT_CD
+      ) BB  ------------------------------------------------------------------------------------------ BB : 매입/매출/판매
+      ON BB.DEPT_CD = AA.DEPT_CD
+       WHERE 1=1
+       GROUP BY AA.BRCH_CD, AA.DEPT_CD_SUM, AA.DEPT_NM, AA.LEVEL,AA.RNUM
+       <if test='sortType == "C" '>
+         ORDER BY AA.RNUM
+       </if>
+       <if test='sortType == "I" '>
+         ORDER BY SALE_AMT DESC,AA.RNUM
+       </if>
+       <if test='sortType == "S" '>
+         ORDER BY SALE_TOT DESC,AA.RNUM
+       </if>
+    </select>
+    
+    <!-- 초당약품 매출현황 일반현황/거래처별 카운트 조회 -->
+    <select id="selectChoSalesStateListCount" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][OrdLedgerMapper.selectChoSalesStateListCount][초당약품매출현황조회 카운트][by.ABJ1]+*/
+    <![CDATA[     
+        SELECT COUNT(1) AS CNT
+          FROM (
+                SELECT B.DEPT_CD
+                  FROM V_SALE_DTL B  
+                 WHERE B.BRCH_CD = #{brchCd}
+                   AND B.SALE_DT BETWEEN SUBSTR('${startYmd}',1, 6) ||'01' AND '${endYmd}'
+                   AND B.MAKER_CD = '112'
+                   AND B.DEPT_CD NOT IN ('11','21','7')
+                   AND SUBSTRING(B.DEPT_CD,1,2) NOT IN ('34','74')
+                   AND B.ITEM_CD NOT IN ('16001610','01004281','01009056','8806707003717','112305','14002438','14002439') /*바이겔품목제외 모드나 추가적용2023.12.29*/                                           
+                 LIMIT 1
+               )
+           ]]>
+    </select>
+    
+    <!-- 초당약품매출현황 일반현황-->
+    <select id="selectChoSalesStateNorList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][OrdLedgerMapper.selectChoSalesStateNorList][모바일>초당약품매출현황 , cej ]+*/
+    SELECT 
+           PD.DEPT_CD||LPAD('9',8-LENGTH(PD.DEPT_CD)) DEPT_SORT
+          ,PD.BRCH_CD
+          ,LEFT(PD.DEPT_CD,(CASE WHEN PD.DEPT_CD LIKE '31%' THEN 4 ELSE 2 END)) SUPP_COL
+          ,MAX(PD.DEPT_LVL) DEPT_LVL
+          ,MAX(PD.LAST_DEPT_YN) LAST_DETP_YN
+          ,(CASE WHEN MAX(PD.LAST_DEPT_YN)='N' OR MAX(PD.DEPT_LVL)=1 THEN 'Y' ELSE 'N' END) LINE_YN
+          ,PD.DEPT_CD --부서코드
+          ,PD.DEPT_NM --부서명
+          ,MAX(B.MAKER_NM) MAKER_NM 
+          ,SUM(AIM_AMT) AIM_AMT                                  --목표액
+          ,CASE WHEN SUM(AIM_AMT)=0 THEN 0 ELSE ROUND((CAST(SUM(OTC_YM_AMT) AS DECIMAL(18,2)) / CAST(SUM(AIM_AMT) AS DECIMAL(18,2)))*100,2) END SAL_PERCENT  --매출%
+          ,SUM(OTC_YMD_AMT) OTC_YMD_AMT                          --일매출(일반)
+          ,SUM(OTC_YM_AMT) OTC_YM_AMT                            --월매출(일반)
+          ,SUM(TOT_YM_AMT) TOT_YM_AMT                            --월매출
+          ,CASE WHEN MAX(PD.DEPT_LVL) = 1 THEN '#D8D6F5' 
+                WHEN MAX(PD.DEPT_LVL) = 2 THEN '#C9EAC7'  
+                ELSE '' END                         AS COLOR    /* 구분색상 */                  
+      FROM T_DEPT PD
+      JOIN (
+            SELECT B.DEPT_CD
+                  ,MAX(B.MAKER_NM) MAKER_NM 
+                  ,COALESCE( CASE WHEN MAX(B.MAKER_CD)='112' THEN MAX(C.CHO_SALE_AIM_AMT) ELSE 0 END, 0) AIM_AMT
+                  ,COALESCE( SUM(CASE WHEN B.MED_CD='01' AND B.SALE_DT=#{endYmd} THEN B.ITEM_AMT ELSE 0 END), 0) OTC_YMD_AMT
+                  ,COALESCE( SUM(CASE WHEN B.MED_CD='01'                        THEN B.ITEM_AMT ELSE 0 END), 0) OTC_YM_AMT
+                  ,COALESCE( SUM(                                                    B.ITEM_AMT           ), 0) TOT_YM_AMT
+              FROM V_SALE_DTL B  
+              LEFT JOIN T_SALE_AIM C  
+                ON C.BRCH_CD =  #{brchCd}
+               AND C.YM = SUBSTR(#{startYmd},1, 6)
+               AND C.DEPT_CD = B.DEPT_CD
+             WHERE B.BRCH_CD = #{brchCd}
+               AND B.SALE_DT BETWEEN SUBSTR('${startYmd}',1, 6) ||'01' AND '${endYmd}'
+               AND B.MAKER_CD = '112'
+               AND B.DEPT_CD NOT IN ('11','21','7')
+               AND SUBSTRING(B.DEPT_CD,1,2) NOT IN ('34','74')
+               AND B.ITEM_CD NOT IN ('16001610','01004281','01009056','8806707003717','112305','14002438','14002439') /*바이겔품목제외 모드나 추가적용2023.12.29*/                                           
+             GROUP BY B.DEPT_CD
+           ) B
+        ON B.DEPT_CD LIKE PD.DEPT_CD||'%'
+         WHERE PD.BRCH_CD IS NULL 
+            OR PD.BRCH_CD = #{brchCd}
+         GROUP BY PD.DEPT_CD,PD.DEPT_NM,PD.BRCH_CD
+         ORDER BY DEPT_SORT ASC
+    </select>
+    
+    <!-- 초당약품매출현황 거래처별-->
+    <select id="selectChoSalesStateCustList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][OrdLedgerMapper.selectChoSalesStateCustList][조회출력>매출자료>초당약품매출현황 거래처별 임진아 , cej ]+*/
+    <![CDATA[ 
+        SELECT A.DEPT_CD
+          ,A.BRCH_CD
+          ,F_S_MASTER('DEPT', A.DEPT_CD, 'NM', A.BRCH_CD) AS DEPT_NM
+          ,SUBSTRING(A.CUST_CD,3,8) CUST_CD
+          ,F_S_MASTER('CUST',A.CUST_CD,'NM') AS CUST_NM --거래처명
+          ,A.MAKER_NM
+          ,A.ITEM_CD
+          ,A.ITEM_NM_UNIT --품목명
+          ,A.SALE_DT --거래일자
+          ,A.APRV_NO
+          ,A.ITEM_QTY --수량
+          ,A.ITEM_AMT --금액
+          ,A.DEPT_CD||LPAD('9',8-LENGTH(A.DEPT_CD)) SORT1
+          ,'1' SORT2
+          ,LEFT(A.DEPT_CD,(CASE WHEN A.DEPT_CD LIKE '31%' THEN 4 ELSE 2 END)) SUPP_COL
+          ,'N' LINE_YN    
+          ,'' AS COLOR
+      FROM V_SALE_DTL A 
+     WHERE A.BRCH_CD = #{brchCd}
+       AND A.SALE_DT BETWEEN #{startYmd}  AND #{endYmd} 
+       AND A.MAKER_CD = '112'
+       AND A.MED_CD = '01'
+       AND A.BRCH_CUST_YN ='N'
+       AND A.DEPT_CD NOT IN ('11','21','7')
+       AND SUBSTRING(A.DEPT_CD,1,2) NOT IN ('34','74')
+       AND A.ITEM_CD NOT IN ('16001610','01004281','01009056','8806707003717','112305','14002438','14002439','22003944','22003945') /*바이겔품목제외 모드나추가(2023.12.22) 칼시마추가(2024.02.06)*/        
+    ]]>
+    
+<!--      UNION ALL   
+    SELECT 
+           A.DEPT_CD
+          ,A.BRCH_CD
+          ,A.DEPT_NM
+          ,'' CUST_CD
+          ,'' CUST_NM
+          ,'' MAKER_NM
+          ,'' ITEM_CD
+          ,'' ITEM_NM_UNIT
+          ,'' SALE_DT
+          ,'' APRV_NO
+          ,0 ITEM_QTY
+          ,SUM(B.MONTH_SALE_AMT) MONTH_SALE_AMT 
+          ,A.DEPT_CD||LPAD('9',8-LENGTH(A.DEPT_CD)) SORT1
+          ,'2' SORT2
+          ,LEFT(A.DEPT_CD,(CASE WHEN A.DEPT_CD LIKE '31%' THEN 4 ELSE 2 END)) SUPP_COL
+          ,(CASE WHEN MAX(A.LAST_DEPT_YN)='N' OR MAX(A.DEPT_LVL)=1 THEN 'Y' ELSE 'N' END) LINE_YN 
+          ,(CASE WHEN LENGTH(A.DEPT_CD) = 0 THEN  '' WHEN LENGTH(A.DEPT_CD) < 5 THEN  '#D8D6F5'  ELSE '#C9EAC7'  END)  AS COLOR
+      FROM T_DEPT A 
+      JOIN (SELECT B.DEPT_CD
+                  ,MAX(B.MAKER_NM) MAKER_NM
+                  ,COUNT(DISTINCT CASE WHEN B.SALE_DT=#{endYmd}  THEN B.CUST_CD END) TODAY_CUST_CNT
+                  ,SUM(CASE WHEN B.SALE_DT=#{endYmd}  THEN B.ITEM_AMT ELSE 0 END) TODAY_SALE_AMT
+                  ,COUNT(DISTINCT B.CUST_CD) MONTH_CUST_CNT
+                  ,SUM(B.ITEM_AMT) MONTH_SALE_AMT
+              FROM V_SALE_DTL B 
+             WHERE B.BRCH_CD = #{brchCd}
+               AND B.SALE_DT  BETWEEN #{startYmd}  AND #{endYmd} 
+               AND B.MAKER_CD = '112'
+               AND B.MED_CD = '01'
+               AND B.BRCH_CUST_YN ='N'
+               AND B.DEPT_CD NOT IN ('11','21','7')
+               AND SUBSTRING(B.DEPT_CD,1,2) NOT IN ('34','74')
+               AND B.ITEM_CD NOT IN ('16001610','01004281','01009056','8806707003717','112305','14002438','14002439','22003944','22003945') /*바이겔품목제외 모드나추가(2023.12.22) 칼시마추가(2024.02.06)*/     
+             GROUP BY B.DEPT_CD
+           ) B
+        ON B.DEPT_CD LIKE A.DEPT_CD||'%'
+     WHERE A.BRCH_CD IS NULL 
+        OR A.BRCH_CD = #{brchCd}
+     GROUP BY A.DEPT_CD,A.DEPT_NM,A.BRCH_CD  -->
+        
+     <if test='sortType == "B" '>
+       ORDER BY CUST_NM ASC
+     </if>
+     <if test='sortType == "D" '>
+       ORDER BY SALE_DT DESC, SORT1 DESC,DEPT_CD ASC, ITEM_NM_UNIT ASC,CUST_NM ASC
+     </if>
+     <if test='sortType == "C" '>
+       ORDER BY CUST_NM ASC, SORT1 DESC,DEPT_CD ASC,SALE_DT ASC,ITEM_NM_UNIT ASC
+     </if>
+     <if test='sortType == "I" '>
+       ORDER BY ITEM_NM_UNIT ASC, SORT1 DESC,DEPT_CD ASC,SALE_DT ASC,CUST_NM ASC
+     </if>
+    </select>
+    
+    <!-- 거래처별 영업현황 -->
+    <select id="rptnSalesCustomSalesNorList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][OrdLedgerMapper.rptnSalesCustomSalesNorList][조회출력>매출자료>거래처별영업현황(일반) 임진아]+*/
+    WITH
+    WITH_TMP01
+    AS (   SELECT BRCH_CD, BALANCE_DEPT_CD AS DEPT_CD, B.DEPT_NM, EMP_ID, EMP_NM, CUST_CD,SERVICE_NO, CUST_NM
+                , SUM(CASE WHEN BALANCE_YM = #{befYm} THEN SALE_2        ELSE 0 END) AS BEF_SALE_2            -- 전월 매출액
+                , SUM(CASE WHEN BALANCE_YM = #{curYm} THEN SALE_2        ELSE 0 END) AS CUR_SALE_2            -- 당월 매출액
+                , SUM(CASE WHEN BALANCE_YM = #{curYm} THEN BALANCE_A_AMT ELSE 0 END) AS CUR_BALANCE_A_AMT     -- 당월 잔고A
+                , TRN_LIM_AMT -- 여신한도액
+             FROM (  SELECT A.BALANCE_YM,
+                            A.CUST_CD,
+                            A.SALE_1,
+                            A.SALE_2,
+                            A.PROFIT_1,
+                            A.PROFIT_2,
+                            A.PAY_A,
+                            A.PAY_B,
+                            A.SALE_AMT,
+                            A.BACK_AMT,
+                            A.PAYBACK_AMT,
+                            A.SALEBACK_AMT,
+                            A.BPP,
+                            A.PAY_CASH_AMT,
+                            A.BALANCE_MOV_AMT,
+                            A.PAY_OM_AMT,
+                            A.PAY_OM_CNT,
+                            A.PAY_OM_BILL_AMT,
+                            A.PAY_OM_BILL_CNT,
+                            A.ADD_SALE_AMT,
+                            A.ADD_SALE_CNT,
+                            A.BALANCE_A_AMT,
+                            A.BALANCE_B_AMT,
+                            A.BALANCE_B_M0,
+                            A.BALANCE_B_M1,
+                            A.BALANCE_B_M2,
+                            A.BALANCE_B_M3,
+                            A.BALANCE_B_M4,
+                            A.PAY_AMT_M0,
+                            A.PAY_AMT_M1,
+                            A.PAY_AMT_M2,
+                            A.PAY_AMT_M3,
+                            A.PAY_AMT_M4,
+                            A.PAYBACK_AMT_M1,
+                            A.PAYBACK_AMT_M2,
+                            A.PAYBACK_AMT_M3,
+                            A.BEF_BALANCE_A_AMT,
+                            A.BEF_BALANCE_B_AMT,
+                            A.BEF_PAY_OM_YET_CNT,
+                            A.SALE_B1,
+                            A.SALE_B2,
+                            A.SALE_B3,
+                            A.SALE_B4,
+                            A.INS_ID,
+                            A.INS_DTM,
+                            A.MOD_ID,
+                            A.MOD_DTM,
+                            A.ROTATE_DAY,
+                            A.CUST_RANK_CD,
+                            A.BALANCE_A_DAY20,
+                            A.BANKBOOK_PRN_DT,
+                            A.CFR_DTM,
+                            A.CFR_BALANCE_B_AMT,
+                            A.CFR_YN,
+                            A.CFR_ID,
+                            A.CFR_IP,
+                            A.YET_AMT,
+                            A.YET_CNT,
+                            A.CUST_NM,
+                            A.BRCH_CD,
+                            A.DEPT_CD,
+                            A.EMP_ID,
+                            A.OPEN_DT,
+                            A.EXC_CUST_GB_CD,
+                            A.BRCH_CUST_YN,
+                            A.DEAL_END_YN,
+                            A.DEAL_END_DT,
+                            A.CUST_GB_CD,
+                            A.SB_GB_CD,
+                            A.CEO_JUMIN_NO,
+                            A.ADDRESS,
+                            A.SERVICE_NO,
+                            A.CEO_NM,
+                            A.SALE_START_DT,
+                            A.BANKBOOK_LINE_NO,
+                            A.PAYBACK_USE_CD,
+                            A.HP_NO,
+                            A.EMP_NM,
+                            A.DEPT_NM,
+                            A.BRCH_NM,
+                            A.BRCH_SNM,
+                            A.P_BRCH_CD,
+                            A.PROFIT_RATE1,
+                            A.PROFIT_RATE2,
+                            B.BRCH_CD BALANCE_BRCH_CD,
+                            B.DEPT_CD BALANCE_DEPT_CD,
+                            B.EMP_ID BALANCE_EMP_ID,
+                            A.REAL_YN,
+                            A.HP_DEPT_YN,
+                            A.TR_DEPT_YN,
+                            A.DOMAE_DEPT_YN,
+                            A.SHOP_DEPT_YN,
+                            A.AN_DEPT_YN,
+                            A.DLV_BRCH_CD,
+                            A.DLV_AREA_CD,
+                            A.DLV_AREA_NM,
+                            C.TRN_LIM_AMT
+                            FROM V_BALANCE_MONTH A 
+                JOIN T_CUST B 
+                  ON B.CUST_CD=A.CUST_CD
+                LEFT JOIN T_CUST_CRM C
+                  ON C.CUST_CD = A.CUST_CD ) A
+             JOIN
+                 (SELECT DEPT_CD, DEPT_NM
+                    FROM T_DEPT
+                    WHERE BRCH_CD = #{brchCd} 
+                 )  B
+               ON A.BALANCE_DEPT_CD = B.DEPT_CD
+            WHERE BALANCE_YM  IN ( #{befYm}, #{curYm} )
+              AND BRCH_CD = F_S_EMPTY(#{brchCd}, #{brchCd})
+              AND BALANCE_DEPT_CD
+                  IN (SELECT DEPT_CD
+                        FROM TABLE(F_T_DEPT_CHILD(F_S_EMPTY(#{brchCd}, #{brchCd}), F_S_EMPTY(#{deptCd}, ''))) AS TMP
+                  )
+              AND REAL_YN = 'Y'
+              AND DEAL_END_YN = 'N'
+              AND CUST_GB_CD IN (SELECT CODE FROM T_CODE WHERE P_CODE = '117' AND CODE != '13'      ) -- 매입처 총무매출처 제외
+              AND BRCH_CUST_YN = 'N'
+              <if test="custNm != null and custNm != ''">
+                  <bind name="custNm" value='"%" + custNm + "%"'/>
+                  AND CUST_NM LIKE #{custNm}
+              </if>
+            GROUP BY
+                  BRCH_CD, BALANCE_DEPT_CD,B.DEPT_NM, EMP_ID, EMP_NM, CUST_CD, A.SERVICE_NO, CUST_NM, TRN_LIM_AMT
+    )
+    SELECT -- 부서집계
+           0                                              AS ORD
+         , '#C9EAC7'                                      AS COLOR
+         , A.BRCH_CD                                      AS BRCH_CD
+         , A.DEPT_CD                                      AS DEPT_CD
+         , A.DEPT_NM                                      AS DEPT_NM
+         , ''                                             AS CUST_CD
+         , A.DEPT_NM                                             AS CUST_NM
+         -- 전월
+         , SUM(IFNULL(C.BEF_SALE_2       , 0))            AS BEF_SALE_2            -- 전월_매출
+         , SUM(IFNULL(C.CUR_SALE_2       , 0))            AS CUR_SALE_2            -- 당월_매출
+         , SUM(IFNULL(C.CUR_BALANCE_A_AMT, 0))            AS CUR_BALANCE_A_AMT     -- 당월_잔고A
+         , 0                                              AS TRN_LIM_AMT           -- 여신한도액
+      FROM ( -- TREE
+           SELECT DEPT.RNUM, DEPT.BRCH_CD, DEPT.DEPT_CD, DEPT.DEPT_NM, DEPT.P_DEPT_CD AS DEPT_CD_P
+                , CUST.DEPT_CD AS DEPT_CD_LOW
+           FROM ( -- 부서TREE
+                SELECT T01.BRCH_CD, T01.DEPT_CD, T01.DEPT_NM, T01.RNUM, T02.P_DEPT_CD
+                  FROM TABLE( F_T_DEPT_CHILD( F_S_EMPTY(#{brchCd}, #{brchCd})
+                                            , F_S_EMPTY(#{deptCd}, '')
+                                            )
+                            ) AS T01
+                  LEFT JOIN  (SELECT DISTINCT P_DEPT_CD FROM T_DEPT) AS T02
+                    ON T02.P_DEPT_CD = T01.DEPT_CD
+                ) DEPT
+           JOIN
+                ( -- 거래처
+                SELECT DISTINCT BRCH_CD, DEPT_CD
+                  FROM WITH_TMP01
+                ) CUST
+             ON CUST.BRCH_CD = DEPT.BRCH_CD AND CUST.DEPT_CD LIKE DEPT.DEPT_CD || '%'
+          ) AS A
+      LEFT JOIN
+           ( -- 데이터
+           SELECT BRCH_CD, DEPT_CD
+                  -- 전월
+                , SUM(BEF_SALE_2       ) AS BEF_SALE_2       
+                  -- 당월                                    
+                , SUM(CUR_SALE_2       ) AS CUR_SALE_2       
+                , SUM(CUR_BALANCE_A_AMT) AS CUR_BALANCE_A_AMT
+             FROM WITH_TMP01
+            GROUP BY
+                  BRCH_CD, DEPT_CD
+           ) C
+        ON C.BRCH_CD = A.BRCH_CD AND C.DEPT_CD = A.DEPT_CD_LOW
+     GROUP BY
+           A.BRCH_CD
+         , A.DEPT_CD, A.DEPT_NM
+         , A.RNUM
+    UNION ALL
+    SELECT -- 거래처별
+           1  AS ORD
+         , '' AS COLOR
+         , BRCH_CD,DEPT_CD,DEPT_NM, CUST_CD
+         , CUST_NM
+           -- 전월
+         , BEF_SALE_2
+           -- 당월
+         , CUR_SALE_2
+         , CUR_BALANCE_A_AMT
+         , TRN_LIM_AMT
+      FROM WITH_TMP01
+      ORDER BY  
+      <if test='sortType == "C" '>
+        CUST_NM ASC,
+      </if>
+      <if test='sortType == "BS" '>
+        BEF_SALE_2 DESC,
+      </if>
+      <if test='sortType == "CS" '>
+        CUR_SALE_2 DESC,
+      </if>
+      BRCH_CD, DEPT_CD, ORD
+    </select>
+    
+    <!-- 일일거래내역서 -->
+    <select id="selectRptnSalesDailyCustomSales" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][ordLedger."selectRptnSalesDailyCustomSales"][매출원장 일일거래내역서 리스트 조회 ][by.ABJ1]+*/
+        SELECT BRCH_CD                                                                                       AS BRCH_CD          --지점코드
+             , DEPT_CD                                                                                       AS DEPT_CD          --부서코드
+             , DEPT_NM                                                                                       AS DEPT_NM          --부서명
+             , EMP_NM                                                                                        AS EMP_NM           --담당자명
+             , SUBSTRING(CUST_CD, 3, 8)                                                                      AS CUST_CD          --거래처코드
+             , F_S_EMPTY(CUST_NM,DEPT_NM)                                                                  AS CUST_NM          --거래처명
+             , OTC_SALE_AMT                                                                                  AS OTC_SALE_AMT     --일반매출액
+             , ETC_SALE_AMT                                                                                  AS ETC_SALE_AMT     --전문매출액
+             , SALE_AMT                                                                                      AS SALE_AMT         --매출액
+             , BACK_AMT                                                                                      AS BACK_AMT         --반품액
+             , PAY_B                                                                                         AS PAY_AMT          --입금액
+             , BALANCE_A_AMT                                                                                 AS BALANCE_A_AMT    --잔고A
+             , CASE WHEN SALE_1 = 0 THEN 0
+                    ELSE ROUND(100.000 * PROFIT_1 / SALE_1 ,2) END                                                     AS YMD_PROFIT1
+
+             , SUBSTRING(F_S_EMPTY(#{curYmd}), 1, 6)                                                        AS YM_CUR
+             , F_S_EMPTY(#{curYmd})                                                                         AS YMD_CUR
+             , CAST(F_S_ADDDATE('M', 'M', SUBSTRING(F_S_EMPTY(#{curYmd}), 1, 6), -1) || '01' AS VARCHAR(6)) AS YM_BEF
+             , CAST(F_S_ADDDATE('M', 'C', F_S_EMPTY(#{curYmd}), -1) AS VARCHAR(6))                          AS YMD_BEF
+             , CASE WHEN LENGTH(DEPT_CD) = 0
+                       OR LENGTH(DEPT_CD) = 2 THEN '#FAFAD2'
+                     WHEN LENGTH(DEPT_CD) = 4 THEN '#F4FDC8'
+                     WHEN LENGTH(DEPT_CD) > 4
+                      AND CUST_CD = ''        THEN '#E2F4E1'
+                     ELSE '' END                                                                              AS R_COLOR
+          FROM ( -------------------------------------------------------------------------------------------------------------------------------------------- DATA STT
+               SELECT -- [ SUMMERY ]
+                      T.BRCH_CD                        AS BRCH_CD
+                    , T.DEPT_CD                        AS DEPT_CD
+                    , T.DEPT_NM                        AS DEPT_NM
+                    , F_S_MASTER('EMP', T.DEPT_CD, 'DEPTEMP')   AS EMP_NM
+                    , ''                               AS CUST_CD
+                    , ''                               AS CUST_NM
+                    , SUM(IFNULL(S.OTC_SALE_AMT  , 0)) AS OTC_SALE_AMT
+                    , SUM(IFNULL(S.ETC_SALE_AMT  , 0)) AS ETC_SALE_AMT
+                    , SUM(IFNULL(S.SALE_AMT      , 0)) AS SALE_AMT
+                    , SUM(IFNULL(S.BACK_AMT      , 0)) AS BACK_AMT
+                    , SUM(IFNULL(D.PAY_B         , 0)) AS PAY_B
+                    , SUM(IFNULL(D.SALE_1        , 0)) AS SALE_1
+                    , SUM(IFNULL(D.PROFIT_1      , 0)) AS PROFIT_1
+                    , SUM(IFNULL(D.BALANCE_A_AMT , 0)) AS BALANCE_A_AMT
+                    , SUM(IFNULL(D.BALANCE_B_AMT , 0)) AS BALANCE_B_AMT
+                 FROM ( --집계대상 (BRCH_CD, DEPT_CD, CUST_CD)
+                      SELECT A.BRCH_CD, A.DEPT_CD, A.DEPT_NM, B.CUST_CD, B.CUST_NM, B.EMP_ID, B.EMP_NM
+                        FROM (
+                             SELECT BRCH_CD, DEPT_CD, DEPT_NM
+                                  , LEVEL, SALE_DEPT_YN, LAST_DEPT_YN, USE_YN, CHAIN, ROOT, RNUM
+                    <choose>
+                      <when test="deptCd != null and deptCd != '' ">
+                               FROM TABLE(F_T_DEPT_CHILD(F_S_EMPTY(#{brchCd}), F_S_EMPTY(#{deptCd}))) DEPT
+                      </when>
+                      <otherwise>
+                               FROM TABLE(F_T_DEPT_CHILD(F_S_EMPTY(#{brchCd}), '')) DEPT
+                      </otherwise>
+                    </choose>
+                              WHERE DEPT_CD NOT IN ('21','11','7')
+                                AND SUBSTR(DEPT_CD, 1, 2) NOT IN ('34','74')
+                             ) A ----------------------------------------- A : 부서 (TREE)
+                             JOIN
+                             (
+                             SELECT BRCH_CD, DEPT_CD, CUST_CD
+                                  , CUST_NM, EMP_ID, EMP_NM
+                               FROM V_CUST
+                              WHERE BRCH_CD = #{brchCd}
+                                AND REAL_YN = 'Y'
+                                AND DEAL_END_YN = 'N'
+                                AND BRCH_CUST_YN = 'N'
+                             ) B ----------------------------------------- B : 거래처
+                             ON A.BRCH_CD = B.BRCH_CD AND B.DEPT_CD LIKE A.DEPT_CD || '%'
+                      ) T ---------------------------------------------------------------------------------------- T : 대상
+                      LEFT JOIN
+                      (
+                      SELECT DISTINCT
+                             P_DEPT_CD AS P_DEPT_CD
+                           , '' AS EMP_NM_DEPT
+                        FROM T_DEPT
+                       WHERE BRCH_CD = #{brchCd}
+                         AND P_DEPT_CD IS NOT NULL
+                      ) P ---------------------------------------------------------------------------------------- P : 집계부서여부(상위부서)
+                      ON T.DEPT_CD = P.P_DEPT_CD
+                      LEFT JOIN
+                      ( --일반매출/전문매출
+                      SELECT CUST_CD
+                           , SUM(CASE WHEN MED_CD='01' AND BACK_YN='N' THEN  TOTAL_AMT ELSE 0 END) OTC_SALE_AMT
+                           , SUM(CASE WHEN MED_CD='02' AND BACK_YN='N' THEN  TOTAL_AMT ELSE 0 END) ETC_SALE_AMT
+                           , SUM(CASE WHEN                 BACK_YN='N' THEN  TOTAL_AMT ELSE 0 END) SALE_AMT
+                           , SUM(CASE WHEN                 BACK_YN='Y' THEN -TOTAL_AMT ELSE 0 END) BACK_AMT
+                        FROM V_SALE_DTL
+                       WHERE SALE_DT = F_S_EMPTY(#{curYmd})
+                         AND BRCH_CD = F_S_EMPTY(#{brchCd})
+                         AND REAL_YN = 'Y'
+                         AND DEAL_END_YN = 'N'
+                       GROUP BY CUST_CD
+                      ) S ---------------------------------------------------------------------------------------- S : 일반매출/전문매출
+                      ON S.CUST_CD = F_S_EMPTY(T.CUST_CD)
+                      LEFT JOIN
+                      ( --입금
+                      SELECT CUST_CD
+                           , PAY_B
+                           , SALE_1
+                           , PROFIT_1
+                           , BALANCE_A_AMT
+                           , BALANCE_B_AMT
+                        FROM V_BALANCE_DAY
+                       WHERE BALANCE_DT = F_S_EMPTY(#{curYmd})
+                         AND BRCH_CD = F_S_EMPTY(#{brchCd})
+                         AND REAL_YN = 'Y'
+                         AND DEAL_END_YN = 'N'
+                      ) D ---------------------------------------------------------------------------------------- D : 입금
+                      ON D.CUST_CD = F_S_EMPTY(T.CUST_CD)
+                GROUP BY T.BRCH_CD, T.DEPT_CD, T.DEPT_NM
+
+               UNION ALL
+
+               SELECT -- [ DETAIL ]
+                      T.BRCH_CD                        AS BRCH_CD
+                    , T.DEPT_CD                        AS DEPT_CD
+                    , T.DEPT_NM                        AS DEPT_NM
+                    , T.EMP_NM                         AS EMP_NM
+                    , T.CUST_CD                        AS CUST_CD
+                    , T.CUST_NM                        AS CUST_NM
+                    , SUM(IFNULL(S.OTC_SALE_AMT  , 0)) AS OTC_SALE_AMT
+                    , SUM(IFNULL(S.ETC_SALE_AMT  , 0)) AS ETC_SALE_AMT
+                    , SUM(IFNULL(S.SALE_AMT      , 0)) AS SALE_AMT
+                    , SUM(IFNULL(S.BACK_AMT      , 0)) AS BACK_AMT
+                    , SUM(IFNULL(D.PAY_B         , 0)) AS PAY_B
+                    , SUM(IFNULL(D.SALE_1        , 0)) AS SALE_1
+                    , SUM(IFNULL(D.PROFIT_1      , 0)) AS PROFIT_1
+                    , SUM(IFNULL(D.BALANCE_A_AMT , 0)) AS BALANCE_A_AMT
+                    , SUM(IFNULL(D.BALANCE_B_AMT , 0)) AS BALANCE_B_AMT
+                 FROM ( --집계대상
+                      SELECT BRCH_CD, DEPT_CD, DEPT_NM, CUST_CD, CUST_NM, EMP_ID, EMP_NM
+                        FROM V_CUST
+                       WHERE BRCH_CD = F_S_EMPTY(#{brchCd})
+                         AND REAL_YN = 'Y'
+                         AND DEAL_END_YN = 'N'
+                    <if test="deptCd != null and deptCd != '' ">
+                         AND DEPT_CD LIKE #{deptCd} || '%'
+                    </if>
+                         AND BRCH_CUST_YN = 'N'
+                      ) T ---------------------------------------------------------------------------------------- T : 대상
+                      LEFT JOIN
+                      ( --일반매출/전문매출
+                      SELECT CUST_CD
+                           , SUM(CASE WHEN MED_CD='01' AND BACK_YN='N' THEN  ITEM_AMT ELSE 0 END) OTC_SALE_AMT
+                           , SUM(CASE WHEN MED_CD='02' AND BACK_YN='N' THEN  ITEM_AMT ELSE 0 END) ETC_SALE_AMT
+                           , SUM(CASE WHEN                 BACK_YN='N' THEN  ITEM_AMT ELSE 0 END) SALE_AMT
+                           , SUM(CASE WHEN                 BACK_YN='Y' THEN -ITEM_AMT ELSE 0 END) BACK_AMT
+                        FROM V_SALE_DTL
+                       WHERE SALE_DT = F_S_EMPTY(#{curYmd})
+                         AND BRCH_CD = F_S_EMPTY(#{brchCd})
+                         AND REAL_YN = 'Y'
+                         AND DEAL_END_YN = 'N'
+                       GROUP BY CUST_CD
+                      ) S ---------------------------------------------------------------------------------------- S : 일반매출/전문매출
+                      ON S.CUST_CD = F_S_EMPTY(T.CUST_CD)
+                      LEFT JOIN
+                      ( --입금
+                      SELECT CUST_CD
+                           , PAY_B
+                           , SALE_1
+                           , PROFIT_1
+                           , BALANCE_A_AMT
+                           , BALANCE_B_AMT
+                        FROM V_BALANCE_DAY
+                       WHERE BALANCE_DT = F_S_EMPTY(#{curYmd})
+                         AND BRCH_CD = F_S_EMPTY(#{brchCd})
+                         AND REAL_YN = 'Y'
+                         AND DEAL_END_YN = 'N'
+                      ) D ---------------------------------------------------------------------------------------- D : 입금
+                      ON D.CUST_CD = F_S_EMPTY(T.CUST_CD)
+                GROUP BY T.BRCH_CD, T.DEPT_CD, T.DEPT_NM, T.EMP_NM, T.CUST_CD, T.CUST_NM
+               ) DAT ---------------------------------------------------------------------------------------------------------------------------------------- DATA END
+         ORDER BY 
+         <if test='sortType == "C" '>
+            BRCH_CD ASC,
+          </if>
+          <if test='sortType == "S" '>
+            SALE_AMT DESC,
+          </if>
+          <if test='sortType == "R" '>
+            BACK_AMT DESC,
+          </if>
+          <if test='sortType == "D" '>
+            PAY_AMT DESC,
+          </if>
+          DEPT_CD, CUST_NM ,DEPT_NM, CUST_CD
+         /*ORDER BY BRCH_CD, DEPT_CD, CUST_NM, DEPT_NM, CUST_CD*/
+    </select>
+    
+    <!-- 수금계획 -->
+    <select id="searchCollectMoneyList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][OrdLedgerMapper.searchCollectMoneyList][입금관리 > 수금할인 > 수금계획 > 조회 > CHAN  ]+*/
+    SELECT F_S_MASTER('CUST', A.CUST_CD, 'NM') AS CUST_NM -- 거래처명
+          ,IFNULL(B.PAY_AMT,0) PAY_AMT -- 수금예상액
+          ,IFNULL(A.BALANCE_B_M1,0) BALANCE_B_M1 -- 1개월잔고
+          ,IFNULL(A.BALANCE_B_M2,0) BALANCE_B_M2 -- 2개월잔고
+          ,IFNULL(A.BALANCE_B_M3,0) BALANCE_B_M3 -- 3개월잔고
+          ,A.PAYBACK_USE_CD -- 수금할인구분
+    /*
+          ,A.BALANCE_YM
+          ,A.CUST_CD AS CUST_CD
+          ,SUBSTRING(A.CUST_CD,3,8) CUST_CD_FM
+          ,IFNULL(B.PAY_DT, F_S_ADDDATE('Y','L',B. PAY_DT||'01',0) ) AS PAY_DT
+          ,B.CALC_DTM
+          ,IFNULL(B.BALANCE_B_AMT,0) BALANCE_B_AMT
+          ,A.PAY_CASH_AMT+A.PAY_OM_BILL_AMT MONTH_PAY_AMT
+          ,A.BALANCE_B_AMT MONTH_BALANCE_B_AMT
+          ,IFNULL(B.PAY_AMT_M0+B.PAY_AMT_M1,0) PAY_AMT_M1
+          ,IFNULL(B.PAY_AMT_M2,0) PAY_AMT_M2
+          ,IFNULL(B.PAY_AMT_M3,0) PAY_AMT_M3
+          ,IFNULL(B.PAY_AMT_M4,0) PAY_AMT_M4
+          ,IFNULL(B.PAYBACK_AMT,0) PAYBACK_AMT
+          ,IFNULL(A.BALANCE_B_AMT,0) BALANCE_B_AMT1
+          ,IFNULL(A.BALANCE_B_M0,0) BALANCE_B_M0
+          ,IFNULL(A.BALANCE_B_M4,0) BALANCE_B_M4
+          ,IfNULL(B.PAYBACK_AMT_M1,0) PAYBACK_AMT_M1
+          ,IFNULL(B.PAYBACK_AMT_M2,0) PAYBACK_AMT_M2
+          ,IFNULL(B.PAYBACK_AMT_M3,0) PAYBACK_AMT_M3
+          ,IFNULL(B.PAYBACK_RATE,0) PAYBACK_RATE
+          ,B.ROTATE_DATE
+          ,(CASE WHEN B.CUST_CD !='' THEN 'Y' ELSE 'N' END) EXIST_YN
+          ,A.PAYBACK_USE_CD PAYBACK_CHG_CD
+          ,A.DEPT_NM
+          ,CASE WHEN A.EMP_NM IS NULL THEN '없음' ELSE A.EMP_NM END EMP_NM
+    */
+     FROM V_BALANCE_MONTH A
+     LEFT OUTER JOIN
+          T_PAY_FORECAST B 
+       ON B.PAY_YM      = A.BALANCE_YM
+      AND B.CUST_CD     = A.CUST_CD
+    WHERE 1=1
+      AND A.BRCH_CD    = #{brchCd}
+      AND A.BALANCE_YM = #{curYm}
+      <if test="deptCd != null and deptCd != '' ">
+      AND A.DEPT_CD = #{deptCd}
+      </if>
+      AND A.DEAL_END_YN = 'N'
+      <if test='sortType != null and sortType != ""'>
+       AND A.PAYBACK_USE_CD = #{sortType}
+      </if>
+    /* 수금할인구분(공통코드134)
+      AND A.PAYBACK_USE_CD = 'N' -- 사용안함
+      AND A.PAYBACK_USE_CD = 'A' -- 말일입금
+      AND A.PAYBACK_USE_CD = 'B' -- 15일입금
+     */
+    ORDER BY CUST_NM,PAY_DT DESC,B.CALC_DTM DESC
+    </select>
+    
+    <select id="selectSalesBranchMobile" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][selectSalesBranchMobile][MIS > 임원용 > 매출현황]+*/
+    select sort_no
+          ,brch_cd    --지점코드
+          ,brch_snm   --지점명
+          ,BALANCE_YM   --년월
+          ,m_net_amt1   --매출1
+          ,m_net_amt2   --매출2
+          ,hp_amt   --약국
+          ,HP_AMT1  --병원
+          ,DOMAE_AMT      --도매
+          ,SP_AMT          --쇼핑몰
+          ,AN_AMT            --동물
+          ,m_bpp    --원가
+          ,BALANCE_A_AMT   --잔고A
+          ,BALANCE_B_AMT   --잔고B
+          ,sale_aim_amt   --매출목표
+          ,target_rate   --달성률
+          ,profit_rate  --이익률
+          ,lm_BALANCE_YM   --년월(전월)
+          ,lm_m_net_amt1   --매출1(전월)
+          ,lm_m_net_amt2   --매출2(전월)
+          ,lm_hp_amt   --약국(전월)
+          ,lm_HP_AMT1  --병원(전월)
+          ,lm_DOMAE_AMT      --도매(전월)
+          ,lm_SP_AMT          --쇼핑몰(전월)
+          ,lm_AN_AMT            --동물(전월)
+          ,lm_m_bpp    --원가(전월)
+          ,lm_BALANCE_A_AMT   --잔고A(전월)
+          ,lm_BALANCE_B_AMT   --잔고B(전월)
+          ,lm_sale_aim_amt   --매출목표(전월)
+          ,lm_target_rate   --달성률(전월)
+          ,lm_profit_rate  --이익률(전월)
+          ,day_net_amt1   --당일매출1
+          ,day_net_amt2   --당일매출2
+          ,day_bpp    --당일원가
+          ,day_profit_rate  --당일이익률
+          ,over_short   --과부족
+          ,one_day_target   --1일필요량
+          ,runday  --진행일수
+          ,remday   --잔여일수
+          ,wkday   --영업일수
+          ,lm_saleday_amt   --전월매출(동일영업일)
+          ,incdec_amt   --전월대비증감(동일영업일)
+          ,new_cust_cnt   --신규처수
+          ,aim_new_cust_cnt   --신규처수목표
+          ,aim_new_cust_cnt_rate   --신규처수달성률    
+      from QTEMP.SA00041 order by  sort_no
+    </select>
+    
+     <select id="callPMB0004" parameterType="java.util.HashMap" statementType="CALLABLE" resultType="java.util.HashMap">
+    /*+[OrdLedgerMapper.xml][callPMB0004][MIS > 임원용 > 매출현황]+*/
+
+       {CALL P_MB0004(
+              #{CUR_YMD         ,mode=IN  ,jdbcType=VARCHAR}
+            ,#{CUR_YMD1         ,mode=IN  ,jdbcType=VARCHAR}
+            , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+            , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+            )}
+
+    </select>
+    
+    <!-- 제품수불내역 조회 -->
+    <select id="selectItemReceivePayList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    <bind name="itemNm" value='"%" + itemNm + "%"'/>
+    /*+[OrdLedgerMapper.xml][ordLedger.selectItemReceivePayList][매출원장 수불현황 리스트조회][by.ABJ1]+*/
+    SELECT SUBSTRING(PAY_ITEM_NM,1,1) AS PAY_ITEM_NM -- 급여/비급여
+          ,SUBSTRING(MED_NM,1,1) AS MED_NM -- 일반/전문
+          ,ITEM_NM -- 품목명
+          ,UNIT -- 규격
+          ,MAKER_NM -- 메이커명
+          ,BRCH_WP2_AMT -- 단가
+          ,AVAIL_STOCK STOCK -- 재고
+          ,ITEM_CD
+          ,SUBDIV_YN
+          ,APPLY_DT
+      FROM V_ITEM_BRCH
+     WHERE ITEM_NM LIKE #{itemNm}
+       AND DLV_BRCH_CD =  #{dlvBrchCd}
+       AND USE_YN = 'Y'
+       AND BRCH_USE_YN = 'Y'
+        <if test='subdivYn != null and subdivYn != ""'>
+            AND SUBDIV_YN = #{subdivYn}
+        </if>
+        ORDER BY ITEM_NM
+    </select>
+    
+    <!-- 제품수불내역 상세 조회 -->
+    <select id="selectItemReceivePayDetailList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    SELECT A.CUST_NM -- 거래처명
+          ,A.DEPT_NM -- 부서명
+          ,F_S_FORMAT(A.APRV_DT||A.APRV_TM,'YYYY-MM-DD HH24:MI:SS') APRV_DTTM -- 승인일+시간
+          ,A.APRV_NO -- 승인번호
+          ,A.ITEM_QTY AS QTY -- 수량
+          ,CASE WHEN A.GUBUN = '1' THEN '매출' ELSE '매출반품' END AS SUBUL_NM --매출/매출반품
+          ,A.ORD_WP2_AMT AS WP2 -- 단가
+          ,A.ITEM_QTY*A.ORD_WP2_AMT AS AMT -- 금액
+    /*
+          ,A.SN
+          ,A.SNO
+          ,A.APRV_DT
+          ,A.APRV_TM
+          ,A.SALE_DT AS IO_DT
+          ,COALESCE(A.DEPT_NM,'') AS DEPT_NM
+          ,CASE WHEN A.GUBUN = '1' THEN '1' ELSE '2' END AS SUBUL
+          ,A.ITEM_NM_UNIT
+          ,A.ITEM_GB_NM AS GB
+          ,A.CUST_CD
+          ,A.ITEM_CD
+          ,A.ITEM_NM
+          ,A.MAKER_NM
+          ,A.APRV_NO
+    */
+      FROM V_SALE_DTL A
+     WHERE A.BRCH_CD = #{brchCd}
+       AND A.ITEM_CD = #{itemCd}
+       AND A.APRV_DT BETWEEN #{startYmd} AND #{endYmd}
+       <if test='deptNm != null and deptNm != "" '>
+           AND A.DEPT_NM = #{deptNm}
+       </if> 
+       
+    /* 부서명 입력시
+       AND A.DEPT_NM = '영등포'
+    */
+    ORDER BY 
+    <if test='sortType == "R" '>
+        A.APRV_DT DESC,
+    </if>
+    <if test='sortType == "P" '>
+        A.APRV_DT ASC,
+    </if>
+    A.APRV_TM DESC
+    </select>
+    <update id="upatePrintOrder" parameterType="java.util.HashMap" >
+        /*+[OrdLedgerMapper.xml][ordLedger.upatePrintOrder][출력 횟수 수정][by.ABJ1]+*/
+        UPDATE T_SALEBACKRCPT
+        SET BACK_PRT_CNT = '1'
+        WHERE SN = #{SN}
+    </update>
+</mapper>

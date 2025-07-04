@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.adams">
+
+    <insert id="insertCsvNEG" parameterType="HashMap">
+        /* k03.adams.insertCsvNEG - 소변 csv 입력*/
+        
+        INSERT INTO K03_ADAMS_CSV_NEG (
+			LIN,
+			SAMPLE_CODE,
+			ANALYSIS_ATTRIBUTE,
+			TEST_RESULT,
+			ANALYSIS_REPORT_DATE,
+			MO_NUMBER,
+			SAMPLE_TYPE,
+			SAMPLEAB,
+			SAMPLE_COLLECTION_DATE,
+			DATE_RECEIVED,
+			TA,
+			SCA,
+			RMA,
+			TEST_TYPE,
+			SPORT_CODE,
+			DISCIPLINE_CODE,
+			GENDER,
+			STEROID_PROFILE_VARIABLE_CODE1,
+			STEROID_PROFILE_VARIABLE_CODE2,
+			STEROID_PROFILE_VARIABLE_CODE3,
+			STEROID_PROFILE_VARIABLE_CODE4,
+			STEROID_PROFILE_VARIABLE_CODE5,
+			STEROID_PROFILE_VARIABLE_CODE6,
+			STEROID_PROFILE_VARIABLE_CODE7,
+			CF_CODE1,
+			CF_CODE2,
+			CF_CODE3,
+			CF_CODE4,
+			CF_CODE5,
+			CF_CODE6,
+			CF_CODE7,
+			CF_CODE8,
+			CF_CODE9,
+			CF_CODE10,
+			CF_CODE11,
+			CF_CODE12,
+			CF_CODE13,
+			SPECIFIC_GRAVITY,
+			SAMPLE_SPECIFIC_GRAVITY_CP,
+			RATIO_5AAND_A,
+			RATIO_5BAND_ETIO,
+			RATIO_FREET_TOTALT,
+			STEROID_PROFILE_VARIABLE_V1,
+			STEROID_PROFILE_VARIABLE_V2,
+			STEROID_PROFILE_VARIABLE_V3,
+			STEROID_PROFILE_VARIABLE_V4,
+			STEROID_PROFILE_VARIABLE_V5,
+			STEROID_PROFILE_VARIABLE_V6,
+			STEROID_PROFILE_VARIABLE_V7,
+			CF_PRESENCE1,
+			CF_PRESENCE2,
+			CF_PRESENCE3,
+			CF_PRESENCE4,
+			CF_PRESENCE5,
+			CF_CONC5,
+			CF_PRESENCE6,
+			CF_PRESENCE7,
+			CF_CONC7,
+			CF_PRESENCE8,
+			CF_CONC8,
+			CF_PRESENCE9,
+			CF_CONC9,
+			CF_PRESENCE10,
+			CF_CONC10,
+			CF_PRESENCE11,
+			CF_CONC11,
+			CF_PRESENCE12,
+			CF_CONC12,
+			CF_PRESENCE13,
+			ANALYSIS_DETAILS,
+			MONITORING,
+			UPLOAD_DATE       
+        ) VALUES (
+            #{lin},
+			#{sample_code},
+			#{analysis_attribute},
+			#{test_result},
+			#{analysis_report_date},
+			#{mo_number},
+			#{sample_type},
+			#{sampleAB},
+			#{sample_collection_date},
+			#{date_received},
+			#{ta},
+			#{sca},
+			#{rma},
+			#{test_type},
+			#{sport_code},
+			#{discipline_code},
+			#{gender},
+			#{steroid_profile_variable_code1},
+			#{steroid_profile_variable_code2},
+			#{steroid_profile_variable_code3},
+			#{steroid_profile_variable_code4},
+			#{steroid_profile_variable_code5},
+			#{steroid_profile_variable_code6},
+			#{steroid_profile_variable_code7},
+			#{CF_code1},
+			#{CF_code2},
+			#{CF_code3},
+			#{CF_code4},
+			#{CF_code5},
+			#{CF_code6},
+			#{CF_code7},
+			#{CF_code8},
+			#{CF_code9},
+			#{CF_code10},
+			#{CF_code11},
+			#{CF_code12},
+			#{CF_code13},
+			#{specific_gravity},
+			#{sample_specific_gravity_CP},
+			#{ratio_5aand_a},
+			#{ratio_5band_etio},
+			#{ratio_freet_totalt},
+			#{steroid_profile_variable_value1},
+			#{steroid_profile_variable_value2},
+			#{steroid_profile_variable_value3},
+			#{steroid_profile_variable_value4},
+			#{steroid_profile_variable_value5},
+			#{steroid_profile_variable_value6},
+			#{steroid_profile_variable_value7},
+			#{CF_presence1},
+			#{CF_presence2},
+			#{CF_presence3},
+			#{CF_presence4},
+			#{CF_presence5},
+			#{CF_conc5},
+			#{CF_presence6},
+			#{CF_presence7},
+			#{CF_conc7},
+			#{CF_presence8},
+			#{CF_conc8},
+			#{CF_presence9},
+			#{CF_conc9},
+			#{CF_presence10},
+			#{CF_conc10},
+			#{CF_presence11},
+			#{CF_conc11},
+			#{CF_presence12},
+			#{CF_conc12},
+			#{CF_presence13},
+			#{analysis_details},
+			#{monitoring},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD')       
+        )        
+    </insert>
+    
+    <select id="selectCsvCheckNEG" parameterType="HashMap" resultType="int">
+        /* k03.adams.selectCsvNeg - 소변csv 내용 중복체크  */
+        
+		SELECT COUNT(*) 
+		  FROM K03_ADAMS_CSV_NEG T
+		 WHERE T.SAMPLE_CODE = #{sample_code}
+		   AND T.SAMPLEAB = #{sampleAB}    
+    </select>
+    
+    <select id="selectCsvNEG_UPLOAD" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvNEG_UPLOAD - 소변csv 내용 조회(업로드화면) */
+        
+		SELECT *
+		FROM K03_ADAMS_CSV_NEG T    
+		WHERE 1=1
+		AND T.UPLOAD_DATE >= to_char(sysdate-7,'yyyy-mm-dd')
+		<if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>
+        <if test="SAMPLE_AB != null and SAMPLE_AB != ''">
+          AND T.SAMPLE_AB = #{SAMPLE_AB}
+        </if> 
+		ORDER BY T.LIN
+    </select>
+    
+    <select id="selectCsvNEG" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvNeg - 소변csv 내용 조회 */
+        
+		SELECT *
+		FROM K03_ADAMS_CSV_NEG T    
+		WHERE 1=1
+		<if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>
+        <if test="SAMPLE_AB != null and SAMPLE_AB != ''">
+          AND T.SAMPLE_AB = #{SAMPLE_AB}
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'UPLOAD_DATE'">
+	        AND UPLOAD_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'DATE_RECEIVED'">
+	        AND REPLACE(DATE_RECEIVED,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'SAMPLE_COLLECTION_DATE'">
+	        AND REPLACE(SAMPLE_COLLECTION_DATE,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>   
+		ORDER BY T.LIN
+    </select>
+    
+    <insert id="insertCsvBLOOD" parameterType="HashMap">
+        /* k03.adams.insertCsvBLOOD - 혈액 csv 입력*/
+        
+        INSERT INTO K03_ADAMS_CSV_BLOOD (
+			LIN,
+			SAMPLE_CODE,
+			MO_NUMBER,
+			SAMPLE_TYPE,
+			SAMPLE_COLLECTION_DATE,
+			DATE_RECEIVED,
+			ANALYSIS_REPORT_DATE,
+			TA,
+			SCA,
+			RMA,
+			TEST_TYPE,
+			SPORT_CODE,
+			DISCIPLINE_CODE,
+			GENDER,
+			SAMPLEAB,
+			TEST_RESULT,
+			ANALYSIS_ATTRIBUTE,
+			UPLOAD_DATE         
+        ) VALUES (
+			#{lin},
+			#{sample_code},
+			#{mo_number},
+			#{sample_type},
+			#{sample_collection_date},
+			#{date_received},
+			#{analysis_report_date},
+			#{ta},
+			#{sca},
+			#{rma},
+			#{test_type},
+			#{sport_code},
+			#{discipline_code},
+			#{gender},
+			#{sampleAB},
+			#{test_result},
+			#{analysis_attribute},
+			TO_CHAR(SYSDATE, 'YYYYMMDD')                      
+        )
+    </insert>
+    
+    <select id="selectCsvCheckBLOOD" parameterType="HashMap" resultType="int">
+        /* k03.adams.selectCsvBLOOD - 혈액csv 내용 중복체크  */
+        
+        SELECT COUNT(*) 
+          FROM K03_ADAMS_CSV_BLOOD T
+         WHERE T.SAMPLE_CODE = #{sample_code}
+           AND T.SAMPLEAB = #{sampleAB}    
+    </select>
+    
+    <select id="selectCsvBLOOD_UPLOAD" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvBLOOD_UPLOAD - 혈액 csv 내용 조회(업로드) */
+        
+        SELECT *
+        FROM K03_ADAMS_CSV_BLOOD T    
+        WHERE 1=1
+        AND T.UPLOAD_DATE >= to_char(sysdate-7,'yyyy-mm-dd')
+        <if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>
+        <if test="SAMPLE_AB != null and SAMPLE_AB != ''">
+          AND T.SAMPLE_AB = #{SAMPLE_AB}
+        </if> 
+        ORDER BY T.LIN
+    </select>
+    
+    <select id="selectCsvBLOOD" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvBlood - 혈액 csv 내용 조회 */
+        
+        SELECT *
+        FROM K03_ADAMS_CSV_BLOOD T    
+        WHERE 1=1
+        <if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>
+        <if test="SAMPLE_AB != null and SAMPLE_AB != ''">
+          AND T.SAMPLE_AB = #{SAMPLE_AB}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'UPLOAD_DATE'">
+	        AND UPLOAD_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'DATE_RECEIVED'">
+	        AND REPLACE(DATE_RECEIVED,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'SAMPLE_COLLECTION_DATE'">
+	        AND REPLACE(SAMPLE_COLLECTION_DATE,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        ORDER BY T.LIN
+    </select>
+    
+    <insert id="insertCsvABP" parameterType="HashMap">
+        /* k03.adams.insertCsvABP - ABP csv 입력*/
+        
+        INSERT INTO K03_ADAMS_CSV_ABP (
+			LIN,
+			SAMPLE_CODE,
+			MO_NUMBER,
+			SAMPLE_TYPE,
+			DATE_RESULTS_REPORTED,
+			TA,
+			SCA,
+			RMA,
+			TEST_TYPE,
+			SPORT_CODE,
+			DISCIPLINE_CODE,
+			GENDER,
+			LAB,
+			DATE_COLLECTION,
+			DATE_RECEIVED,
+			ANALYSIS_DATE,
+			HGB,
+			HCT,
+			IRF,
+			MCH,
+			MCHC,
+			MCV,
+			OFF_SCORE,
+			PLT,
+			RDW_SD,
+			RBC,
+			RET_SHARP,
+			RET_PERCENT,
+			WBC,
+			ANALYSER,
+			UPLOAD_DATE,
+			USER_ID        
+        ) VALUES (
+			#{lin},
+			#{sample_code},
+			#{mo_number},
+			#{sample_type},
+			#{date_results_reported},
+			#{ta},
+			#{sca},
+			#{rma},
+			#{test_type},
+			#{sport_code},
+			#{discipline_code},
+			#{gender},
+			#{lab},
+			#{date_collection},
+			#{date_received},
+			#{analysis_date},
+			#{HGB},
+			#{HCT},
+			#{IRF},
+			#{MCH},
+			#{MCHC},
+			#{MCV},
+			#{OFF-Score},
+			#{PLT},
+			#{RDW_SD},
+			#{RBC},
+			#{RET#},
+			#{RET%},
+			#{WBC},
+			#{analyser},
+			TO_CHAR(SYSDATE, 'YYYYMMDD'),
+			#{GSS.USER_ID}      
+        )
+    </insert>
+    
+    <select id="selectCsvCheckABP" parameterType="HashMap" resultType="int">
+        /* k03.adams.selectCsvABP - ABP csv 내용 중복체크  */
+        
+        SELECT COUNT(*) 
+          FROM K03_ADAMS_CSV_ABP T
+         WHERE T.SAMPLE_CODE = #{sample_code}               
+    </select>
+    
+    <select id="selectCsvABP_UPLOAD" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvABP_UPLOAD - ABP csv 내용 조회 */
+    
+        SELECT *
+        FROM K03_ADAMS_CSV_ABP T 
+        WHERE 1=1
+        AND T.UPLOAD_dATE >= to_char(sysdate-7,'yyyy-mm-dd')
+        <if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>                        
+        ORDER BY T.LIN
+    </select>
+    
+    <select id="selectCsvABP" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvABP - ABP csv 내용 조회 */
+    
+        SELECT *
+        FROM K03_ADAMS_CSV_ABP T 
+        WHERE 1=1
+        <if test="SAMPLE_CODE != null and SAMPLE_CODE != ''">
+          AND T.SAMPLE_CODE = #{SAMPLE_CODE}
+        </if>           
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'UPLOAD_DATE'">
+	        AND UPLOAD_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'DATE_RECEIVED'">
+	        AND REPLACE(DATE_RECEIVED,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if> 
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'SAMPLE_COLLECTION_DATE'">
+	        AND REPLACE(SAMPLE_COLLECTION_DATE,'-','') BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>                
+        ORDER BY T.LIN
+    </select>
+    
+    <select id="selectCsvMngCsvNEG" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvMngCsvNEG - 소변csv 내용 조회 */
+        
+		SELECT #{GUBUN} AS GUBUN,
+	            LIN,
+	            SAMPLE_CODE,
+	            ANALYSIS_ATTRIBUTE,
+	            TEST_RESULT,
+	            ANALYSIS_REPORT_DATE,
+	            MO_NUMBER,
+	            SAMPLE_TYPE,
+	            SAMPLEAB,
+	            SAMPLE_COLLECTION_DATE,
+	            DATE_RECEIVED,
+	            TA,
+	            SCA,
+	            RMA,
+	            TEST_TYPE,
+	            SPORT_CODE,
+	            DISCIPLINE_CODE,
+	            GENDER,
+	            STEROID_PROFILE_VARIABLE_CODE1,
+	            STEROID_PROFILE_VARIABLE_CODE2,
+	            STEROID_PROFILE_VARIABLE_CODE3,
+	            STEROID_PROFILE_VARIABLE_CODE4,
+	            STEROID_PROFILE_VARIABLE_CODE5,
+	            STEROID_PROFILE_VARIABLE_CODE6,
+	            STEROID_PROFILE_VARIABLE_CODE7,
+	            CF_CODE1,
+	            CF_CODE2,
+	            CF_CODE3,
+	            CF_CODE4,
+	            CF_CODE5,
+	            CF_CODE6,
+	            CF_CODE7,
+	            CF_CODE8,
+	            CF_CODE9,
+	            CF_CODE10,
+	            CF_CODE11,
+	            CF_CODE12,
+	            CF_CODE13,
+	            SPECIFIC_GRAVITY,
+	            SAMPLE_SPECIFIC_GRAVITY_CP,
+	            RATIO_5AAND_A,
+	            RATIO_5BAND_ETIO,
+	            RATIO_FREET_TOTALT,
+	            STEROID_PROFILE_VARIABLE_V1,
+	            STEROID_PROFILE_VARIABLE_V2,
+	            STEROID_PROFILE_VARIABLE_V3,
+	            STEROID_PROFILE_VARIABLE_V4,
+	            STEROID_PROFILE_VARIABLE_V5,
+	            STEROID_PROFILE_VARIABLE_V6,
+	            STEROID_PROFILE_VARIABLE_V7,
+	            CF_PRESENCE1,
+	            CF_PRESENCE2,
+	            CF_PRESENCE3,
+	            CF_PRESENCE4,
+	            CF_PRESENCE5,
+	            CF_CONC5,
+	            CF_PRESENCE6,
+	            CF_PRESENCE7,
+	            CF_CONC7,
+	            CF_PRESENCE8,
+	            CF_CONC8,
+	            CF_PRESENCE9,
+	            CF_CONC9,
+	            CF_PRESENCE10,
+	            CF_CONC10,
+	            CF_PRESENCE11,
+	            CF_CONC11,
+	            CF_PRESENCE12,
+	            CF_CONC12,
+	            CF_PRESENCE13,
+	            ANALYSIS_DETAILS,
+	            MONITORING       
+		 FROM K03_ADAMS_CSV_NEG T   
+		WHERE LIN =#{LIN}
+		  AND SAMPLE_CODE =#{SAMPLE_CODE}
+		ORDER BY T.LIN
+    </select>
+    
+    <select id="selectCsvMngBLOOD" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvMngBLOOD - 혈액 csv 내용 조회 */
+        
+        SELECT  #{GUBUN} AS GUBUN,
+	            LIN,
+	            SAMPLE_CODE,
+	            MO_NUMBER,
+	            SAMPLE_TYPE,
+	            SAMPLE_COLLECTION_DATE,
+	            DATE_RECEIVED,
+	            ANALYSIS_REPORT_DATE,
+	            TA,
+	            SCA,
+	            RMA,
+	            TEST_TYPE,
+	            SPORT_CODE,
+	            DISCIPLINE_CODE,
+	            GENDER,
+	            SAMPLEAB,
+	            TEST_RESULT,
+	            ANALYSIS_ATTRIBUTE    
+        FROM K03_ADAMS_CSV_BLOOD T    
+        where LIN =#{LIN}
+		and SAMPLE_CODE =#{SAMPLE_CODE}
+        AND ROWNUM=1
+        ORDER BY T.LIN
+        
+    </select>
+    
+    <select id="selectCsvMngABP" parameterType="HashMap" resultType="HashMap">
+        /* k03.adams.selectCsvMngABP - ABP csv 내용 조회 */
+    
+        SELECT #{GUBUN} AS GUBUN,
+	            LIN,
+	            SAMPLE_CODE,
+	            MO_NUMBER,
+	            SAMPLE_TYPE,
+	            DATE_RESULTS_REPORTED,
+	            TA,
+	            SCA,
+	            RMA,
+	            TEST_TYPE,
+	            SPORT_CODE,
+	            DISCIPLINE_CODE,
+	            GENDER,
+	            LAB,
+	            DATE_COLLECTION,
+	            DATE_RECEIVED,
+	            ANALYSIS_DATE,
+	            HGB,
+	            HCT,
+	            IRF,
+	            MCH,
+	            MCHC,
+	            MCV,
+	            OFF_SCORE,
+	            PLT,
+	            RDW_SD,
+	            RBC,
+	            RET_SHARP,
+	            RET_PERCENT,
+	            WBC,
+	            ANALYSER    
+        FROM K03_ADAMS_CSV_ABP T    
+        where LIN =#{LIN}
+		and SAMPLE_CODE =#{SAMPLE_CODE}
+		AND ROWNUM=1
+        ORDER BY T.LIN
+    </select>
+    
+    <update id="updateCsvNEG" parameterType="HashMap">
+        /* k03.adams.updateCsvNEG - 소변 csv 수정*/
+        
+         UPDATE K03_ADAMS_CSV_NEG 
+         SET ANALYSIS_ATTRIBUTE =  #{ANALYSIS_ATTRIBUTE}
+			,TEST_RESULT =  #{TEST_RESULT}
+			,ANALYSIS_REPORT_DATE =  #{ANALYSIS_REPORT_DATE}
+			,MO_NUMBER =  #{MO_NUMBER}
+			,SAMPLE_TYPE =  #{SAMPLE_TYPE}
+			,SAMPLE_COLLECTION_DATE =  #{SAMPLE_COLLECTION_DATE}
+			,DATE_RECEIVED =  #{DATE_RECEIVED}
+			,TA =  #{TA}
+			,SCA =  #{SCA}
+			,RMA =  #{RMA}
+			,TEST_TYPE =  #{TEST_TYPE}
+			,MONITORING =  #{MONITORING}
+			,SPORT_CODE =  #{SPORT_CODE}
+			,DISCIPLINE_CODE =  #{DISCIPLINE_CODE}
+			,GENDER =  #{GENDER}
+			,STEROID_PROFILE_VARIABLE_CODE1 =  #{STEROID_PROFILE_VARIABLE_CODE1}
+			,STEROID_PROFILE_VARIABLE_CODE2 =  #{STEROID_PROFILE_VARIABLE_CODE2}
+			,STEROID_PROFILE_VARIABLE_CODE3 =  #{STEROID_PROFILE_VARIABLE_CODE3}
+			,STEROID_PROFILE_VARIABLE_CODE4 =  #{STEROID_PROFILE_VARIABLE_CODE4}
+			,STEROID_PROFILE_VARIABLE_CODE5 =  #{STEROID_PROFILE_VARIABLE_CODE5}
+			,STEROID_PROFILE_VARIABLE_CODE6 =  #{STEROID_PROFILE_VARIABLE_CODE6}
+			,STEROID_PROFILE_VARIABLE_CODE7 =  #{STEROID_PROFILE_VARIABLE_CODE7}
+			,CF_CODE1 =  #{CF_CODE1}
+			,CF_CODE2 =  #{CF_CODE2}
+			,CF_CODE3 =  #{CF_CODE3}
+			,CF_CODE4 =  #{CF_CODE4}
+			,CF_CODE5 =  #{CF_CODE5}
+			,CF_CODE6 =  #{CF_CODE6}
+			,CF_UNIT1 =  #{CF_UNIT1}
+			,SPECIFIC_GRAVITY =  #{SPECIFIC_GRAVITY}
+			,RATIO_5AAND_A =  #{RATIO_5AAND_A}
+			,RATIO_5BAND_ETIO =  #{RATIO_5BAND_ETIO}
+			,STEROID_PROFILE_VARIABLE_1 =  #{STEROID_PROFILE_VARIABLE_1}
+			,STEROID_PROFILE_VARIABLE_2 =  #{STEROID_PROFILE_VARIABLE_2}
+			,STEROID_PROFILE_VARIABLE_3 =  #{STEROID_PROFILE_VARIABLE_3}
+			,STEROID_PROFILE_VARIABLE_4 =  #{STEROID_PROFILE_VARIABLE_4}
+			,STEROID_PROFILE_VARIABLE_5 =  #{STEROID_PROFILE_VARIABLE_5}
+			,STEROID_PROFILE_VARIABLE_6 =  #{STEROID_PROFILE_VARIABLE_6}
+			,STEROID_PROFILE_VARIABLE_7 =  #{STEROID_PROFILE_VARIABLE_7}
+			,CF_PRESENCE1 =  #{CF_PRESENCE1}
+			,CF_CONC1 =  #{CF_CONC1}
+			,CF_PRESENCE2 =  #{CF_PRESENCE2}
+			,CF_PRESENCE3 =  #{CF_PRESENCE3}
+			,CF_PRESENCE4 =  #{CF_PRESENCE4}
+			,CF_PRESENCE5 =  #{CF_PRESENCE5}
+			,CF_PRESENCE6 =  #{CF_PRESENCE6}
+			,CF_PRESENCE7 =  #{CF_PRESENCE7}
+			,CF_PRESENCE8 =  #{CF_PRESENCE8}
+			,RATIO_FREET_TOTALT =  #{RATIO_FREET_TOTALT}
+			,ANALYSIS_DETAILS =  #{ANALYSIS_DETAILS}
+			,CF_CODE7 =  #{CF_CODE7}
+			,CF_CODE8 =  #{CF_CODE8}
+			,SAMPLE_SPECIFIC_GRAVITY_CP = #{SAMPLE_SPECIFIC_GRAVITY_CP}
+		WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+		  AND SAMPLEAB =  #{SAMPLEAB}
+        
+    </update>
+    <delete id="deleteCsvNEG" parameterType="hashMap">
+    DELETE FROM K03_ADAMS_CSV_NEG
+		WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+		  AND SAMPLEAB =  #{SAMPLEAB}
+    </delete>
+     <update id="updateCsvBLOOD" parameterType="HashMap">
+        /* k03.adams.updateCsvBLOOD - 혈액 csv 수정*/
+        
+        UPDATE K03_ADAMS_CSV_BLOOD 
+        SET  MO_NUMBER = #{MO_NUMBER}
+			,SAMPLE_TYPE = #{SAMPLE_TYPE}
+			,SAMPLE_COLLECTION_DATE = #{SAMPLE_COLLECTION_DATE}
+			,DATE_RECEIVED = #{DATE_RECEIVED}
+			,ANALYSIS_REPORT_DATE = #{ANALYSIS_REPORT_DATE}
+			,TA = #{TA}
+			,SCA = #{SCA}
+			,RMA = #{RMA}
+			,TEST_TYPE = #{TEST_TYPE}
+			,SPORT_CODE = #{SPORT_CODE}
+			,DISCIPLINE_CODE = #{DISCIPLINE_CODE}
+			,GENDER = #{GENDER}
+			,TEST_RESULT = #{TEST_RESULT}
+			,ANALYSIS_ATTRIBUTE = #{ANALYSIS_ATTRIBUTE}
+       WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+		 AND SAMPLEAB = #{SAMPLEAB}
+
+    </update>
+    <delete id="deleteCsvBLOOD" parameterType="hashMap">
+    DELETE FROM K03_ADAMS_CSV_BLOOD 
+		WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+		  AND SAMPLEAB =  #{SAMPLEAB}
+    </delete>
+    <update id="updateCsvABP" parameterType="HashMap">
+        /* k03.adams.updateCsvABP - ABP csv 수정*/
+        
+        UPDATE  K03_ADAMS_CSV_ABP 
+        SET  MO_NUMBER = #{MO_NUMBER}
+			,SAMPLE_TYPE = #{SAMPLE_TYPE}
+			,DATE_RESULTS_REPORTED = #{DATE_RESULTS_REPORTED}
+			,TA = #{TA}
+			,SCA = #{SCA}
+			,RMA = #{RMA}
+			,TEST_TYPE = #{TEST_TYPE}
+			,SPORT_CODE = #{SPORT_CODE}
+			,DISCIPLINE_CODE = #{DISCIPLINE_CODE}
+			,GENDER = #{GENDER}
+			,LAB = #{LAB}
+			,DATE_COLLECTION = #{DATE_COLLECTION}
+			,DATE_RECEIVED = #{DATE_RECEIVED}
+			,ANALYSIS_DATE = #{ANALYSIS_DATE}
+			,HGB = #{HGB}
+			,HCT = #{HCT}
+			,IRF = #{IRF}
+			,MCH = #{MCH}
+			,MCHC = #{MCHC}
+			,MCV = #{MCV}
+			,OFF_SCORE = #{OFF_SCORE}
+			,PLT = #{PLT}
+			,RDW_SD = #{RDW_SD}
+			,RBC = #{RBC}
+			,RET_SHARP = #{RET_SHARP}
+			,RET_PERCENT = #{RET_PERCENT}
+			,WBC = #{WBC}
+			,ANALYSER   = #{ANALYSER}
+	   WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+			
+	</update>
+    <delete id="deleteCsvABP" parameterType="hashMap">
+    DELETE FROM K03_ADAMS_CSV_ABP 
+		WHERE SAMPLE_CODE = #{SAMPLE_CODE}
+    </delete>
+</mapper>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgi.mst">
+   	<select id="selectFdgiMstList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.mst.selectFdgiMstList (mst.xml) */
+	SELECT ITEM_CD			AS ITEM_CD    	/* 재료코드 */
+	      ,ITEM_NM			AS ITEM_NM    	/* 재료명 */
+	      ,UNIT				AS UNIT    		/* 규격 */
+	      ,MANU_COM			AS MANU_COM    	/* 제조사 */
+	      ,ITEM_MNGN_YN 	AS ITEM_MNGN_YN /* 재료관리여부 */
+	  FROM T_FDGI_MST
+	 WHERE 1=1
+	   <if test="ITEM_CD != null and ITEM_CD != ''">
+       AND ITEM_CD LIKE CONCAT('%',#{ITEM_CD},'%')
+       </if>
+       <if test="ITEM_NM != null and ITEM_NM != ''">
+       AND ITEM_NM LIKE CONCAT('%',#{ITEM_NM},'%')
+       </if>
+       <if test="UNIT != null and UNIT != ''">
+       AND UNIT LIKE CONCAT('%',#{UNIT},'%')
+       </if>
+       <if test="MANU_COM != null and MANU_COM != ''">
+       AND MANU_COM LIKE CONCAT('%',#{MANU_COM},'%')
+       </if>
+       <if test="ITEM_MNGN_YN != null and ITEM_MNGN_YN != ''">
+       AND ITEM_MNGN_YN = #{ITEM_MNGN_YN}
+       </if>
+	 ORDER BY ITEM_CD
+    </select>
+    
+    <update id="updateFdgiMstData" parameterType="hashMap">
+    /* fdgi.mst.updateFdgiMstData (mst.xml) */
+    UPDATE T_FDGI_MST
+       SET ITEM_MNGN_YN = #{ITEM_MNGN_YN}
+       	  ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+     WHERE ITEM_CD = #{ITEM_CD}
+	</update>
+    
+    <select id="selectFdgiMstNmByCd" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.mst.selectFdgiMstList (mst.xml) */
+	SELECT ITEM_NM			AS ITEM_NM    	/* 재료명 */
+	  FROM T_FDGI_MST
+	 WHERE ITEM_CD = #{ITEM_CD}
+    </select>
+    
+    <select id="selectFdgiMstQtyList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.mst.selectFdgiMstQtyList (mst.xml) */
+	SELECT A.ITEM_CD			AS ITEM_CD    	/* 재료코드 */
+	      ,A.ITEM_NM			AS ITEM_NM    	/* 재료명 */
+	      ,(SELECT COUNT(*)
+	      	  FROM T_FDGI_LOT TFL 
+	      	 WHERE TFL.ITEM_CD = A.ITEM_CD) AS LOT_CNT /* 보유 LOT 수 */
+	      ,(SELECT SUM(QTY)
+	      	  FROM T_FDGI_LOT TFL 
+	      	 WHERE TFL.ITEM_CD = A.ITEM_CD) AS QTY /* 현재재고 */
+	  FROM T_FDGI_MST A
+	 WHERE 1=1
+	   <if test="ITEM_CD != null and ITEM_CD != ''">
+       AND A.ITEM_CD LIKE CONCAT('%',#{ITEM_CD},'%')
+       </if>
+       <if test="ITEM_NM != null and ITEM_NM != ''">
+       AND A.ITEM_NM LIKE CONCAT('%',#{ITEM_NM},'%')
+       </if>
+	 ORDER BY A.ITEM_CD
+    </select>
+</mapper>

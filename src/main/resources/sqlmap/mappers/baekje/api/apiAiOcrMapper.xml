@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiAiOcr">
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiAiOcrMapper.xml][apiAiOcr.insertApiHistory][API연동이력(T_API_LOG) ]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+        , MOD_ID
+        , ERR_MSG
+    ) VALUES (
+          #{API_IP}
+        , #{API_ID}
+        , SUBSTR(#{API_TXT},1,2000)
+        , #{API_INS}
+        , CURRENT TIMESTAMP
+        , #{API_MOD}
+        , #{ERR_MSG}
+        )
+</insert>
+
+<select id="checkAuth"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiAiOcr.xml][apiAiOcr.selectAuthCheck][인증체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_KEY},'') = '' THEN 'API키값이 누락되었습니다'
+                           WHEN USER_STRING1 != #{API_KEY} THEN 'API키값이 일치하지 않습니다'
+                           WHEN IFNULL(#{API_IP},'') = '' THEN 'IP가 확인되지 않습니다'
+                           WHEN USER_STRING2 != #{API_IP} AND USER_STRING3 != #{API_IP} AND USER_STRING4 != #{API_IP} AND USER_STRING5 != #{API_IP} AND USER_STRING6 != #{API_IP} AND USER_STRING7 != #{API_IP} AND USER_STRING8 != #{API_IP} THEN '승인되지 않은 IP입니다'||'('||#{API_IP}||')'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE = '584'
+       AND CODE   = 'OCR'
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="getItem"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getItem][품목조회]+*/
+    SELECT A.ITEM_CD
+          ,A.ITEM_NM
+          ,A.UNIT
+          ,A.MAKER_CD
+          ,A.TAX_YN
+          ,A.BP_AMT
+          ,A.BP1_AMT
+          ,A.BARCODE1
+          ,A.ITEM_PYOJUN_CD
+          ,A.BOHUM_CD
+          ,CASE WHEN A.USE_YN = 'N' OR A.FORBID_YN = 'Y' OR A.BUY_FORBID_YN = 'Y' THEN 'N' ELSE 'Y' END USE_YN
+          ,A.MED_CD
+          ,B.CD_NM AS MED_NM
+          ,CASE WHEN A.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END PAY_ITEM_NN
+      FROM T_ITEM A
+      JOIN T_CODE B
+        ON B.P_CODE = '101'
+       AND B.CODE = A.MED_CD
+      JOIN T_CODE C
+        ON C.P_CODE = '109'
+       AND C.CODE = A.SPEC_CD
+     WHERE A.ITEM_CD != '000000'
+       AND A.MED_CD IN ('01','02')
+       AND A.USE_YN = 'Y'
+       AND A.SUBDIV_YN = 'N'
+       AND NVL(A.BUY_FORBID_YN,'N') != 'Y'
+       AND NVL(A.FORBID_YN,'N') != 'Y'
+    <if test='ITEM_CD_LIKE != null and ITEM_CD_LIKE != ""'>
+       AND A.ITEM_CD LIKE #{ITEM_CD_LIKE}||'%'
+    </if>
+    <if test='ITEM_NM_LIKE != null and ITEM_NM_LIKE != ""'>
+       AND A.ITEM_NM LIKE '%'||#{ITEM_NM_LIKE}||'%'
+    </if>
+     ORDER BY A.ITEM_CD
+</select>
+
+<select id="getMaker"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getMaker][품목메이커조회]+*/
+    SELECT A.MAKER_CD
+          ,A.MAKER_NM
+          ,A.USE_YN
+      FROM T_MAKER A
+    <if test='MAKER_CD_LIKE != null and MAKER_CD_LIKE != ""'>
+       AND A.MAKER_CD LIKE CONCAT(#{MAKER_CD_LIKE},'%')
+    </if>
+     ORDER BY A.MAKER_CD
+</select>
+
+<select id="getBuyCust"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getBuyCust][매입거래처조회]+*/
+    SELECT A.CUST_CD
+          ,A.CUST_NM
+          ,A.BRCH_CD
+          ,A.CEO_NM
+          ,A.SERVICE_NO
+          ,IFNULL(A.TEL_NO,'') AS TEL_NO 
+          ,IFNULL(A.FAX_NO,'') AS FAX_NO
+          ,IFNULL(A.HP_NO,'') AS HP_NO
+          ,IFNULL(A.EMAIL,'') AS EMAIL
+          ,IFNULL(A.CUST_ADDRESS,'') AS CUST_ADDRESS
+          ,IFNULL(A.CUST_ADDRESS2,'') AS CUST_ADDRESS2
+          ,IFNULL(A.ZIP_CD,'') AS ZIP_CD
+          ,(CASE WHEN A.DEAL_END_YN = 'Y' THEN 'N' ELSE 'Y' END) AS USE_YN
+/*
+          ,A.SB_GB_CD
+          ,B.CD_NM AS SB_GB_NM
+          ,A.CUST_GB_CD
+          ,A.DEAL_END_YN
+          ,A.DEAL_END_DT
+*/
+      FROM V_CUST A
+      JOIN T_CODE B
+        ON B.P_CODE  = '118'
+       AND B.CODE = A.SB_GB_CD
+     WHERE A.SB_GB_CD IN ('01','03')
+       AND A.TR_CUST_YN = 'N'
+    <if test='CUST_CD_LIKE != null and CUST_CD_LIKE != ""'>
+       AND A.CUST_CD LIKE CONCAT(#{CUST_CD_LIKE},'%')
+    </if>
+    <if test='USE_YN != null and USE_YN != ""'>
+       AND (CASE WHEN A.DEAL_END_YN = 'Y' THEN 'N' ELSE 'Y' END) = #{USE_YN}
+    </if>
+     ORDER BY A.CUST_CD
+</select>
+
+<select id="getBrch"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getBrch][매입지점조회]+*/
+    SELECT A.BRCH_CD
+          ,A.BRCH_SNM
+          ,A.BRCH_NM
+          ,A.CEO_NM
+          ,A.SERVICE_NO
+          ,A.ZIP_CD
+          ,A.ADDR
+          ,A.TEL_NO
+          ,A.BUY_DEPT_TEL_NO AS DEPT_TEL_NO
+          ,A.BUY_DEPT_FAX_NO AS DEPT_FAX_NO
+          ,A.BRCH_GB_NM
+          ,A.AREA_GB_NM
+      FROM V_BRANCH A
+     WHERE A.DLV_BRCH_YN = 'Y'
+    <if test='BRCH_CD_LIKE != null and BRCH_CD_LIKE != ""'>
+       AND A.BRCH_CD LIKE CONCAT(#{BRCH_CD_LIKE},'%')
+    </if>
+    <if test='USE_YN != null and USE_YN != ""'>
+       AND A.USE_YN = #{USE_YN}
+    </if>
+     ORDER BY A.BRCH_CD
+</select>
+
+<select id="getItemBuyCust"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getItemBuyCust][품목별매입거래처조회]+*/
+    SELECT B.BRCH_CD
+          ,A.ITEM_CD
+          ,B.BUY_CUST_CD AS CUST_CD
+      FROM T_ITEM A
+      JOIN T_ITEM_STOCK B
+        ON B.ITEM_CD = A.ITEM_CD
+       AND B.BUY_CUST_CD != ''
+       AND B.USE_YN = 'Y'
+    <if test='BRCH_CD != null and BRCH_CD != ""'>
+       AND B.BRCH_CD = #{BRCH_CD}
+    </if>
+      JOIN T_MAKER C
+        ON C.MAKER_CD = A.MAKER_CD
+     WHERE A.USE_YN = 'Y'
+       AND A.SUBDIV_YN = 'N'
+       AND A.FORBID_YN = 'N'
+     ORDER BY B.BRCH_CD, A.ITEM_CD
+</select>
+
+<select id="getInvoiceList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getInvoiceList][매입명세서 마스터 조회]+*/
+    SELECT A.INVOICE_SEQ
+          ,A.INVOICE_GROUP_SEQ
+          ,A.INVOICE_ROWNUM
+          ,A.INVOICE_TYPE
+          ,A.CUST_CD
+          ,A.BRCH_CD
+          ,A.TOTAL_PRICE
+          ,A.TOTAL_VAT_PRICE
+          ,A.TOTAL_DC_PRICE
+          ,A.ORI_IMG_PATH
+          ,A.SEPARATE_IMG_PATH
+          ,A.PUBLISH_DATE
+          ,A.INVOICE_MED_CD
+          ,A.TAX_YN
+          ,A.REG_DATE
+          ,A.INS_DATE
+      FROM T_BUY_OCR A
+     WHERE 1 = 1
+    <choose>
+      <when test='INVOICE_SEQ != null and INVOICE_SEQ != ""'>
+       AND A.INVOICE_SEQ = #{INVOICE_SEQ}
+      </when>
+      <otherwise>
+       AND A.INS_DATE BETWEEN #{DATE_FROM} AND #{DATE_TO}
+      </otherwise>
+    </choose>
+     ORDER BY A.INS_DATE, A.INVOICE_SEQ
+</select>
+
+
+<select id="getInvoiceItemList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getInvoiceItemList][매입명세서 품목 조회]+*/
+    SELECT B.ITEM_SEQ
+          ,B.ITEM_ROWNUM
+          ,B.INVOICE_SEQ
+          ,B.ITEM_CD
+          ,B.ITEM_NM
+          ,B.ITEM_ST
+          ,B.ITEM_QTY
+          ,B.ORDER_AMT
+          ,B.ORDER_PRICE
+          ,B.EXP_DT
+          ,B.PROD_NO
+          ,B.BOHUM_CD
+      FROM T_BUY_OCR A
+      JOIN T_BUY_OCR_ITEM B
+        ON B.INVOICE_SEQ = A.INVOICE_SEQ
+     WHERE 1 = 1
+    <choose>
+      <when test='INVOICE_SEQ != null and INVOICE_SEQ != ""'>
+       AND A.INVOICE_SEQ = #{INVOICE_SEQ}
+      </when>
+      <otherwise>
+       AND A.INS_DATE BETWEEN #{DATE_FROM} AND #{DATE_TO}
+      </otherwise>
+    </choose>
+     ORDER BY A.INS_DATE, A.INVOICE_SEQ, B.ITEM_SEQ
+</select>
+
+<select id="getInvoiceModify"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getInvoiceModify][매입명세서 마스터 수정건 조회]+*/
+    SELECT A.INVOICE_SEQ
+          ,A.BRCH_CD
+          ,A.CUST_CD
+          ,NVL(A.SAVE_CUST_CD,'') AS SAVE_CUST_CD
+          ,A.TOTAL_PRICE
+          ,NVL(A.SAVE_TOTAL_AMT,0) AS SAVE_TOTAL_PRICE 
+          ,A.SAVE_INS_DATE AS SAVE_DATE
+          ,A.SAVE_SN
+      FROM T_BUY_OCR A
+     WHERE A.SAVE_INS_DATE BETWEEN #{DATE_FROM} AND #{DATE_TO}
+       AND (   A.CUST_CD      != NVL(A.SAVE_CUST_CD,'')
+            OR A.TOTAL_PRICE  != NVL(A.SAVE_TOTAL_AMT,0) 
+           )
+     ORDER BY A.SAVE_INS_DATE
+</select>
+
+<select id="getInvoiceItemModify"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getInvoiceItemModify][매입명세서 품목 수정건 조회]+*/
+    SELECT B.INVOICE_SEQ
+          ,B.ITEM_SEQ
+          ,B.ITEM_CD
+          ,NVL(B.SAVE_ITEM_CD,'') AS SAVE_ITEM_CD
+          ,B.ITEM_QTY
+          ,NVL(B.SAVE_ITEM_QTY,0) AS SAVE_ITEM_QTY
+          ,B.ORDER_AMT
+          ,NVL(B.SAVE_BUY_UNIT_AMT,0) AS SAVE_ORDER_AMT
+          ,B.ORDER_PRICE
+          ,NVL(B.SAVE_TOTAL_AMT,0) AS SAVE_ORDER_PRICE
+          ,A.SAVE_INS_DATE AS SAVE_DATE
+          ,B.SAVE_SN
+          ,B.SAVE_SNO
+      FROM T_BUY_OCR A
+      JOIN T_BUY_OCR_ITEM B
+        ON B.INVOICE_SEQ = A.INVOICE_SEQ 
+       AND B.SAVE_SN != 0
+       AND (   B.ITEM_CD     != NVL(B.SAVE_ITEM_CD,'')
+            OR B.ITEM_QTY    != NVL(B.SAVE_ITEM_QTY,0)
+            OR B.ORDER_AMT   != NVL(B.SAVE_BUY_UNIT_AMT,0)
+            OR B.ORDER_PRICE != NVL(B.SAVE_TOTAL_AMT,0)
+           )
+     WHERE A.SAVE_INS_DATE BETWEEN #{DATE_FROM} AND #{DATE_TO}
+     ORDER BY A.SAVE_INS_DATE
+</select>
+
+<insert id="insertInvoice"  parameterType="java.util.HashMap">
+    MERGE INTO T_BUY_OCR A
+    USING (SELECT IFNULL(#{INVOICE_SEQ},0) AS INVOICE_SEQ
+                 ,IFNULL(#{INVOICE_GROUP_SEQ},0) AS INVOICE_GROUP_SEQ
+                 ,IFNULL(#{INVOICE_ROWNUM},0) AS INVOICE_ROWNUM
+                 ,IFNULL(CAST(#{INVOICE_TYPE} AS VARCHAR(2)),'') AS INVOICE_TYPE
+                 ,IFNULL(CAST(#{CUST_CD} AS VARCHAR(10)),'') AS CUST_CD
+                 ,IFNULL(CAST(#{CUST_NM} AS VARCHAR(100) CCSID 933),'') AS CUST_NM
+                 ,IFNULL(CAST(#{BRCH_CD} AS VARCHAR(2)),'') AS BRCH_CD
+                 ,IFNULL(CAST(#{TOTAL_PRICE} AS VARCHAR(20)),'0') AS TOTAL_PRICE
+                 ,IFNULL(CAST(#{TOTAL_VAT_PRICE} AS VARCHAR(20)),'0') AS TOTAL_VAT_PRICE
+                 ,IFNULL(CAST(#{TOTAL_DC_PRICE} AS VARCHAR(20)),'0') AS TOTAL_DC_PRICE
+                 ,IFNULL(CAST(#{ORI_IMG_PATH} AS VARCHAR(100) CCSID 933),'') AS ORI_IMG_PATH
+                 ,IFNULL(CAST(#{SEPARATE_IMG_PATH} AS VARCHAR(100) CCSID 933),'') AS SEPARATE_IMG_PATH 
+                 ,IFNULL(CAST(#{PUBLISH_DATE} AS VARCHAR(20)),'') AS PUBLISH_DATE
+                 ,IFNULL(CAST(#{INVOICE_MED_CD} AS VARCHAR(10)),'') AS INVOICE_MED_CD
+                 ,IFNULL(CAST(#{TAX_YN} AS VARCHAR(2)),'') AS TAX_YN
+                 ,IFNULL(CAST(#{REG_DATE} AS VARCHAR(20)),'') AS REG_DATE
+            FROM DUAL) B
+     ON A.INVOICE_SEQ = B.INVOICE_SEQ
+  WHEN MATCHED THEN
+    UPDATE SET A.MOD_ID  = #{API_INS}
+              ,A.MOD_DTM = CURRENT TIMESTAMP
+  WHEN NOT MATCHED THEN
+    INSERT (   A.INVOICE_SEQ
+              ,A.INVOICE_GROUP_SEQ
+              ,A.INVOICE_ROWNUM
+              ,A.INVOICE_TYPE
+              ,A.CUST_CD
+              ,A.CUST_NM
+              ,A.BRCH_CD
+              ,A.TOTAL_PRICE
+              ,A.TOTAL_VAT_PRICE
+              ,A.TOTAL_DC_PRICE
+              ,A.ORI_IMG_PATH
+              ,A.SEPARATE_IMG_PATH
+              ,A.PUBLISH_DATE
+              ,A.INVOICE_MED_CD
+              ,A.TAX_YN
+              ,A.REG_DATE
+              ,A.INS_ID
+              ,A.INS_DTM
+              ,A.INS_DATE
+           )
+    VALUES (   B.INVOICE_SEQ
+              ,B.INVOICE_GROUP_SEQ
+              ,B.INVOICE_ROWNUM
+              ,B.INVOICE_TYPE
+              ,B.CUST_CD
+              ,B.CUST_NM
+              ,B.BRCH_CD
+              ,B.TOTAL_PRICE
+              ,B.TOTAL_VAT_PRICE
+              ,B.TOTAL_DC_PRICE
+              ,B.ORI_IMG_PATH
+              ,B.SEPARATE_IMG_PATH
+              ,B.PUBLISH_DATE
+              ,B.INVOICE_MED_CD
+              ,B.TAX_YN
+              ,B.REG_DATE
+              ,#{API_INS}
+              ,CURRENT TIMESTAMP
+              ,VARCHAR_FORMAT(CURRENT TIMESTAMP, 'YYYYMMDD')
+           )
+</insert>
+
+
+<insert id="insertInvoiceItem"  parameterType="java.util.HashMap">
+    MERGE INTO T_BUY_OCR_ITEM A
+    USING (SELECT IFNULL(#{ITEM_SEQ},0) AS ITEM_SEQ
+                 ,IFNULL(#{ITEM_ROWNUM},0) AS ITEM_ROWNUM
+                 ,IFNULL(#{INVOICE_SEQ},0) AS INVOICE_SEQ
+                 ,IFNULL(CAST(#{ITEM_CD} AS VARCHAR(20)),'') AS ITEM_CD
+                 ,IFNULL(CAST(#{ITEM_NM} AS VARCHAR(100) CCSID 933),'') AS ITEM_NM
+                 ,IFNULL(CAST(#{ITEM_ST} AS VARCHAR(100) CCSID 933),'') AS ITEM_ST
+                 ,IFNULL(CAST(#{ITEM_QTY} AS VARCHAR(20)),'0') AS ITEM_QTY
+                 ,IFNULL(CAST(#{ORDER_AMT} AS VARCHAR(20)),'0') AS ORDER_AMT
+                 ,IFNULL(CAST(#{ORDER_PRICE} AS VARCHAR(20)),'0') AS ORDER_PRICE 
+                 ,IFNULL(CAST(#{EXP_DT} AS VARCHAR(20)),'') AS EXP_DT 
+                 ,IFNULL(CAST(#{PROD_NO} AS VARCHAR(20)),'') AS PROD_NO 
+                 ,IFNULL(CAST(#{BOHUM_CD} AS VARCHAR(20)),'') AS BOHUM_CD 
+            FROM DUAL) B
+     ON A.ITEM_SEQ = B.ITEM_SEQ
+  WHEN MATCHED THEN
+    UPDATE SET A.MOD_ID  = #{API_INS}
+              ,A.MOD_DTM = CURRENT TIMESTAMP
+  WHEN NOT MATCHED THEN
+    INSERT (   A.ITEM_SEQ
+              ,A.ITEM_ROWNUM
+              ,A.INVOICE_SEQ
+              ,A.ITEM_CD
+              ,A.ITEM_NM
+              ,A.ITEM_ST
+              ,A.ITEM_QTY
+              ,A.ORDER_AMT
+              ,A.ORDER_PRICE
+              ,A.EXP_DT
+              ,A.PROD_NO
+              ,A.BOHUM_CD
+              ,A.INS_ID
+              ,A.INS_DTM
+           )
+    VALUES (   B.ITEM_SEQ
+              ,B.ITEM_ROWNUM
+              ,B.INVOICE_SEQ
+              ,B.ITEM_CD
+              ,B.ITEM_NM
+              ,B.ITEM_ST
+              ,B.ITEM_QTY
+              ,CAST(B.ORDER_AMT AS DECIMAL(18,0))
+              ,CAST(B.ORDER_PRICE AS DECIMAL(18,0))
+              ,B.EXP_DT
+              ,B.PROD_NO
+              ,B.BOHUM_CD
+              ,#{API_INS}
+              ,CURRENT TIMESTAMP
+           )
+</insert>
+
+<insert id="insertInvoiceItemCandidate"  parameterType="java.util.HashMap">
+    MERGE INTO T_BUY_OCR_ITEM_CANDIDATE A
+    USING (SELECT IFNULL(CAST(#{ITEM_SEQ} AS VARCHAR(20)),'') AS ITEM_SEQ
+                 ,IFNULL(CAST(#{ITEM_ROWNUM} AS VARCHAR(20)),'') AS ITEM_ROWNUM
+                 ,IFNULL(CAST(#{INVOICE_SEQ} AS VARCHAR(20)),'') AS INVOICE_SEQ
+                 ,IFNULL(CAST(#{ITEM_CD} AS VARCHAR(20)),'') AS ITEM_CD
+                 ,IFNULL(CAST(#{RELIABILITY} AS VARCHAR(20)),'0') AS RELIABILITY
+            FROM DUAL) B
+     ON A.ITEM_SEQ = B.ITEM_SEQ
+    AND A.ITEM_CD = B.ITEM_CD
+  WHEN MATCHED THEN
+    UPDATE SET A.MOD_ID  = #{API_INS}
+              ,A.MOD_DTM = CURRENT TIMESTAMP
+  WHEN NOT MATCHED THEN
+    INSERT (   A.ITEM_SEQ
+              ,A.ITEM_CD
+              ,A.ITEM_ROWNUM
+              ,A.INVOICE_SEQ
+              ,A.RELIABILITY
+              ,A.INS_ID
+              ,A.INS_DTM
+           )
+    VALUES (   B.ITEM_SEQ
+              ,B.ITEM_CD
+              ,B.ITEM_ROWNUM
+              ,B.INVOICE_SEQ
+              ,CASE WHEN B.RELIABILITY = '' THEN '0' ELSE B.RELIABILITY END
+              ,#{API_INS}
+              ,CURRENT TIMESTAMP
+           )
+</insert>
+
+<update id="saveFileUploadResult"  parameterType="java.util.HashMap">
+    <choose>
+    <when test='BRCH_CD == null or BRCH_CD == ""'>
+        UPDATE T_BUY_OCR_UPLOAD
+           SET PROC_DATE = #{PROC_DATE}
+              ,PROC_RSLT_YN = #{PROC_RSLT_YN}
+              ,PAGE_TOTAL = #{TOTAL_PAGE_COUNT}
+              ,PAGE_SUCC = #{SUCCESS_PAGE_COUNT}
+              ,ERROR_MSG = #{ERROR_MSG}
+              ,MOD_ID = #{API_INS}
+              ,MOD_DTM = CURRENT TIMESTAMP
+         WHERE UPLOAD_SEQ = #{FILE_NAME}
+    </when>
+    <otherwise>
+        INSERT INTO T_BUY_OCR_UPLOAD(
+               UPLOAD_SEQ
+              ,UPLOAD_SIZE
+              ,ORG_FILE_NAME
+              ,BRCH_CD
+              ,UPLOAD_DT
+              ,PROC_DATE
+              ,PROC_RSLT_YN
+              ,PAGE_TOTAL
+              ,PAGE_SUCC
+              ,ERROR_MSG
+              ,INS_ID 
+              ,INS_DTM
+        )VALUES(
+               #{FILE_NAME}
+              ,#{UPLOAD_SIZE}
+              ,#{ORG_FILE_NAME}
+              ,#{BRCH_CD}
+              ,TO_CHAR(CURRENT DATE,'YYYYMMDD')
+              ,#{PROC_DATE}
+              ,#{PROC_RSLT_YN}
+              ,#{TOTAL_PAGE_COUNT}
+              ,#{SUCCESS_PAGE_COUNT}
+              ,#{ERROR_MSG}
+              ,#{API_INS}
+              ,CURRENT TIMESTAMP 
+        )
+    </otherwise>
+    </choose>
+</update>
+
+<select id="getBuyInvoiceError"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiAiOcr.xml][apiAiOcr.getBuyInvoiceError][매입명세서 등록 오류건 조회]+*/
+    SELECT TO_CHAR(A.INS_DTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTM
+          ,SUBSTRING(A.API_TXT,1,400) AS REQ_STRING
+          ,SUBSTRING(A.ERR_MSG,1,400) AS ERR_MESSAGE
+      FROM T_API_LOG A
+     WHERE A.API_ID = 'AIOCR.putBuyInvoice'
+       AND A.ERR_MSG IS NOT NULL
+       AND A.INS_DTM BETWEEN TO_DATE(CAST(#{ERROR_DT} AS VARCHAR(8)),'YYYYMMDD') AND TO_DATE(CAST(#{ERROR_DT} AS VARCHAR(8)),'YYYYMMDD') + 1 DAY
+</select>
+
+</mapper>

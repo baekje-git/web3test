@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.MyInspect">
+    <select id="selectMyInspect" parameterType="HashMap" resultType="HashMap">
+        /* k05.MyInspect.selectMyInspect - 나의 검사결과 */   
+		SELECT IPNT_DATE
+		      ,USER_ID
+		      ,USER_NAME
+		      ,LISTAGG(TO_CHAR(TEST_NO), ',') WITHIN GROUP(ORDER BY IPNT_DATE) AS TEST_NOS
+		      ,CASE WHEN LISTAGG(TO_CHAR(TEST_STATUS), ',') WITHIN GROUP(ORDER BY IPNT_DATE) LIKE '%분석중%' THEN '분석중' ELSE '분석완료' END AS TEST_STATUS
+		      ,LISTAGG(TO_CHAR(SAMPLE_TYPE), ',') WITHIN GROUP(ORDER BY IPNT_DATE) AS SAMPLE_TYPE
+		FROM 
+           (SELECT A.USER_ID
+                 , ROWNUM
+                 , A.USER_NAME
+                 , B.TEST_NO
+                 , B.PLAYER_NO
+                 , B.IPNT_NO
+                 , B.IPNT_UPPER_SEQ
+                 , C.ID 
+                 , C.TESTSID 
+                 , D.TESTRESULTSID 
+                 , D.CODE 
+                 , E.SAMPLE_CODE 
+                 , DECODE(E.SAMPLE_TYPE ,'Urine','소변','Blood','혈액',E.SAMPLE_TYPE) SAMPLE_TYPE
+                 , CASE WHEN E.TEST_RESULT IS NULL THEN '' 
+                                WHEN E.TEST_RESULT = 'Negative' THEN '음성' ELSE '양성' END  AS TEST_RESULT
+                 , CASE WHEN TEST_RESULT IS NULL THEN '분석중' ELSE '분석완료' END AS TEST_STATUS
+                 , IPNT_DATE
+            FROM USER01TB  A
+            JOIN  K00_ZTESTS  B
+              ON A.PLAYER_NO =B.PLAYER_NO
+            JOIN K03_DOPING_INSPECT_REG F 
+              ON F.IPNT_NO=B.IPNT_NO 
+            LEFT OUTER JOIN WTEST_RESULTS C
+              ON C.TESTSID =B.TEST_NO
+            LEFT OUTER JOIN WTEST_RESULT_SAMPLES D 
+              ON D.TESTRESULTSID = C.ID                                     
+            LEFT OUTER JOIN K03_ADAMS_CSV_NEG E 
+              ON E.SAMPLE_CODE = D.CODE 
+            WHERE 1=1
+            AND A.USER_ID = #{USER_ID}
+            AND IPNT_DATE  BETWEEN #{START_DATE} AND #{END_DATE}
+            ) 
+            GROUP BY IPNT_DATE,USER_ID,USER_NAME
+    </select>
+    
+    <select id="selectMyInspect_Detail" parameterType="HashMap" resultType="HashMap">
+        /* k05.MyInspect.selectMyInspect_Detail - 나의 검사결과(상세) */   
+    SELECT A.USER_ID
+                 , ROWNUM
+                 , A.USER_NAME
+                 , A.BIRTH_DT
+                 , SUBSTR(A.BIRTH_DT,1,4)||'년 ' || SUBSTR(A.BIRTH_DT,5,2)||'월 ' || SUBSTR(A.BIRTH_DT,7,2)||'일' AS BIRTH_DT_NM
+                 , A.USER_SEX
+                 , F_CODE_NM('SEX_CODE',A.USER_SEX) AS USER_SEX_NM
+                 , B.TEST_NO
+                 , B.PLAYER_NO
+                 , B.IPNT_NO
+                 , B.IPNT_UPPER_SEQ
+                 , C.ID 
+                 , C.TESTSID 
+                 , D.TESTRESULTSID 
+                 , D.CODE 
+                 , E.SAMPLE_CODE 
+                 , E.SAMPLE_TYPE 
+                 , DECODE(E.SAMPLE_TYPE ,'Urine','소변','Blood','혈액',E.SAMPLE_TYPE) SAMPLE_TYPE_NM 
+                 , E.TEST_RESULT
+                 , CASE WHEN E.TEST_RESULT IS NULL THEN '' 
+                        WHEN E.TEST_RESULT = 'Negative' THEN '음성' ELSE '양성' END  AS TEST_RESULT_NM
+                 , IPNT_DATE
+                 , SUBSTR(IPNT_DATE,1,4)||'년' AS YYYY
+                 , SUBSTR(IPNT_DATE,5,2)||'월' AS MM
+                 , SUBSTR(IPNT_DATE,7,2)||'일' AS DD
+                 , SUBSTR(IPNT_DATE,1,4)||'년 ' || SUBSTR(IPNT_DATE,5,2)||'월 ' || SUBSTR(IPNT_DATE,7,2)||'일' AS YYYYMMDD
+                 , G.CODE_NAME AS PRO_ORGZ_NM /*소속단체코드명*/
+                 , G.OPTION8 AS EVENT_CODE
+                 , F_CODE_NM('EVENT_CODE',G.OPTION8) EVENT_CODE_NM
+                 , G.OPTION9 AS EVENT_DET_CODE
+                 , F_CODE_NM('EVENT_DET_CODE',G.OPTION9) EVENT_DET_CODE_NM
+                 , F_CODE_NM('EVENT_CODE',G.OPTION8)|| ' '|| F_CODE_NM('EVENT_DET_CODE',G.OPTION9) EVENT_ALL_NM
+                 , CASE WHEN TEST_RESULT IS NULL THEN '분석중' ELSE '분석완료' END  AS TEST_STATUS
+      FROM USER01TB  A
+      JOIN  K00_ZTESTS  B
+        ON A.PLAYER_NO =B.PLAYER_NO
+      JOIN K03_DOPING_INSPECT_REG F 
+        ON F.IPNT_NO=B.IPNT_NO 
+      LEFT OUTER JOIN WTEST_RESULTS C
+        ON C.TESTSID =B.TEST_NO
+      LEFT OUTER JOIN WTEST_RESULT_SAMPLES D 
+        ON D.TESTRESULTSID = C.ID 
+      LEFT OUTER JOIN (SELECT SAMPLE_CODE,TEST_RESULT,SAMPLE_TYPE  
+                         FROM K03_ADAMS_CSV_NEG
+                        UNION ALL
+                       SELECT SAMPLE_CODE,TEST_RESULT,SAMPLE_TYPE 
+                         FROM K03_ADAMS_CSV_BLOOD
+                      )  E 
+        ON E.SAMPLE_CODE = D.CODE 
+      LEFT OUTER JOIN K99_CODE_DTL G
+        ON G.MST_CODE ='PRO_ORGZ'  
+       AND G.dtl_code = A.PRO_ORGZ
+    WHERE 1=1
+    AND A.USER_ID = #{USER_ID}
+    AND IPNT_DATE = #{IPNT_DATE}
+    </select>
+</mapper>

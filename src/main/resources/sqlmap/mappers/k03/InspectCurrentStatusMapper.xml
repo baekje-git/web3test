@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.inspect">
+    <select id="selectSTOCK_STATUS_DCO" parameterType="HashMap" resultType="HashMap">
+   /* InspectCurrentStatusMapper.xml - InspectCurrentStatus.vue - 검사관별 보유현황*/
+		WITH TEMP AS (
+		SELECT SH.USER_ID, 
+		       CASE 
+		       WHEN STATUS IN ('SEC_03','SEC_04') THEN 'A' --지급(정기,요청)   
+		       WHEN STATUS = 'SEC_05' THEN 'B' --사용
+		       WHEN STATUS = 'SEC_06' THEN 'C' --반납       
+		       ELSE NULL END AS STATUS,
+		       SH.STOCK_ITEM, 
+		       CASE 
+		       WHEN STATUS IN ('SEC_03','SEC_04') THEN QTY --지급(정기,요청)   
+		       WHEN STATUS = 'SEC_05' THEN QTY --사용
+		       WHEN STATUS = 'SEC_06' THEN QTY --반납       
+		       ELSE 0 END QTY
+		FROM K03_STOCK_HISTORY SH
+		WHERE SH.STATUS IN ('SEC_03','SEC_04','SEC_05','SEC_06')
+		)
+		SELECT ROWNUM,
+		       A.USER_ID,
+		       U.USER_NAME AS USER_NM,
+		       NVL(A.A_SI_01,0) AS A_SI_01,
+		       NVL(A.A_SI_02,0) AS A_SI_02,
+		       NVL(A.A_SI_03,0) AS A_SI_03,
+		       NVL(A.A_SI_04,0) AS A_SI_04,
+		       NVL(A.A_SI_05,0) AS A_SI_05,
+		       NVL(A.A_SI_06,0) AS A_SI_06,
+		       NVL(A.A_SI_07,0) AS A_SI_07,
+		       NVL(A.A_SI_08,0) AS A_SI_08,
+		       NVL(A.A_SI_09,0) AS A_SI_09,
+		       NVL(A.A_SI_10,0) AS A_SI_10,
+		       NVL(A.A_SI_11,0) AS A_SI_11,
+		       NVL(A.A_SI_12,0) AS A_SI_12,
+		       NVL(A.A_SI_13,0) AS A_SI_13,
+		       NVL(A.A_SI_14,0) AS A_SI_14,
+		       NVL(A.A_SI_15,0) AS A_SI_15,
+		       NVL(A.A_SI_16,0) AS A_SI_16,
+		       NVL(A.A_SI_17,0) AS A_SI_17,
+		       NVL(A.A_SI_18,0) AS A_SI_18,
+		       NVL(A.A_SI_19,0) AS A_SI_19,
+		       NVL(A.A_SI_20,0) AS A_SI_20,
+		       NVL(A.A_SI_21,0) AS A_SI_21,
+		       NVL(A.A_SI_22,0) AS A_SI_22,
+		       NVL(A.B_SI_01,0) AS B_SI_01,
+		       NVL(A.B_SI_02,0) AS B_SI_02,
+		       NVL(A.B_SI_03,0) AS B_SI_03,
+		       NVL(A.B_SI_04,0) AS B_SI_04,
+		       NVL(A.B_SI_05,0) AS B_SI_05,
+		       NVL(A.B_SI_06,0) AS B_SI_06,
+		       NVL(A.B_SI_07,0) AS B_SI_07,
+		       NVL(A.B_SI_08,0) AS B_SI_08,
+		       NVL(A.B_SI_09,0) AS B_SI_09,
+		       NVL(A.B_SI_10,0) AS B_SI_10,
+		       NVL(A.B_SI_11,0) AS B_SI_11,
+		       NVL(A.B_SI_12,0) AS B_SI_12,
+		       NVL(A.B_SI_13,0) AS B_SI_13,
+		       NVL(A.B_SI_14,0) AS B_SI_14,
+		       NVL(A.B_SI_15,0) AS B_SI_15,
+		       NVL(A.B_SI_16,0) AS B_SI_16,
+		       NVL(A.B_SI_17,0) AS B_SI_17,
+		       NVL(A.B_SI_18,0) AS B_SI_18,
+		       NVL(A.B_SI_19,0) AS B_SI_19,
+		       NVL(A.B_SI_20,0) AS B_SI_20,
+		       NVL(A.B_SI_21,0) AS B_SI_21,
+		       NVL(A.B_SI_22,0) AS B_SI_22,
+		       NVL(A.C_SI_01,0) AS C_SI_01,
+		       NVL(A.C_SI_02,0) AS C_SI_02,
+		       NVL(A.C_SI_03,0) AS C_SI_03,
+		       NVL(A.C_SI_04,0) AS C_SI_04,
+		       NVL(A.C_SI_05,0) AS C_SI_05,
+		       NVL(A.C_SI_06,0) AS C_SI_06,
+		       NVL(A.C_SI_07,0) AS C_SI_07,
+		       NVL(A.C_SI_08,0) AS C_SI_08,
+		       NVL(A.C_SI_09,0) AS C_SI_09,
+		       NVL(A.C_SI_10,0) AS C_SI_10,
+		       NVL(A.C_SI_11,0) AS C_SI_11,
+		       NVL(A.C_SI_12,0) AS C_SI_12,
+		       NVL(A.C_SI_13,0) AS C_SI_13,
+		       NVL(A.C_SI_14,0) AS C_SI_14,
+		       NVL(A.C_SI_15,0) AS C_SI_15,
+		       NVL(A.C_SI_16,0) AS C_SI_16,
+		       NVL(A.C_SI_17,0) AS C_SI_17,
+		       NVL(A.C_SI_18,0) AS C_SI_18,
+		       NVL(A.C_SI_19,0) AS C_SI_19,
+		       NVL(A.C_SI_20,0) AS C_SI_20,
+		       NVL(A.C_SI_21,0) AS C_SI_21,
+		       NVL(A.C_SI_22,0) AS C_SI_22,
+		       NVL(A.A_SI_01,0) - NVL(A.B_SI_01,0) - NVL(A.C_SI_01,0) AS D_SI_01,
+			   NVL(A.A_SI_02,0) - NVL(A.B_SI_02,0) - NVL(A.C_SI_02,0) AS D_SI_02,
+			   NVL(A.A_SI_03,0) - NVL(A.B_SI_03,0) - NVL(A.C_SI_03,0) AS D_SI_03,
+			   NVL(A.A_SI_04,0) - NVL(A.B_SI_04,0) - NVL(A.C_SI_04,0) AS D_SI_04,
+			   NVL(A.A_SI_05,0) - NVL(A.B_SI_05,0) - NVL(A.C_SI_05,0) AS D_SI_05,
+			   NVL(A.A_SI_06,0) - NVL(A.B_SI_06,0) - NVL(A.C_SI_06,0) AS D_SI_06,
+			   NVL(A.A_SI_07,0) - NVL(A.B_SI_07,0) - NVL(A.C_SI_07,0) AS D_SI_07,
+			   NVL(A.A_SI_08,0) - NVL(A.B_SI_08,0) - NVL(A.C_SI_08,0) AS D_SI_08,
+			   NVL(A.A_SI_09,0) - NVL(A.B_SI_09,0) - NVL(A.C_SI_09,0) AS D_SI_09,
+			   NVL(A.A_SI_10,0) - NVL(A.B_SI_10,0) - NVL(A.C_SI_10,0) AS D_SI_10,
+			   NVL(A.A_SI_11,0) - NVL(A.B_SI_11,0) - NVL(A.C_SI_11,0) AS D_SI_11,
+			   NVL(A.A_SI_12,0) - NVL(A.B_SI_12,0) - NVL(A.C_SI_12,0) AS D_SI_12,
+			   NVL(A.A_SI_13,0) - NVL(A.B_SI_13,0) - NVL(A.C_SI_13,0) AS D_SI_13,
+			   NVL(A.A_SI_14,0) - NVL(A.B_SI_14,0) - NVL(A.C_SI_14,0) AS D_SI_14,
+			   NVL(A.A_SI_15,0) - NVL(A.B_SI_15,0) - NVL(A.C_SI_15,0) AS D_SI_15,
+			   NVL(A.A_SI_16,0) - NVL(A.B_SI_16,0) - NVL(A.C_SI_16,0) AS D_SI_16,
+			   NVL(A.A_SI_17,0) - NVL(A.B_SI_17,0) - NVL(A.C_SI_17,0) AS D_SI_17,
+			   NVL(A.A_SI_18,0) - NVL(A.B_SI_18,0) - NVL(A.C_SI_18,0) AS D_SI_18,
+			   NVL(A.A_SI_19,0) - NVL(A.B_SI_19,0) - NVL(A.C_SI_19,0) AS D_SI_19,
+			   NVL(A.A_SI_20,0) - NVL(A.B_SI_20,0) - NVL(A.C_SI_20,0) AS D_SI_20,
+			   NVL(A.A_SI_21,0) - NVL(A.B_SI_21,0) - NVL(A.C_SI_21,0) AS D_SI_21,
+			   NVL(A.A_SI_22,0) - NVL(A.B_SI_22,0) - NVL(A.C_SI_22,0) AS D_SI_22
+		FROM
+		(SELECT *
+		FROM TEMP
+		PIVOT(
+		SUM(QTY)
+		FOR (STATUS,STOCK_ITEM)
+		IN(
+		    ('A','SI_01') A_SI_01 ,('A','SI_02') A_SI_02,('A','SI_03') A_SI_03,('A','SI_04') A_SI_04,('A','SI_05') A_SI_05,('A','SI_06') A_SI_06
+		   ,('A','SI_07') A_SI_07,('A','SI_08') A_SI_08, ('A','SI_09') A_SI_09,('A','SI_10') A_SI_10,('A','SI_11') A_SI_11,('A','SI_12') A_SI_12
+		   ,('A','SI_13') A_SI_13,('A','SI_14') A_SI_14, ('A','SI_15') A_SI_15, ('A','SI_16') A_SI_16, ('A','SI_17') A_SI_17, ('A','SI_18') A_SI_18
+		   ,('A','SI_19') A_SI_19,('A','SI_20') A_SI_20, ('A','SI_21') A_SI_21, ('A','SI_22') A_SI_22
+		   ,('B','SI_01') B_SI_01 ,('B','SI_02') B_SI_02,('B','SI_03') B_SI_03,('B','SI_04') B_SI_04,('B','SI_05') B_SI_05,('B','SI_06') B_SI_06
+		   ,('B','SI_07') B_SI_07,('B','SI_08') B_SI_08, ('B','SI_09') B_SI_09,('B','SI_10') B_SI_10,('B','SI_11') B_SI_11,('B','SI_12') B_SI_12
+		   ,('B','SI_13') B_SI_13,('B','SI_14') B_SI_14, ('B','SI_15') B_SI_15, ('B','SI_16') B_SI_16, ('B','SI_17') B_SI_17, ('B','SI_18') B_SI_18
+		   ,('B','SI_19') B_SI_19,('B','SI_20') B_SI_20, ('B','SI_21') B_SI_21, ('B','SI_22') B_SI_22
+		   ,('C','SI_01') C_SI_01 ,('C','SI_02') C_SI_02,('C','SI_03') C_SI_03,('C','SI_04') C_SI_04,('C','SI_05') C_SI_05,('C','SI_06') C_SI_06
+		   ,('C','SI_07') C_SI_07,('C','SI_08') C_SI_08, ('C','SI_09') C_SI_09,('C','SI_10') C_SI_10,('C','SI_11') C_SI_11,('C','SI_12') C_SI_12
+		   ,('C','SI_13') C_SI_13,('C','SI_14') C_SI_14, ('C','SI_15') C_SI_15, ('C','SI_16') C_SI_16, ('C','SI_17') C_SI_17, ('C','SI_18') C_SI_18
+		   ,('C','SI_19') C_SI_19,('C','SI_20') C_SI_20, ('C','SI_21') C_SI_21, ('C','SI_22') C_SI_22
+		)
+		)) A LEFT OUTER JOIN USER01TB U ON A.USER_ID = U.USER_ID 
+		ORDER BY U.USER_NAME   
+    </select>
+
+</mapper>

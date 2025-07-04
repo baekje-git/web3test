@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.certi">
+
+    <select id="selectAUTH_STAGE" parameterType="HashMap" resultType="HashMap">
+    /* CertiNumberMgmtMapper.xml -selectAUTH_STAGE -  CertiNumberMgmt.vue - 인증번호관리*/
+        <![CDATA[
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT  T1.AUTH_STAGE_SEQ
+                                ,T1.AUTH_STAGE_NO
+                                ,T1.AUTH_STAGE_NAME
+                                ,T1.USER_NAME AS REG_USER_NAME
+                                ,T1.USED_YN
+                                ,T1.USER_ID
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,TO_CHAR(T1.USED_DATE, 'YYYY-MM-DD HH24:MI:SS') AS USED_DATE
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    AUTH_STAGE T1
+                        WHERE   1 = 1
+                ]]>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'AUTH_STAGE_NO'">
+            <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+                AND   T1.AUTH_STAGE_NO = #{CONDITION_TEXT}
+  		    </if>
+  		</if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'AUTH_STAGE_NAME'">
+            <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+                AND   T1.AUTH_STAGE_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+  		    </if>
+  		</if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+            <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+                AND   T1.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+  		    </if>
+  		</if>
+        <![CDATA[
+                        ORDER BY T1.REG_DATE
+                        ) A
+                ORDER BY REG_DATE DESC
+        ]]>
+    </select>
+    <select id="selectAUTH_STAGEByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        SELECT	T1.AUTH_STAGE_SEQ
+                ,T1.AUTH_STAGE_NO
+                ,T1.AUTH_STAGE_NAME
+                ,T1.USER_NAME AS REG_USER_NAME
+                ,T1.USED_YN
+                ,T1.USER_ID
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,TO_CHAR(T1.USED_DATE, 'YYYY-MM-DD HH24:MI:SS') AS USED_DATE
+        FROM	AUTH_STAGE T1
+        WHERE	T1.AUTH_STAGE_SEQ = #{AUTH_STAGE_SEQ}
+        ]]>
+    </select>
+    
+    <update id="updateAUTH_STAGE" parameterType="hashMap">
+        <![CDATA[
+        UPDATE	AUTH_STAGE
+        SET		AUTH_STAGE_NO = #{AUTH_STAGE_NO}
+                ,AUTH_STAGE_NAME = #{AUTH_STAGE_NAME}
+                ,USER_NAME = #{REG_USER_NAME}
+                ,EDT_USER = #{EDT_USER}
+                ,EDT_DATE = SYSDATE
+        WHERE	AUTH_STAGE_SEQ = #{AUTH_STAGE_SEQ}
+        ]]>
+    </update>
+    
+    <insert id="insertAUTH_STAGE" parameterType="hashMap">
+        <![CDATA[
+        INSERT	INTO AUTH_STAGE
+                (
+                AUTH_STAGE_SEQ
+                ,AUTH_STAGE_NO
+                ,AUTH_STAGE_NAME
+                ,USER_NAME
+                ,REG_USER
+                ,REG_DATE
+                )
+        VALUES	(
+                SEQ_AUTH_STAGE.NEXTVAL
+                ,#{AUTH_STAGE_NO}
+                ,#{AUTH_STAGE_NAME}
+                ,#{REG_USER_NAME}
+                ,#{REG_USER}
+                ,SYSDATE
+                )
+        ]]>
+    </insert>
+    
+    <delete id="deleteAUTH_STAGE" parameterType="hashMap">
+        <![CDATA[
+        DELETE
+        FROM	AUTH_STAGE
+        WHERE	AUTH_STAGE_SEQ = #{AUTH_STAGE_SEQ}
+        ]]>
+    </delete>
+    </mapper>

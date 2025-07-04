@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.2//EN"
+        "http://java.sun.com/j2ee/dtd/web-jsptaglibrary_1_2.dtd">
+        
+<taglib>
+    <tlib-version>1.0</tlib-version>
+    <jsp-version>2.3</jsp-version>
+    <short-name>pop</short-name>
+    <description>custom tab library for the popup tag</description>
+    
+    <tag>
+        <name>cust</name>
+        <tag-class>ever.support.taglibs.PopupCustInfoTag</tag-class>
+        <attribute>
+            <name>pType</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업종류를 선택하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCode</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드ID를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pName</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description></description>
+        </attribute>
+        <attribute>
+            <name>pCallFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>호출하는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCallParam</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pCallFunc 호출시 인자값 없으면 this 로 설정됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pRetnFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>반횐받는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClearId</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>코드값변경시 초기화할 객체아이디를 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pReadOnly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업 활성화 여부를 입력하세요.</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>item</name>
+        <tag-class>ever.support.taglibs.PopupItemInfoTag</tag-class>
+        <attribute>
+            <name>pType</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업종류를 선택하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCode</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드ID를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pName</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description></description>
+        </attribute>
+        <attribute>
+            <name>pCallFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>호출하는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCallParam</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pCallFunc 호출시 인자값 없으면 this 로 설정됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pReturnFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>반횐받는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClearId</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>코드값변경시 초기화할 객체아이디를 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pReadOnly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업 활성화 여부를 입력하세요.</description>
+        </attribute>
+    </tag>
+    
+    <tag>
+        <name>open</name>
+        <tag-class>ever.support.taglibs.PopupOpenCmmnTag</tag-class>
+        <attribute>
+            <name>pType</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업종류를 선택하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCode</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드ID를 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pName</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>* 코드명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClass</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description></description>
+        </attribute>
+        <attribute>
+            <name>pCallFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>호출하는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pCallParam</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>pCallFunc 호출시 인자값 없으면 this 로 설정됩니다.</description>
+        </attribute>
+        <attribute>
+            <name>pReturnFunc</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>반횐받는 함수명을 입력하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pClearId</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>코드값변경시 초기화할 객체아이디를 설정하세요.</description>
+        </attribute>
+        <attribute>
+            <name>pReadOnly</name>
+            <required>false</required>
+            <rtexprvalue>true</rtexprvalue>
+            <description>팝업 활성화 여부를 입력하세요.</description>
+        </attribute>
+    </tag>
+    
+</taglib>

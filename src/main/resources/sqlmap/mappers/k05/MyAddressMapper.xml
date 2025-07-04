@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.myaddress">
+    <select id="selectMyAddress" parameterType="HashMap" resultType="HashMap">
+       /* k05.myaddress.selectMyAddress - 주소관리 조회 */
+		SELECT T.*, '' AS CHK
+		  FROM K05_MY_ADDRESS T
+		 WHERE T.USER_ID = #{USER_ID}
+		 <if test="ADDRESS != null and ADDRESS != ''">
+           AND ( T.ADDRESS LIKE '%' || #{ADDRESS} || '%' OR T.ADDRESS_DETAIL LIKE '%' || #{ADDRESS} || '%')
+         </if>
+		 ORDER BY T.SEQ DESC        
+       
+    </select>
+    
+    <insert id="insertMyAddress" parameterType="HashMap">
+	    <selectKey keyProperty="NEW_SEQ" resultType="int" order="BEFORE">
+	    SELECT NVL(MAX(SEQ) + 1,1) AS NEW_SEQ
+          FROM K05_MY_ADDRESS T
+         WHERE T.USER_ID = #{USER_ID}
+	    </selectKey>
+    
+       /* k05.myaddress.insertMyAddress - 주소관리 입력 */
+       INSERT INTO K05_MY_ADDRESS (USER_ID, SEQ, ADDRESS, ADDRESS_DETAIL, X, Y, ROAD_ADDRESS, PLACE_ID, REG_USER, REG_DATE)
+       VALUES (#{USER_ID}, #{NEW_SEQ}, #{ADDRESS}, #{ADDRESS_DETAIL}, #{X}, #{Y}, #{ROAD_ADDRESS}, #{PLACE_ID}, #{GSS.USER_ID}, SYSDATE)       
+    </insert>
+    
+    <update id="updateMyAddress" parameterType="HashMap">
+       /* k05.myaddress.updateMyAddress - 주소관리 수정 */
+        
+       UPDATE K05_MY_ADDRESS
+          SET ADDRESS = #{ADDRESS}, 
+              ADDRESS_DETAIL = #{ADDRESS_DETAIL}, 
+              X = #{X}, 
+              Y = #{Y},
+              ROAD_ADDRESS = #{ROAD_ADDRESS},
+              PLACE_ID = #{PLACE_ID},
+              EDT_USER = #{GSS.USER_ID},
+              EDT_DATE = SYSDATE
+        WHERE USER_ID = #{USER_ID}
+          AND SEQ = #{SEQ}  
+    </update>
+    
+    <delete id="deleteMyAddress" parameterType="HashMap">
+        /* k05.myaddress.deleteMyAddress - 주소관리 삭제 */
+        
+        DELETE FROM K05_MY_ADDRESS
+         WHERE USER_ID = #{USER_ID}
+           AND SEQ = #{SEQ}
+    </delete>
+    
+</mapper>

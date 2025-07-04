@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgi.in">
+   	<select id="selectFdgiInList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.in.selectFdgiInList (in.xml) */
+	SELECT SEQ							AS SEQ			/* SEQ */
+		  ,A.ITEM_CD					AS ITEM_CD    	/* 재료코드 */
+	      ,B.ITEM_NM					AS ITEM_NM    	/* 재료명 */
+	      ,A.LOT_NO						AS LOT_NO    	/* LOT NO */
+	      ,B.MANU_COM					AS MANU_COM    	/* 제조사 */
+	      ,A.QTY						AS QTY    		/* 수량 */
+	      ,C.TEST_NO					AS TEST_NO		/* 시험번호 */
+	      ,FN_FMT_DT(A.RECEIPT_DT)		AS RECEIPT_DT 	/* 입고일자 */
+	  FROM T_FDGI_IN A
+	  LEFT JOIN T_FDGI_MST B
+	    ON B.ITEM_CD = A.ITEM_CD
+	  LEFT JOIN T_FDGI_LOT C
+	    ON C.ITEM_CD = A.ITEM_CD
+	   AND C.LOT_NO = A.LOT_NO
+	 WHERE 1=1
+	   <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+       AND A.RECEIPT_DT BETWEEN REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+       </if>
+       <if test="ITEM_CD != null and ITEM_CD != ''">
+       AND B.ITEM_CD = #{ITEM_CD}
+       </if>
+       <if test="LOT_NO != null and LOT_NO != ''">
+       AND A.LOT_NO LIKE CONCAT('%',#{LOT_NO},'%')
+       </if>
+       <if test="TEST_NO != null and TEST_NO != ''">
+       AND C.TEST_NO LIKE CONCAT('%',#{TEST_NO},'%')
+       </if>
+	 ORDER BY A.RECEIPT_DT DESC, A.REG_DTM DESC
+    </select>
+    
+    <insert id="insertFdgiInData" parameterType="HashMap">
+    /* fdgi.in.insertFdgiInData (in.xml) */
+    INSERT INTO T_FDGI_IN (
+           SEQ         
+          ,LOT_NO
+          ,ITEM_CD
+          ,RECEIPT_DT
+          ,QTY
+          ,REG_ID
+          ,REG_DTM
+	      ,EDT_ID
+	      ,EDT_DTM
+    ) VALUES (
+           (SELECT IFNULL(MAX(SEQ+0) + 1, 1) FROM T_FDGI_IN A)
+          ,#{LOT_NO} 
+          ,#{ITEM_CD} 
+          ,REPLACE(#{RECEIPT_DT},'-','')
+          ,#{QTY}  
+          ,#{userData.USER_ID}
+          ,DEFAULT
+	      ,#{userData.USER_ID}
+	      ,DEFAULT
+    )
+    </insert>
+    
+    <update id="updateFdgiInData" parameterType="hashMap">
+    /* fdgi.in.updateFdgiInData (in.xml) */
+    UPDATE T_FDGI_IN
+       SET LOT_NO = #{LOT_NO}
+          ,ITEM_CD = #{ITEM_CD}
+          ,RECEIPT_DT = REPLACE(#{RECEIPT_DT},'-','')
+          ,QTY = #{QTY}
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+     WHERE SEQ = #{SEQ}
+	</update>
+    
+    <select id="selectFdgiInUseHisList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgi.in.selectFdgiInUseHisList (in.xml) */
+	SELECT FN_FMT_DT(A.RECEIPT_DT)		AS RECEIPT_DT 	/* 입고일자 */
+		  ,'입고'							AS STATUS		/* 상태 */
+		  ,A.ITEM_CD					AS ITEM_CD    	/* 재료코드 */
+	      ,B.ITEM_NM					AS ITEM_NM    	/* 재료명 */
+	      ,A.LOT_NO						AS LOT_NO    	/* LOT NO */
+	      ,A.QTY						AS IN_QTY    	/* 입고수량 */
+	      ,''							AS USE_QTY		/* 사용수량 */
+	      ,''							AS LOT_QTY		/* LOT재고 */
+	      ,''							AS MST_QTY		/* MST재고 */
+	  FROM T_FDGI_IN A
+	  LEFT JOIN T_FDGI_MST B
+	    ON B.ITEM_CD = A.ITEM_CD
+	 WHERE 1=1
+	   <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+       AND A.RECEIPT_DT between REPLACE(#{START_DATE},'-','') AND REPLACE(#{END_DATE},'-','')
+       </if>
+       <if test="ITEM_CD != null and ITEM_CD != ''">
+       AND A.ITEM_CD = #{ITEM_CD}
+       </if>
+	 ORDER BY A.RECEIPT_DT DESC, A.REG_DTM DESC, A.ITEM_CD
+    </select>
+</mapper>

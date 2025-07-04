@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.menu">
+    
+    <select id="selectUpperMenu" parameterType="HashMap" resultType="HashMap">
+		SELECT T.MENU_ID,
+		       T.MENU_NAME,
+		       T.MENU_SORT,
+		       T.USE_YN
+		FROM K99_MENU T
+		WHERE T.MENU_UPPER IS NULL    
+		ORDER BY T.MENU_SORT
+    </select>
+    
+    <insert id="insertUpperMenu" parameterType="HashMap">
+        INSERT INTO K99_MENU (MENU_ID, MENU_NAME, MENU_SORT, USE_YN, REG_DATE)
+        VALUES (#{MENU_ID}, #{MENU_NAME}, #{MENU_SORT}, #{USE_YN}, SYSDATE)
+    </insert>
+    
+    <update id="updateUpperMenu" parameterType="HashMap">
+        UPDATE K99_MENU
+          SET  MENU_NAME = #{MENU_NAME},               
+               MENU_SORT = #{MENU_SORT},
+               USE_YN = #{USE_YN},
+               REG_DATE = SYSDATE
+         WHERE MENU_ID = #{MENU_ID}    
+    </update>
+    
+    <select id="selectLowerMenu" parameterType="HashMap" resultType="HashMap">
+        SELECT T.MENU_ID,
+		       T.MENU_NAME,
+		       T.MENU_SORT,
+		       T.USE_YN,
+		       T.REG_DATE,
+		       T.MENU_UPPER,
+		       T.ROUTE_NAME
+        FROM K99_MENU T
+        WHERE T.MENU_UPPER = #{MENU_UPPTER}    
+        ORDER BY T.MENU_SORT
+    </select>
+    
+    <insert id="insertLowerMenu" parameterType="HashMap">
+        INSERT INTO K99_MENU (MENU_ID, MENU_NAME, MENU_SORT, USE_YN, REG_DATE, MENU_UPPER, ROUTE_NAME)
+        VALUES (#{MENU_ID}, #{MENU_NAME}, #{MENU_SORT}, #{USE_YN}, SYSDATE, #{MENU_UPPER}, #{ROUTE_NAME})
+    </insert>
+    
+    <update id="updateLowerMenu" parameterType="HashMap">
+        UPDATE K99_MENU
+          SET  MENU_NAME = #{MENU_NAME},               
+               MENU_SORT = #{MENU_SORT},
+               USE_YN = #{USE_YN},
+               REG_DATE = SYSDATE,               
+               ROUTE_NAME = #{ROUTE_NAME}
+         WHERE MENU_ID = #{MENU_ID}    
+    </update>
+    
+    <delete id="deleteLowerMenu" parameterType="HashMap">
+        DELETE FROM K99_MENU
+         WHERE MENU_ID = #{MENU_ID}  
+    </delete>
+    
+    <select id="selectMenuLocation" parameterType="HashMap" resultType="HashMap">
+        /* k99.menu.selectMenuLocation 메뉴경로 (MenuMapper.xml) */
+    
+		 SELECT M.MENU_ID,
+           M.MENU_NM,
+           M.MENU_SORT,
+           M.USE_YN,
+           M.REG_DATE,
+           M.MENU_UPPER,
+           M.ROUTE_NM
+     FROM Z_MENU M
+     WHERE 1=1
+     AND M.USE_YN = 'Y'     
+    </select>
+    
+</mapper>

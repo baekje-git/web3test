@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="modoc.ModocReciveData">
+    
+    <select id="selectUsers" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocReciveData.selectUsers - modoc 사용자 데이터 조회 */
+        
+        SELECT A.ID
+              ,A.FIRSTNAME
+              ,A.MIDDLENAME
+              ,A.LASTNAME
+              ,A.GENDER
+              ,A.EMAIL
+              ,A.PHONE
+              ,TO_CHAR(A.CREATEDAT,'YYYY-MM-DD HH24:MI:SS') AS CREATEDAT
+              ,TO_CHAR(A.MODIFIEDAT,'YYYY-MM-DD HH24:MI:SS') AS MODIFIEDAT
+              ,TO_CHAR(A.SYNCAT,'YYYY-MM-DD HH24:MI:SS') AS SYNCAT
+        FROM WUSERS A
+       WHERE 1=1
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+           AND  (A.FIRSTNAME LIKE '%'||#{CONDITION_TEXT}||'%' OR A.MIDDLENAME LIKE '%'||#{CONDITION_TEXT}||'%' OR A.LASTNAME LIKE '%'||#{CONDITION_TEXT}||'%')
+         </if>
+       ORDER BY A.ID
+    </select>
+    
+    <insert id="saveUsers" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocReciveData.saveUsers - modoc 사용자 데이터 수신 */
+        
+        MERGE INTO WUSERS A
+        USING DUAL
+              ON (A.ID = #{id})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET A.FIRSTNAME     = #{firstName}
+                    ,A.MIDDLENAME    = #{middleName}
+                    ,A.LASTNAME      = #{lastName}
+                    ,A.GENDER        = #{gender}
+                    ,A.EMAIL         = #{email}
+                    ,A.PHONE         = #{phone}
+                    ,A.CREATEDAT     = TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.MODIFIEDAT    = TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.SYNCAT        = SYSDATE
+         WHEN NOT MATCHED THEN
+              INSERT (
+                     A.ID
+                    ,A.FIRSTNAME
+                    ,A.MIDDLENAME
+                    ,A.LASTNAME
+                    ,A.GENDER
+                    ,A.EMAIL
+                    ,A.PHONE
+                    ,A.CREATEDAT
+                    ,A.MODIFIEDAT
+                    ,A.SYNCAT 
+                     )
+              VALUES (
+                     #{id}
+                    ,#{firstName}
+                    ,#{middleName}
+                    ,#{lastName}
+                    ,#{gender}
+                    ,#{email}
+                    ,#{phone}
+                    ,TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,SYSDATE
+                     )
+        ]]>
+    </insert>
+    
+    <select id="selectDcos" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocReciveData.selectDcos - modoc dcos 데이터 조회 */
+        
+        SELECT A.ID
+              ,A.FIRSTNAME
+              ,A.MIDDLENAME
+              ,A.LASTNAME
+              ,A.GENDER
+              ,A.EMAIL
+              ,A.PHONE
+              ,TO_CHAR(A.CREATEDAT,'YYYY-MM-DD HH24:MI:SS') AS CREATEDAT
+              ,TO_CHAR(A.MODIFIEDAT,'YYYY-MM-DD HH24:MI:SS') AS MODIFIEDAT
+              ,TO_CHAR(A.SYNCAT,'YYYY-MM-DD HH24:MI:SS') AS SYNCAT
+        FROM WDCOS A
+       WHERE 1=1
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+         AND  (A.FIRSTNAME LIKE '%'||#{CONDITION_TEXT}||'%' OR A.MIDDLENAME LIKE '%'||#{CONDITION_TEXT}||'%' OR A.LASTNAME LIKE '%'||#{CONDITION_TEXT}||'%')
+        </if>
+       ORDER BY A.ID
+    </select>
+    
+    <insert id="saveDcos" parameterType="HashMap">
+        <![CDATA[
+         /* modoc.ModocReciveData.saveDcos - modoc dcos 데이터 수신 */
+        
+        MERGE INTO WDCOS A
+        USING DUAL
+              ON (A.ID = #{id})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET A.FIRSTNAME     = #{firstName}
+                    ,A.MIDDLENAME    = #{middleName}
+                    ,A.LASTNAME      = #{lastName}
+                    ,A.GENDER        = #{gender}
+                    ,A.EMAIL         = #{email}
+                    ,A.PHONE         = #{phone}
+                    ,A.CREATEDAT     = TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.MODIFIEDAT    = TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.SYNCAT        = SYSDATE
+         WHEN NOT MATCHED THEN
+              INSERT (
+                     A.ID
+                    ,A.FIRSTNAME
+                    ,A.MIDDLENAME
+                    ,A.LASTNAME
+                    ,A.GENDER
+                    ,A.EMAIL
+                    ,A.PHONE
+                    ,A.CREATEDAT
+                    ,A.MODIFIEDAT
+                    ,A.SYNCAT 
+                     )
+              VALUES (
+                     #{id}
+                    ,#{firstName}
+                    ,#{middleName}
+                    ,#{lastName}
+                    ,#{gender}
+                    ,#{email}
+                    ,#{phone}
+                    ,TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,SYSDATE
+                     )
+        ]]>
+    </insert>
+    
+    <select id="selectSports" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocReciveData.selectSports - modoc 종목 데이터 조회 */
+        
+        SELECT A.ID
+              ,A.NAME              
+              ,TO_CHAR(A.CREATEDAT,'YYYY-MM-DD HH24:MI:SS') AS CREATEDAT
+              ,TO_CHAR(A.MODIFIEDAT,'YYYY-MM-DD HH24:MI:SS') AS MODIFIEDAT
+              ,TO_CHAR(A.SYNCAT,'YYYY-MM-DD HH24:MI:SS') AS SYNCAT
+        FROM WSPORTS A
+       WHERE 1=1
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+           AND A.NAME LIKE '%'||#{CONDITION_TEXT}||'%'
+         </if>        
+       ORDER BY A.ID
+    </select>
+    
+    <insert id="saveSports" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocReciveData.saveSports - modoc 종목 데이터 수신 */
+        
+        MERGE INTO WSPORTS A
+        USING DUAL
+              ON (A.ID = #{id})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET A.CODE          = #{code}
+                    ,A.NAME          = #{name}
+                    ,A.CREATEDAT     = TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.MODIFIEDAT    = TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.SYNCAT        = SYSDATE
+         WHEN NOT MATCHED THEN
+              INSERT (
+                     A.ID
+                    ,A.NAME
+                    ,A.CREATEDAT
+                    ,A.MODIFIEDAT
+                    ,A.SYNCAT 
+                     )
+              VALUES (
+                     #{id}
+                    ,#{name}
+                    ,TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,SYSDATE
+                     )
+        ]]>
+    </insert>
+    
+    <select id="selectSportDisciplines" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocReciveData.selectSportDisciplines - modoc 세부종목 데이터 조회 */
+        
+        SELECT A.SPORTSID 
+              ,P.NAME AS NAME2
+              ,A.ID
+              ,A.NAME              
+              ,TO_CHAR(A.CREATEDAT,'YYYY-MM-DD HH24:MI:SS') AS CREATEDAT
+              ,TO_CHAR(A.MODIFIEDAT,'YYYY-MM-DD HH24:MI:SS') AS MODIFIEDAT
+              ,TO_CHAR(A.SYNCAT,'YYYY-MM-DD HH24:MI:SS') AS SYNCAT
+        FROM WSPORT_DISCIPLINES A LEFT OUTER JOIN WSPORTS P ON A.SPORTSID = P.ID
+       WHERE 1=1
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+         AND (P.NAME LIKE '%'||#{CONDITION_TEXT}||'%' OR A.NAME LIKE '%'||#{CONDITION_TEXT}||'%')
+        </if>        
+       ORDER BY A.SPORTSID, A.ID 
+    </select>
+
+    <insert id="saveSportDisciplines" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocReciveData.saveSportDisciplines - modoc 세부종목 데이터 수신 */
+        
+        MERGE INTO WSPORT_DISCIPLINES A
+        USING DUAL
+              ON (A.ID = #{id})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET A.SPORTSID      = #{sportsId}
+                    ,A.CODE          = #{code}
+                    ,A.NAME          = #{name}
+                    ,A.CREATEDAT     = TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.MODIFIEDAT    = TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.SYNCAT        = SYSDATE
+         WHEN NOT MATCHED THEN
+              INSERT (
+                     A.SPORTSID
+                    ,A.ID
+                    ,A.NAME
+                    ,A.CREATEDAT
+                    ,A.MODIFIEDAT
+                    ,A.SYNCAT
+                     )
+              VALUES (
+                     #{sportsId}
+                    ,#{id}
+                    ,#{name}
+                    ,TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,SYSDATE
+                     )
+        ]]>
+    </insert>
+    
+    <select id="selectCountries" parameterType="HashMap" resultType="HashMap">
+        /* modoc.ModocReciveData.selectCountries - modoc 국가 데이터 조회 */
+        
+        SELECT A.ID,
+               A.CODE,
+               A.NAME,
+               A.NATIONALITY,
+               TO_CHAR(A.CREATEDAT,'YYYY-MM-DD HH24:MI:SS') AS CREATEDAT,
+               TO_CHAR(A.MODIFIEDAT,'YYYY-MM-DD HH24:MI:SS') AS MODIFIEDAT,
+               TO_CHAR(A.SYNCAT,'YYYY-MM-DD HH24:MI:SS') AS SYNCAT
+          FROM WCOUNTRIES A
+          WHERE 1=1
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+            AND (A.CODE LIKE '%'||#{CONDITION_TEXT}||'%' OR 
+                 A.NAME LIKE '%'||#{CONDITION_TEXT}||'%' OR
+                 A.NATIONALITY LIKE '%'||#{CONDITION_TEXT}||'%' )
+        </if>        
+          ORDER BY A.ID 
+    </select>
+    
+    <insert id="saveCountries" parameterType="HashMap">
+        <![CDATA[
+        /* modoc.ModocReciveData.saveCountries - modoc 국가 데이터 수신 */
+        
+        MERGE INTO WCOUNTRIES A
+        USING DUAL
+              ON (A.ID = #{id})
+         WHEN MATCHED THEN
+              UPDATE
+                 SET A.CODE          = #{code}
+                    ,A.NAME          = #{name}
+                    ,A.NATIONALITY   = #{nationality}
+                    ,A.CREATEDAT     = TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.MODIFIEDAT    = TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,A.SYNCAT        = SYSDATE
+         WHEN NOT MATCHED THEN
+              INSERT (
+                     A.ID
+                    ,A.NAME
+                    ,A.NATIONALITY
+                    ,A.CREATEDAT
+                    ,A.MODIFIEDAT
+                    ,A.SYNCAT
+                     )
+              VALUES (
+                     #{id}
+                    ,#{name}
+                    ,#{nationality}
+                    ,TO_DATE(#{createdAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,TO_DATE(#{modifiedAt},'YYYY-MM-DD HH24:MI:SS')
+                    ,SYSDATE
+                     )
+        ]]>
+    </insert>
+    
+</mapper>

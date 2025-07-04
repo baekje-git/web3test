@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="pmntItem">
+    <select id="selectPmntItemCount" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* ordLedger.selectPmntItemCount 품목수불 카운트 */
+        SELECT CAST(IFNULL(COUNT(1), 0) AS VARCHAR(20)) AS CNT
+             , CAST(IFNULL(SUM(A.TOTAL_AMT), 0) AS VARCHAR(20)) AS TOTAL_AMT
+          FROM V_SALE_DTL A
+         WHERE A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+           AND A.CUST_CD = #{custCd}
+        <if test="itemNm != null and itemNm !=''">
+            <bind name="itemNm" value='"%" + itemNm + "%"'/>
+            AND A.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test="bohumCd != null and bohumCd !=''">
+            <bind name="bohumCd" value='"%" + bohumCd + "%"'/>
+            AND A.BOHUM_CD LIKE #{bohumCd}
+        </if>
+        <if test="makerNm != null and makerNm !=''">
+            <bind name="makerNm" value='"%" + makerNm + "%"'/>
+            AND A.MAKER_NM LIKE #{makerNm}
+        </if>
+        
+        <if test='searchAll == "N"'>
+            <if test='professionalYn == "N" and generalYn == "Y"'>
+                AND A.MED_CD = '01'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "N"'>
+                AND A.MED_CD = '02'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "Y"'>      -- (추가) 일반, 전문 모두체크
+                AND A.MED_CD in ( '01','02')
+            </if>
+            <if test='paymentYn == "N" and nonPaymentYn == "Y"'>   -- 비급여
+                AND A.PAY_ITEM_YN = 'N'
+            </if>
+            <if test='paymentYn == "Y" and nonPaymentYn == "N"'>   -- 급여
+                AND A.PAY_ITEM_YN = 'Y'
+            </if>
+       <if test='paymentYn == "Y" and nonPaymentYn == "Y"'>   -- (추가) 급여,비급여 모두체크
+                AND A.PAY_ITEM_YN in ('Y','N')
+            </if>
+       <if test='nonVatYn == "Y"'>                  -- 비과세
+                AND A.VAT_YN = 'N'
+            </if>
+            <if test='nonVatYn == "N"'>                  -- 과세
+                AND A.VAT_YN = 'Y'
+            </if>
+        <if test='discountYn == "Y"'>                  -- 수금할인 Y
+                AND A.ORD_TYPE_CD = '91'
+            </if>
+            <if test='discountYn == "N"'>               -- 수금할인 N
+                AND A.ORD_TYPE_CD != '91'
+            </if>
+        </if>
+        
+        <!--  
+        <if test='searchAll == "N"'>
+            <if test='professionalYn == "N" and generalYn == "Y"'>
+                AND A.MED_CD = '01'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "N"'>
+                AND A.MED_CD = '02'
+            </if>
+            <if test='paymentYn == "N" and nonPaymentYn == "Y"'>
+                AND A.PAY_ITEM_YN = 'N'
+            </if>
+            <if test='paymentYn == "Y" and nonPaymentYn == "N"'>
+                AND A.PAY_ITEM_YN = 'Y'
+            </if>
+            <if test='nonVatYn == "Y"'>
+                AND A.VAT_YN = 'N'
+            </if>
+            <if test='nonVatYn == "N"'>
+                AND A.VAT_YN = 'Y'
+            </if>
+            <if test='discountYn == "Y"'>
+                AND A.ORD_TYPE_CD = '91'
+            </if>
+            <if test='discountYn == "N"'>
+                AND A.ORD_TYPE_CD != '91'
+            </if>
+        </if>
+        -->
+    </select>
+
+    <select id="selectPmntItemList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* pmntItem.selectPmntItemList 품목수불 리스트 */
+        SELECT SUBSTRING(A.SALE_DT,1,6) APRV_YM                                       --승인년월
+              , A.SALE_DT AS APRV_DT                                                    --일자
+              , F_S_FORMAT(A.SALE_DT,'YYYY.MM.DD') AS APRV_DT_FM                        --일자
+              , A.APRV_TM                                                               --승인시간
+              , A.APRV_NO                                                               --번호
+              , A.GUBUN_NM AS TYPE_NM                                                   --종류
+              , A.ITEM_NM_UNIT                                                          --적요
+              , A.SUPPLY_AMT
+              , A.ORD_WP2_AMT                                                           -- 단가
+              , A.BOHUM_CD                                                              -- 보험코드
+              , A.ITEM_PYOJUN_CD                                                        -- 표준코드
+              , A.ITEM_QTY                                                              -- 수량
+              , A.VAT_AMT
+              , A.TOTAL_AMT AS SALE_AMT                                                 --판매금액
+              , 0 PAY_AMT                                                               --입금액
+              , '' OM_TYPE_NM                                                           --어음종류
+              , '' OM_EXP_DT                                                            --어음만기일
+              , '' OM_NO                                                                --어음번호
+              , A.BANKBOOK_PRN_DT AS TONGPRN_DT                                        --통장발행일
+              , 'ORD' AS GUBUN
+              , A.BALANCE_A_AMT AS BALANCE_CALC
+              , A.SN
+              , A.SNO
+              , SUBSTRING(A.SALE_DT,1,6) AS APRV_MONTH
+              , A.BALANCE_A_AMT AS BALANCE_A_AMT
+              , A.ORD_TYPE_NM
+              , A.ORD_MEMO
+              , A.DLV_ST_CD
+              , IFNULL(A.EXP_DT,'')         AS EXP_DT
+              , IFNULL(A.PROD_NO,'')        AS PROD_NO
+              , IFNULL(A.SERIAL_NO,'')      AS SERIAL_NO
+              , A.MAKER_NM
+              , SUBSTRING(A.PAY_ITEM_NM, 1, 1) AS PAY_ITEM_NM
+              , SUBSTRING(A.MED_NM, 1,1)     AS MED_NM
+              , A.SALE_DT || A.APRV_NO || A.SN || A.SNO AS SEQ
+              , CASE WHEN IFNULL(A.EXP_DT,'') = '' OR IFNULL(A.PROD_NO,'') = '' THEN 'N'
+                ELSE 'Y'
+                END AS EXP_YN
+          FROM V_SALE_DTL A
+         WHERE A.SALE_DT BETWEEN #{startDt} AND #{endDt}
+           AND A.CUST_CD = #{custCd}
+        <if test="itemNm != null and itemNm !=''">
+            <bind name="itemNm" value='"%" + itemNm + "%"'/>
+            AND A.ITEM_NM LIKE #{itemNm}
+        </if>
+        <if test="bohumCd != null and bohumCd !=''">
+            <bind name="bohumCd" value='"%" + bohumCd + "%"'/>
+            AND A.BOHUM_CD LIKE #{bohumCd}
+        </if>
+        <if test="makerNm != null and makerNm !=''">
+            <bind name="makerNm" value='"%" + makerNm + "%"'/>
+            AND A.MAKER_NM LIKE #{makerNm}
+        </if>
+        <if test="gubunNm != null and gubunNm !=''">
+            <bind name="makerNm" value='"%" + makerNm + "%"'/>
+            AND A.GUBUN_NM LIKE #{gubunNm}
+        </if>
+        
+        <if test='searchAll == "N"'>
+            <if test='professionalYn == "N" and generalYn == "Y"'>
+                AND A.MED_CD = '01'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "N"'>
+                AND A.MED_CD = '02'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "Y"'>      -- (추가) 일반, 전문 모두체크
+                AND A.MED_CD in ( '01','02')
+            </if>
+            <if test='paymentYn == "N" and nonPaymentYn == "Y"'>   -- 비급여
+                AND A.PAY_ITEM_YN = 'N'
+            </if>
+            <if test='paymentYn == "Y" and nonPaymentYn == "N"'>   -- 급여
+                AND A.PAY_ITEM_YN = 'Y'
+            </if>
+            <if test='paymentYn == "Y" and nonPaymentYn == "Y"'>   -- (추가) 급여,비급여 모두체크
+                AND A.PAY_ITEM_YN in ('Y','N')
+            </if>
+             <if test='nonVatYn == "Y"'>                  -- 비과세
+                AND A.VAT_YN = 'N'
+            </if>
+            <if test='nonVatYn == "N"'>                  -- 과세
+                AND A.VAT_YN = 'Y'
+            </if>
+             <if test='discountYn == "Y"'>                  -- 수금할인 Y
+                AND A.ORD_TYPE_CD = '91'
+            </if>
+            <if test='discountYn == "N"'>               -- 수금할인 N
+                AND A.ORD_TYPE_CD != '91'
+            </if>
+        </if>
+        
+        
+        <!--  
+        <if test='searchAll == "N"'>
+            <if test='professionalYn == "N" and generalYn == "Y"'>
+                AND A.MED_CD = '01'
+            </if>
+            <if test='professionalYn == "Y" and generalYn == "N"'>
+                AND A.MED_CD = '02'
+            </if>
+            <if test='paymentYn == "N" and nonPaymentYn == "Y"'>
+                AND A.PAY_ITEM_YN = 'N'
+            </if>
+            <if test='paymentYn == "Y" and nonPaymentYn == "N"'>
+                AND A.PAY_ITEM_YN = 'Y'
+            </if>
+            <if test='nonVatYn == "Y"'>
+                AND A.VAT_YN = 'N'
+            </if>
+            <if test='nonVatYn == "N"'>
+                AND A.VAT_YN = 'Y'
+            </if>
+            <if test='discountYn == "Y"'>
+                AND A.ORD_TYPE_CD = '91'
+            </if>
+            <if test='discountYn == "N"'>
+                AND A.ORD_TYPE_CD != '91'
+            </if>
+        </if>
+        -->
+        <!--  
+        ORDER BY APRV_DT DESC, APRV_TM DESC, SN ASC
+        -->
+          
+        ORDER BY
+        <if test='sortType == "R"'>
+            APRV_DT DESC,
+        </if>
+        <if test='sortType == "P"'>
+            APRV_DT ASC,
+        </if>
+        <if test='sortType == "Web"'>
+            APRV_DT DESC,
+        </if> 
+        APRV_TM DESC, SN ASC
+        <!-- LIMIT #{PAGE_PER_CNT} OFFSET #{PAGE_OFFSET_CNT} -->
+    </select>
+
+    <select id="selectPmntItemDtlListPop" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* pmntItem.selectPmntItemDtlListPop 품목수불 상세리스트(유/제) */
+        SELECT
+               CASE WHEN LENGTH(A.EXP_DT) > '8' THEN REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')
+               WHEN LENGTH(REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')) = '6' THEN '20'||REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')
+               ELSE A.EXP_DT END AS EXP_DT
+              , A.SERIAL_NO
+              , A.PROD_NO
+              , A.ITEM_QTY
+              , '출고' AS SORT
+         FROM T_SALE_SERIAL A
+        WHERE 1=1
+         AND A.SN = #{sn}
+         AND A.SNO = #{sno}
+        UNION ALL
+        SELECT
+               CASE WHEN LENGTH(A.EXP_DT) > '8' THEN REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')
+               WHEN LENGTH(REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')) = '6' THEN '20'||REPLACE(REPLACE(A.EXP_DT,'-',''),'.','')
+               ELSE A.EXP_DT END AS EXP_DT
+              , A.SERIAL_NO
+              , A.PROD_NO
+              , A.ITEM_QTY
+              , '출고반품' AS SORT
+         FROM T_SALEBACK_SERIAL A
+        WHERE 1=1
+         AND A.SN = #{sn}
+         AND A.SNO = #{sno}
+    </select>
+</mapper>

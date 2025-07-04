@@ -1,0 +1,1425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.AppDetail">
+    <select id="selectMY_STOCK_STATUS" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 아래 오른쪽 그리드- MyAppDetail.vue */
+		WITH TEMP AS (
+		SELECT SH.STOCK_ITEM,SH.STATUS,         
+		       CASE SH.STATUS        
+		       WHEN 'SEC_03' THEN QTY --정기
+		       WHEN 'SEC_04' THEN QTY --요청  
+		       WHEN 'SEC_05' THEN QTY --사용
+		       WHEN 'SEC_06' THEN QTY --반납              
+		       ELSE 0 END QTY
+		FROM STOCK_HISTORY SH
+		WHERE SH.USER_ID = #{USER_ID}
+		)
+		SELECT D.STOCK_ITEM,
+		       D.STOCK_NM,
+		       D.STOCK_CATE,
+		       NVL(A.SEC_03,0) AS SEC_03,
+		       NVL(A.SEC_04,0) AS SEC_04,
+		       NVL(A.SEC_05,0) AS SEC_05,
+		       NVL(A.SEC_06,0) AS SEC_06,
+		       NVL(A.SEC_03,0) + NVL(A.SEC_04,0) - NVL(A.SEC_05,0) - NVL(A.SEC_06,0) AS SEC_07 --보유
+		FROM 
+		(SELECT D1.DTL_CODE AS STOCK_ITEM,
+		       D1.CODE_NAME AS STOCK_NM,
+		       D1.SORT_ORDER,
+		       D2.CODE_NAME AS STOCK_CATE 
+		FROM
+		(SELECT D.DTL_CODE,D.CODE_NAME,D.SORT_ORDER,D.OPTION1
+		FROM CODE01TB D 
+		WHERE D.MST_CODE = 'SAMPLE_ITEM') D1 JOIN 
+		(SELECT D.DTL_CODE,D.CODE_NAME
+		FROM CODE01TB D
+		WHERE D.MST_CODE = 'SAMPLE_CATE') D2 ON D1.OPTION1 = D2.DTL_CODE) D LEFT OUTER JOIN
+		(SELECT *
+		FROM TEMP
+		PIVOT(
+		SUM(QTY)
+		FOR STATUS
+		IN ('SEC_03' AS SEC_03,'SEC_04' AS SEC_04,'SEC_05' AS SEC_05,'SEC_06' AS SEC_06)
+		)) A ON D.STOCK_ITEM = A.STOCK_ITEM 
+		ORDER BY D.SORT_ORDER
+    </select>
+    
+    <select id="selectInspectorPopup" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 검사관 신청팝업- selectInspectorPopup - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  ROWNUM AS LIST_SEQUENCE
+                        ,A.*
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.CHOOSE_DCO_YN
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+    <select id="selectInspectorPopupCnt" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 검사관 신청팝업 Cnt- selectInspectorPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  COUNT(*) AS ALL_CNT
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.CHOOSE_DCO_YN
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+  <select id="selectInspectorSelectPopup" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 검사관 선정팝업- selectInspectorSelectPopup - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  ROWNUM AS LIST_SEQUENCE
+                        ,A.*
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.CHOOSE_DCO_YN
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+                        AND     T2.CHOOSE_DCO_YN = 'Y'
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+    
+  <select id="selectInspectorSelectPopupCnt" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 검사관 선정팝업 Cnt- selectInspectorSelectPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  COUNT(*) AS ALL_CNT
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.CHOOSE_DCO_YN
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+                        AND     T2.CHOOSE_DCO_YN = 'Y'
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+    
+    <select id="selectExpertPopup" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 전문강사신청 팝업- selectExpertPopup - MyAppDetail.vue */
+        <![CDATA[
+              		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT  T1.EDNT_NO
+                                ,T1.EDNT_NAME
+                                ,T1.EDNT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE' AND DTL_CODE = T1.EDNT_TYPE) AS EDNT_TYPE_NAME
+                                ,T1.EDNT_TYPE2
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE2' AND DTL_CODE = T1.EDNT_TYPE2) AS EDNT_TYPE2_NAME
+                                ,T1.EDNT_TYPE3
+                				,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE3' AND DTL_CODE = T1.EDNT_TYPE3) AS EDNT_TYPE3_NAME
+                                ,T1.EDNT_DATE
+                                ,T1.EDNT_TIME
+                                ,T1.EDNT_TARGET_CODE
+                                ,T2.EDNT_TARGET_NAME
+                                ,T1.EDNT_PLACE_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.EDNT_PLACE_TYPE) AS EDNT_PLACE_TYPE_NAME
+                                ,T1.EDNT_PROVINCE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.EDNT_PROVINCE_CODE) AS EDNT_PROVINCE_NAME
+                                ,T1.EDNT_PLACE_DETAIL
+                                ,T1.EDNT_PLACE_ZIPCODE
+                                ,T1.EDNT_PLACE_ADDRESS
+                                ,T1.EDNT_PLACE_NEWADDRESS
+                                ,T1.EDNT_PLACE_PHONE
+                                ,T1.EDNT_PLACE_LATITUDE
+                                ,T1.EDNT_PLACE_LONGITUDE
+                                ,T1.EDNT_TEACHER_COUNT
+                                ,T1.EDNT_DONE_DATE
+                                ,T1.EDNT_CHARGER_ID
+                                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.EDNT_CHARGER_ID) AS EDNT_CHARGER_NAME
+                                ,T1.EDNT_INDICATION
+                                ,T1.EDNT_REMARK
+                                ,T1.USE_YN
+                                ,T1.MEMO
+                                ,T1.CHOOSE_DONE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                --,ISNULL((SELECT COUNT(1)FROM IPNT04TB WHERE IPNT_NO = T1.IPNT_NO), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    EDNT01TB T1
+                                ,(
+                                SELECT  A.EDNT_NO
+                                        ,TO_CHAR(WM_CONCAT((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TARGET_CODE' AND DTL_CODE = A.EDNT_TARGET_CODE) || '(' || A.EDNT_STUDENT_COUNT || '명)')) AS EDNT_TARGET_NAME
+                                FROM    EDNT04TB A
+                                GROUP BY A.EDNT_NO
+                                ) T2
+                                ,EDNT02TB T3
+                        WHERE   T1.EDNT_NO = T2.EDNT_NO
+                        AND     T1.EDNT_NO = T3.EDNT_NO
+                        AND     T3.USER_ID = #{USER_ID}
+                        AND	  T1.EDNT_DATE LIKE #{EDNT_YEAR} || '%'
+                        ]]>
+	            	
+                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                    AND   T1.EDNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NO'">
+                    AND   UPPER(T1.EDNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NAME'">
+                    AND   UPPER(T1.EDNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_PLACE_DETAIL'">
+                    AND   UPPER(T1.EDNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <![CDATA[
+                        ORDER BY T1.EDNT_DATE,T1.REG_DATE
+                        ) A
+        ]]>
+    </select>
+    
+    <select id="selectExpertPopupCnt" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 전문강사신청 팝업- selectExpertPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  COUNT(*) AS ALL_CNT
+        		FROM	(
+                        SELECT  T1.EDNT_NO
+                                ,T1.EDNT_NAME
+                                ,T1.EDNT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE' AND DTL_CODE = T1.EDNT_TYPE) AS EDNT_TYPE_NAME
+                                ,T1.EDNT_TYPE2
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE2' AND DTL_CODE = T1.EDNT_TYPE2) AS EDNT_TYPE2_NAME
+                                ,T1.EDNT_TYPE3
+                				,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE3' AND DTL_CODE = T1.EDNT_TYPE3) AS EDNT_TYPE3_NAME
+                                ,T1.EDNT_DATE
+                                ,T1.EDNT_TIME
+                                ,T1.EDNT_TARGET_CODE
+                                ,T2.EDNT_TARGET_NAME
+                                ,T1.EDNT_PLACE_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.EDNT_PLACE_TYPE) AS EDNT_PLACE_TYPE_NAME
+                                ,T1.EDNT_PROVINCE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.EDNT_PROVINCE_CODE) AS EDNT_PROVINCE_NAME
+                                ,T1.EDNT_PLACE_DETAIL
+                                ,T1.EDNT_PLACE_ZIPCODE
+                                ,T1.EDNT_PLACE_ADDRESS
+                                ,T1.EDNT_PLACE_NEWADDRESS
+                                ,T1.EDNT_PLACE_PHONE
+                                ,T1.EDNT_PLACE_LATITUDE
+                                ,T1.EDNT_PLACE_LONGITUDE
+                                ,T1.EDNT_TEACHER_COUNT
+                                ,T1.EDNT_DONE_DATE
+                                ,T1.EDNT_CHARGER_ID
+                                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.EDNT_CHARGER_ID) AS EDNT_CHARGER_NAME
+                                ,T1.EDNT_INDICATION
+                                ,T1.EDNT_REMARK
+                                ,T1.USE_YN
+                                ,T1.MEMO
+                                ,T1.CHOOSE_DONE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                --,ISNULL((SELECT COUNT(1)FROM IPNT04TB WHERE IPNT_NO = T1.IPNT_NO), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    EDNT01TB T1
+                                ,(
+                                SELECT  A.EDNT_NO
+                                        ,TO_CHAR(WM_CONCAT((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TARGET_CODE' AND DTL_CODE = A.EDNT_TARGET_CODE) || '(' || A.EDNT_STUDENT_COUNT || '명)')) AS EDNT_TARGET_NAME
+                                FROM    EDNT04TB A
+                                GROUP BY A.EDNT_NO
+                                ) T2
+                                ,EDNT02TB T3
+                        WHERE   T1.EDNT_NO = T2.EDNT_NO
+                        AND     T1.EDNT_NO = T3.EDNT_NO
+                        AND     T3.USER_ID = #{USER_ID}
+                        AND	  T1.EDNT_DATE LIKE #{EDNT_YEAR} || '%'
+                        ]]>
+	            	
+                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                    AND   T1.EDNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NO'">
+                    AND   UPPER(T1.EDNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NAME'">
+                    AND   UPPER(T1.EDNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_PLACE_DETAIL'">
+                    AND   UPPER(T1.EDNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <![CDATA[
+                        ORDER BY T1.EDNT_DATE,T1.REG_DATE
+                        ) A
+        ]]>
+    </select>
+    
+    <select id="selectExpertSelectPopup" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 전문강사선정 팝업- selectExpertPopup - MyAppDetail.vue */
+        <![CDATA[
+              		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT  T1.EDNT_NO
+                                ,T1.EDNT_NAME
+                                ,T1.EDNT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE' AND DTL_CODE = T1.EDNT_TYPE) AS EDNT_TYPE_NAME
+                                ,T1.EDNT_TYPE2
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE2' AND DTL_CODE = T1.EDNT_TYPE2) AS EDNT_TYPE2_NAME
+                                ,T1.EDNT_TYPE3
+                				,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE3' AND DTL_CODE = T1.EDNT_TYPE3) AS EDNT_TYPE3_NAME
+                                ,T1.EDNT_DATE
+                                ,T1.EDNT_TIME
+                                ,T1.EDNT_TARGET_CODE
+                                ,T2.EDNT_TARGET_NAME
+                                ,T1.EDNT_PLACE_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.EDNT_PLACE_TYPE) AS EDNT_PLACE_TYPE_NAME
+                                ,T1.EDNT_PROVINCE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.EDNT_PROVINCE_CODE) AS EDNT_PROVINCE_NAME
+                                ,T1.EDNT_PLACE_DETAIL
+                                ,T1.EDNT_PLACE_ZIPCODE
+                                ,T1.EDNT_PLACE_ADDRESS
+                                ,T1.EDNT_PLACE_NEWADDRESS
+                                ,T1.EDNT_PLACE_PHONE
+                                ,T1.EDNT_PLACE_LATITUDE
+                                ,T1.EDNT_PLACE_LONGITUDE
+                                ,T1.EDNT_TEACHER_COUNT
+                                ,T1.EDNT_DONE_DATE
+                                ,T1.EDNT_CHARGER_ID
+                                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.EDNT_CHARGER_ID) AS EDNT_CHARGER_NAME
+                                ,T1.EDNT_INDICATION
+                                ,T1.EDNT_REMARK
+                                ,T1.USE_YN
+                                ,T1.MEMO
+                                ,T1.CHOOSE_DONE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                --,ISNULL((SELECT COUNT(1)FROM IPNT04TB WHERE IPNT_NO = T1.IPNT_NO), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    EDNT01TB T1
+                                ,(
+                                SELECT  A.EDNT_NO
+                                        ,TO_CHAR(WM_CONCAT((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TARGET_CODE' AND DTL_CODE = A.EDNT_TARGET_CODE) || '(' || A.EDNT_STUDENT_COUNT || '명)')) AS EDNT_TARGET_NAME
+                                FROM    EDNT04TB A
+                                GROUP BY A.EDNT_NO
+                                ) T2
+                                ,EDNT02TB T3
+                        WHERE   T1.EDNT_NO = T2.EDNT_NO
+                        AND     T1.EDNT_NO = T3.EDNT_NO
+                        AND     T3.USER_ID = #{USER_ID}
+                        AND     T1.CHOOSE_DONE_YN = 'Y'
+                        AND	  T1.EDNT_DATE LIKE #{EDNT_YEAR} || '%'
+                        ]]>
+	            	
+                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                    AND   T1.EDNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NO'">
+                    AND   UPPER(T1.EDNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NAME'">
+                    AND   UPPER(T1.EDNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_PLACE_DETAIL'">
+                    AND   UPPER(T1.EDNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <![CDATA[
+                        ORDER BY T1.EDNT_DATE,T1.REG_DATE
+                        ) A
+        ]]>
+    </select>
+    
+ <select id="selectExpertSelectPopupCnt" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 전문강사선정 팝업Cnt- selectExpertSelectPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  COUNT(*) AS ALL_CNT
+        		FROM	(
+                        SELECT  T1.EDNT_NO
+                                ,T1.EDNT_NAME
+                                ,T1.EDNT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE' AND DTL_CODE = T1.EDNT_TYPE) AS EDNT_TYPE_NAME
+                                ,T1.EDNT_TYPE2
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE2' AND DTL_CODE = T1.EDNT_TYPE2) AS EDNT_TYPE2_NAME
+                                ,T1.EDNT_TYPE3
+                				,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TYPE3' AND DTL_CODE = T1.EDNT_TYPE3) AS EDNT_TYPE3_NAME
+                                ,T1.EDNT_DATE
+                                ,T1.EDNT_TIME
+                                ,T1.EDNT_TARGET_CODE
+                                ,T2.EDNT_TARGET_NAME
+                                ,T1.EDNT_PLACE_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.EDNT_PLACE_TYPE) AS EDNT_PLACE_TYPE_NAME
+                                ,T1.EDNT_PROVINCE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.EDNT_PROVINCE_CODE) AS EDNT_PROVINCE_NAME
+                                ,T1.EDNT_PLACE_DETAIL
+                                ,T1.EDNT_PLACE_ZIPCODE
+                                ,T1.EDNT_PLACE_ADDRESS
+                                ,T1.EDNT_PLACE_NEWADDRESS
+                                ,T1.EDNT_PLACE_PHONE
+                                ,T1.EDNT_PLACE_LATITUDE
+                                ,T1.EDNT_PLACE_LONGITUDE
+                                ,T1.EDNT_TEACHER_COUNT
+                                ,T1.EDNT_DONE_DATE
+                                ,T1.EDNT_CHARGER_ID
+                                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.EDNT_CHARGER_ID) AS EDNT_CHARGER_NAME
+                                ,T1.EDNT_INDICATION
+                                ,T1.EDNT_REMARK
+                                ,T1.USE_YN
+                                ,T1.MEMO
+                                ,T1.CHOOSE_DONE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                --,ISNULL((SELECT COUNT(1)FROM IPNT04TB WHERE IPNT_NO = T1.IPNT_NO), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM    EDNT01TB T1
+                                ,(
+                                SELECT  A.EDNT_NO
+                                        ,TO_CHAR(WM_CONCAT((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EDNT_TARGET_CODE' AND DTL_CODE = A.EDNT_TARGET_CODE) || '(' || A.EDNT_STUDENT_COUNT || '명)')) AS EDNT_TARGET_NAME
+                                FROM    EDNT04TB A
+                                GROUP BY A.EDNT_NO
+                                ) T2
+                                ,EDNT02TB T3
+                        WHERE   T1.EDNT_NO = T2.EDNT_NO
+                        AND     T1.EDNT_NO = T3.EDNT_NO
+                        AND     T3.USER_ID = #{USER_ID}
+                        AND     T1.CHOOSE_DONE_YN = 'Y'
+                        AND	  T1.EDNT_DATE LIKE #{EDNT_YEAR} || '%'
+                        ]]>
+	            	
+                <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                    AND   T1.EDNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NO'">
+                    AND   UPPER(T1.EDNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_NAME'">
+                    AND   UPPER(T1.EDNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'EDNT_PLACE_DETAIL'">
+                    AND   UPPER(T1.EDNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+                </if>
+                <![CDATA[
+                        ORDER BY T1.EDNT_DATE,T1.REG_DATE
+                        ) A
+        ]]>
+    </select>
+    
+  <select id="selectBCODCOPopup" parameterType="HashMap" resultType="HashMap">
+  /* k05.MyAppDetailMapper.xml - 나의 BCO/DCO팝업- selectBCODCOPopup - MyAppDetail.vue */
+        <![CDATA[
+                SELECT  ROWNUM AS LIST_SEQUENCE
+                        ,A.*
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T1.IPNT_NO
+                                ,CHOOSE_DCO_YN
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+                        AND     CHOOSE_DCO_YN = 'Y'
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+    
+  <select id="selectBCODCOPopupCnt" parameterType="HashMap" resultType="HashMap">
+  /* k05.MyAppDetailMapper.xml - 나의 BCO/DCO팝업Cnt- selectBCODCOPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+				SELECT  COUNT(*) AS ALL_CNT
+                FROM    (
+                        SELECT  T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T1.IPNT_NO
+                                ,CHOOSE_DCO_YN
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,SUBSTR(T1.IPNT_PLACE_ADDRESS, 0, INSTR(T1.IPNT_PLACE_ADDRESS, ' ', 1, 2)) AS ADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.MIN_IPNT_DATE AS IPNT_DATE
+                                ,T1.MAX_IPNT_DATE AS IPNT_TIME
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,T1.CHOOSE_DONE_YN
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                                ,(SELECT COUNT(1) FROM IPNT07TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ) AS COUNT_PEOPLE
+                        FROM    (
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T2.MIN_IPNT_DATE
+                                        ,T2.MAX_IPNT_DATE
+                                        ,T2.IPNT_DCO
+                                        ,T2.IPNT_DCO_F
+                                        ,T2.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                        ,(
+                                        SELECT  A.GAME_CODE
+                                                ,MIN(A.IPNT_UPPER_SEQ) AS IPNT_UPPER_SEQ
+                                                ,MIN(A.IPNT_DATE || A.IPNT_TIME) AS MIN_IPNT_DATE
+                                                ,MAX(A.IPNT_DATE || A.IPNT_TIME) AS MAX_IPNT_DATE
+                                                ,SUM(A.IPNT_DCO) AS IPNT_DCO
+                                                ,SUM(A.IPNT_DCO_F) AS IPNT_DCO_F
+                                                ,SUM(A.IPNT_BCO) AS IPNT_BCO
+                                        FROM    IPNT01TB A
+                                        WHERE   A.GAME_CODE IS NOT NULL
+                                        AND     A.IPNT_KIND_CODE = '1'
+                                        AND     NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ), '0') = '0'
+                                        GROUP BY A.GAME_CODE
+                                        ) T2
+                                WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                UNION ALL
+                                SELECT  T1.IPNT_KIND_CODE
+                                        ,T1.IPNT_PERIOD_CODE
+                                        ,T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_PLACE_ADDRESS
+                                        ,T1.IPNT_PLACE_NEWADDRESS
+                                        ,T1.IPNT_PLACE_PHONE
+                                        ,T1.IPNT_DONE_DATE
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T1.IPNT_DCO
+                                        ,T1.IPNT_DCO_F
+                                        ,T1.IPNT_BCO
+                                        ,T1.GAME_CODE
+                                        ,T1.CHOOSE_DONE_YN
+                                FROM    IPNT01TB T1
+                                WHERE   T1.USE_YN = 'Y'
+                                AND     (
+                                            T1.IPNT_KIND_CODE IS NULL
+                                            OR
+                                            T1.IPNT_KIND_CODE <> '1'
+                                            OR
+                                            (T1.IPNT_KIND_CODE = '1' AND NVL((SELECT CONFIRM_STATUS FROM IPCF01TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), '0') > '0')
+                                        )
+                                AND T1.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+                                ) T1,
+                                IPNT07TB T2
+                        WHERE   1 = 1
+                        AND     T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND		T2.USER_ID = #{USER_ID}
+                        AND     CHOOSE_DCO_YN = 'Y'
+        ]]>
+        <!-- <if test="IPNT_DATE != null and IPNT_DATE != ''">
+            AND	  T1.IPNT_DATE LIKE #{IPNT_DATE} || '%'
+        </if> -->
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND   UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND   UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND   UPPER(T1.IPNT_PLACE_DETAIL) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        				<!-- ORDER BY(CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO
+                		) A
+				ORDER BY IPNT_DONE_DATE DESC, (CASE WHEN UPPER(IPNT_NO) LIKE 'K%' THEN 1 ELSE 0 END), IPNT_NO DESC -->
+        <![CDATA[
+
+						ORDER BY IPNT_DATE , IPNT_UPPER_SEQ
+                		) A
+        ]]>
+    </select>
+    
+    <select id="selectMyFaultPopup" parameterType="HashMap" resultType="HashMap">
+	/* k05.MyAppDetailMapper.xml - 나의 중/경과실 팝업- selectMyFaultPopup - MyAppDetail.vue */
+        <![CDATA[
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT  T1.IPER_SEQ
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                                ,T1.MISTAKE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS MISTAKE_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.IPNT_NO
+                                ,T1.USER_ID
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME
+                                
+                                ,T1.REMARK
+                                ,T1.USE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,T1.IPNT_START_DATE
+                                ,T1.IPNT_END_DATE
+                                ,T1.MISTAKE_MEMO
+                                ,T1.MISTAKE_PRIORITY
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_PRIORITY' AND DTL_CODE = T1.MISTAKE_PRIORITY) AS MISTAKE_PRIORITY_NAME
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T2.IPNT_EVENT_DET_CODE AND OPTION2 = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                                ,T2.IPNT_PLACE_DETAIL
+                                ,T2.IPNT_DATE
+                        FROM    IPER01TB T1
+                                ,IPNT01TB T2
+                                ,USER01TB T3
+                        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND     T1.USER_ID = T3.USER_ID
+                        AND     T1.USE_YN = 'Y'
+                        AND     T2.USE_YN = 'Y'
+        ]]>
+        <if test="STOP_YN != null and STOP_YN != ''">
+            AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN T1.IPNT_START_DATE AND T1.IPNT_END_DATE
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND UPPER(T2.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+            AND T3.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND T2.IPNT_PLACE_DETAIL LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="USER_ID != null and USER_ID != ''">
+            AND T1.USER_ID = #{USER_ID}
+        </if>
+        <if test="IPNT_YEAR != null and IPNT_YEAR != ''">
+           	AND	  T2.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+        </if>
+        <![CDATA[
+                        ORDER BY T1.IPER_SEQ
+                        ) A
+        ]]>
+    </select>
+    
+ <select id="selectMyFaultPopupCnt" parameterType="HashMap" resultType="HashMap">
+	/* k05.MyAppDetailMapper.xml - 나의 중/경과실Cnt 팝업- selectMyFaultPopupCnt - MyAppDetail.vue */
+        <![CDATA[
+        		SELECT  COUNT(*) AS ALL_CNT
+        		FROM	(
+                        SELECT  T1.IPER_SEQ
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MISTAKE_UPPER_NAME
+                                ,T1.MISTAKE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS MISTAKE_NAME
+                                ,T1.IPNT_UPPER_SEQ
+                                ,T2.IPNT_NO
+                                ,T1.USER_ID
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME
+                                
+                                ,T1.REMARK
+                                ,T1.USE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,T1.IPNT_START_DATE
+                                ,T1.IPNT_END_DATE
+                                ,T1.MISTAKE_MEMO
+                                ,T1.MISTAKE_PRIORITY
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_PRIORITY' AND DTL_CODE = T1.MISTAKE_PRIORITY) AS MISTAKE_PRIORITY_NAME
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T2.IPNT_EVENT_DET_CODE AND OPTION2 = T2.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                                ,T2.IPNT_PLACE_DETAIL
+                                ,T2.IPNT_DATE
+                        FROM    IPER01TB T1
+                                ,IPNT01TB T2
+                                ,USER01TB T3
+                        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND     T1.USER_ID = T3.USER_ID
+                        AND     T1.USE_YN = 'Y'
+                        AND     T2.USE_YN = 'Y'
+        ]]>
+        <if test="STOP_YN != null and STOP_YN != ''">
+            AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN T1.IPNT_START_DATE AND T1.IPNT_END_DATE
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+            AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+            AND UPPER(T2.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+            AND T3.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_PLACE_DETAIL'">
+            AND T2.IPNT_PLACE_DETAIL LIKE '%' || #{CONDITION_TEXT} || '%'
+        </if>
+        <if test="USER_ID != null and USER_ID != ''">
+            AND T1.USER_ID = #{USER_ID}
+        </if>
+        <if test="IPNT_YEAR != null and IPNT_YEAR != ''">
+           	AND	  T2.IPNT_DATE LIKE #{IPNT_YEAR} || '%'
+        </if>
+        <![CDATA[
+                        ORDER BY T1.IPER_SEQ
+                        ) A
+        ]]>
+    </select>
+    
+    <select id="selectNewSchedule" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 새로운 일정 알림- selectNewSchedule - MyAppDetail.vue */
+        SELECT  T.IPNT_UPPER_SEQ
+                ,T.IPNT_TYPE
+                ,T.IPNT_NO
+                ,T.IPNT_NAME
+                ,T.IPNT_DONE_DATE
+                ,NVL(T.IPNT_PLACE_DETAIL, IPNT_PROVINCE_CODE) AS IPNT_PLACE_DETAIL
+                ,T.IPNT_DATE
+                ,T.IPNT_TIME
+                ,T.IPNT_DCO
+                ,T.IPNT_BCO
+				,COUNT(1) OVER() AS ALL_COUNT
+        FROM    (
+                SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,'IP' AS IPNT_TYPE
+                        ,T1.IPNT_NAME
+                        ,T1.IPNT_DONE_DATE
+                        ,T1.IPNT_PLACE_ADDRESS AS IPNT_PLACE_DETAIL
+                        ,T1.IPNT_PROVINCE_CODE
+                        ,T1.IPNT_DATE
+                        ,T1.IPNT_TIME
+                        ,TO_CHAR(NVL(T1.IPNT_DCO, 0) + NVL(T1.IPNT_DCO_F, 0)) || '(남:' || NVL(T1.IPNT_DCO, 0) || ' 여:' || NVL(T1.IPNT_DCO_F, 0) || ')' AS IPNT_DCO
+                        ,NVL(T1.IPNT_BCO, 0) AS IPNT_BCO
+                FROM    IPNT01TB T1
+                WHERE   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') = #{SELECT_YMD}
+                UNION ALL
+                SELECT  NULL AS EDNT_UPPER_SEQ
+                        ,T1.EDNT_NO
+                        ,'ED' AS EDNT_TYPE
+                        ,T1.EDNT_NAME
+                        ,T1.EDNT_DONE_DATE
+                        ,T1.EDNT_PLACE_DETAIL
+                        ,T1.EDNT_PROVINCE_CODE
+                        ,T1.EDNT_DATE
+                        ,T1.EDNT_TIME
+                        ,TO_CHAR(T1.EDNT_TEACHER_COUNT) AS EDNT_TEACHER_COUNT
+                        ,(SELECT SUM(EDNT_STUDENT_COUNT) FROM EDNT04TB WHERE EDNT_NO = T1.EDNT_NO) AS EDNT_STUDENT_COUNT
+                FROM    EDNT01TB T1
+                WHERE   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') = #{SELECT_YMD}
+                ) T
+        ORDER BY T.IPNT_TIME
+    </select>
+    
+    <select id="selectNewScheduleCnt" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 새로운 일정 알림Cnt- selectNewScheduleCnt - MyAppDetail.vue */
+                SELECT  COUNT(*) AS ALL_CNT
+        		FROM	( SELECT  T.IPNT_UPPER_SEQ
+                ,T.IPNT_TYPE
+                ,T.IPNT_NO
+                ,T.IPNT_NAME
+                ,T.IPNT_DONE_DATE
+                ,NVL(T.IPNT_PLACE_DETAIL, IPNT_PROVINCE_CODE) AS IPNT_PLACE_DETAIL
+                ,T.IPNT_DATE
+                ,T.IPNT_TIME
+                ,T.IPNT_DCO
+                ,T.IPNT_BCO
+				,COUNT(1) OVER() AS ALL_COUNT
+        FROM    (
+                SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,'IP' AS IPNT_TYPE
+                        ,T1.IPNT_NAME
+                        ,T1.IPNT_DONE_DATE
+                        ,T1.IPNT_PLACE_ADDRESS AS IPNT_PLACE_DETAIL
+                        ,T1.IPNT_PROVINCE_CODE
+                        ,T1.IPNT_DATE
+                        ,T1.IPNT_TIME
+                        ,TO_CHAR(NVL(T1.IPNT_DCO, 0) + NVL(T1.IPNT_DCO_F, 0)) || '(남:' || NVL(T1.IPNT_DCO, 0) || ' 여:' || NVL(T1.IPNT_DCO_F, 0) || ')' AS IPNT_DCO
+                        ,NVL(T1.IPNT_BCO, 0) AS IPNT_BCO
+                FROM    IPNT01TB T1
+                WHERE   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') = #{SELECT_YMD}
+                UNION ALL
+                SELECT  NULL AS EDNT_UPPER_SEQ
+                        ,T1.EDNT_NO
+                        ,'ED' AS EDNT_TYPE
+                        ,T1.EDNT_NAME
+                        ,T1.EDNT_DONE_DATE
+                        ,T1.EDNT_PLACE_DETAIL
+                        ,T1.EDNT_PROVINCE_CODE
+                        ,T1.EDNT_DATE
+                        ,T1.EDNT_TIME
+                        ,TO_CHAR(T1.EDNT_TEACHER_COUNT) AS EDNT_TEACHER_COUNT
+                        ,(SELECT SUM(EDNT_STUDENT_COUNT) FROM EDNT04TB WHERE EDNT_NO = T1.EDNT_NO) AS EDNT_STUDENT_COUNT
+                FROM    EDNT01TB T1
+                WHERE   TO_CHAR(T1.REG_DATE, 'YYYYMMDD') = #{SELECT_YMD}
+                ) T
+        ORDER BY T.IPNT_TIME ) A
+    </select>
+    
+ <select id="selectPopupClick" parameterType="HashMap" resultType="HashMap">
+    /* k05.MyAppDetailMapper.xml - 팝업 클릭 쿼리- selectPopupClick - MyAppDetail.vue */
+        <![CDATA[
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T1.IPNT_NO
+                ,T1.IPNT_NAME
+                ,T1.IPNT_TYPE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                ,T1.IPNT_KIND_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                ,T1.IPNT_KIND_ETC
+                ,T1.IPNT_PERIOD_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                ,T1.IPNT_SUPERVISOR
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME
+                ,T1.IPNT_COLLECTOR
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME
+                ,T1.IPNT_RESULT_MANAGER
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME
+                ,T1.IPNT_DONE_DATE
+                ,T1.IPNT_CHARGER_ID
+                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+                ,T1.IPNT_INDICATION
+                ,T1.IPNT_CHOOSE_METHOD
+                ,T1.IPNT_REMARK
+                ,T1.IPNT_EVENT_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                ,T1.IPNT_EVENT_DET_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.IPNT_EVENT_DET_CODE AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                ,T1.IPNT_DATE
+                ,T1.IPNT_TIME
+                ,T1.IPNT_PLACE_TYPE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+                ,T1.IPNT_PROVINCE_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME
+                ,T1.IPNT_PLACE_DETAIL
+                ,T1.IPNT_PLACE_ZIPCODE
+                ,T1.IPNT_PLACE_ADDRESS
+                ,T1.IPNT_PLACE_NEWADDRESS
+                ,T1.IPNT_PLACE_PHONE
+                ,T1.IPNT_PLACE_LATITUDE
+                ,T1.IPNT_PLACE_LONGITUDE                
+                ,NVL(T13.IPNT_SEX_M,0) AS IPNT_SEX_M
+                ,NVL(T13.IPNT_SEX_F,0) AS IPNT_SEX_F
+                ,NVL(T13.IPNT_SEX_MIX,0) AS IPNT_SEX_MIX
+                ,T1.IPNT_DCO
+                ,T1.IPNT_DCO_F
+                ,T1.IPNT_BCO
+                ,T1.MEMO
+                ,T1.CHOOSE_DONE_YN
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.GAME_CODE
+                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                ,(SELECT EMP_CODE FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS EMP_CODE
+                ,T1.LAB_BALANCE
+                ,(SELECT TT1.USER_NAME
+                  FROM USER01TB TT1
+                  WHERE TT1.USER_ID = (SELECT USER_ID FROM IPNT07TB WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ} AND PREDECESSOR_YN='Y' AND ROWNUM = 1)) USER_NAME
+        FROM    IPNT01TB T1
+        LEFT OUTER JOIN (SELECT C.IPNT_UPPER_SEQ,
+                     SUM(DECODE(C.SEX, 'M', 1, 0)) AS IPNT_SEX_M,
+                     SUM(DECODE(C.SEX, 'F', 1, 0)) AS IPNT_SEX_F,
+                     SUM(DECODE(C.SEX, 'X', 1, 0)) AS IPNT_SEX_MIX
+                FROM (SELECT T1.IPNT_UPPER_SEQ, T2.IPNT_NO, T1.SEX
+                        FROM IPNT13TB T1, IPNT01TB T2
+                       WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                         AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                         AND T1.USE_YN = 'Y'
+                         AND T2.USE_YN = 'Y'
+	                 GROUP BY T1.IPNT_UPPER_SEQ,
+	                          T2.IPNT_NO,
+	                          T1.PLAYER_NAME,
+	                          T1.NATIONALITY,
+	                          T1.SEX,
+	                          T1.MINOR_TYPE,
+	                          T1.EVENT_CODE,
+	                          T1.EVENT_DET_CODE,
+	                          T1.USE_YN,
+	                          T1.SORT_NO,
+	                          T1.PLAYER_NO) C
+                  GROUP BY C.IPNT_UPPER_SEQ) T13 ON T1.IPNT_UPPER_SEQ = T13.IPNT_UPPER_SEQ
+        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T1.USE_YN = 'Y'
+        ]]>
+    </select>
+</mapper>

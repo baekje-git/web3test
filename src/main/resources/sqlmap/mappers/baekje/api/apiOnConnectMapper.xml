@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiOnConnect">
+
+<select id="selectKeyCheck"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectKeyCheck][인증키체크]+*/
+    SELECT CODE FROM T_CODE
+     WHERE P_CODE='580'
+       AND USER_STRING1=#{AUTH_KEY}
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+     LIMIT 1
+</select>
+    
+<select id="selectSaleMaster"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleMaster][매출마스터]+*/
+    SELECT CAST(#{SALE_SERVICE_NO} AS VARCHAR(20))            AS SALE_SERVICE_NO
+          ,CAST(#{SALE_APRV_DT} AS VARCHAR(8))                AS SALE_APRV_DT
+          ,CAST(IFNULL(#{SALE_APRV_TM_FR},'') AS VARCHAR(4))  AS SALE_APRV_TM_FR
+          ,CAST(IFNULL(#{SALE_APRV_TM_TO},'') AS VARCHAR(4))  AS SALE_APRV_TM_TO
+          ,MAX(BRCH_CD)         AS BRCH_CD
+          ,MAX(BRCH_NM)         AS BRCH_NM
+          ,MAX(BRCH_SERVICE_NO) AS BRCH_SERVICE_NO
+          ,MAX(CUST_CD)         AS CUST_CD
+          ,MAX(CUST_NM)         AS CUST_NM
+          ,COUNT(1)             AS SALE_CNT
+          ,SUM(SALE_AMT)        AS SALE_AMT
+          ,SUM(SALE_SUPPLY_AMT) AS SALE_SUPPLY_AMT
+          ,SUM(SALE_VAT_AMT)    AS SALE_VAT_AMT
+          ,'' AS BIGO
+      FROM (
+            SELECT A.BRCH_CD       AS BRCH_CD
+                  ,D.BRCH_SNM      AS BRCH_NM
+                  ,D.SERVICE_NO    AS BRCH_SERVICE_NO
+                  ,A.CUST_CD       AS CUST_CD
+                  ,B.CUST_NM       AS CUST_NM
+                  ,TOTAL_AMT       AS SALE_AMT
+                  ,SUPPLY_AMT      AS SALE_SUPPLY_AMT
+                  ,VAT_AMT         AS SALE_VAT_AMT
+              FROM T_SALE A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                 ON D.BRCH_CD = A.BRCH_CD
+             WHERE A.APRV_DT = #{SALE_APRV_DT}
+    <if test='SALE_APRV_TM_FR != null and SALE_APRV_TM_FR != ""'>
+               AND A.APRV_TM &gt;=  CAST(#{SALE_APRV_TM_FR} AS VARCHAR(4)) ||'00'
+    </if>
+    <if test='SALE_APRV_TM_TO != null and SALE_APRV_TM_TO != "" '>
+               AND A.APRV_TM &lt;= CAST(#{SALE_APRV_TM_TO} AS VARCHAR(4)) ||'59'
+    </if>
+            UNION ALL
+            SELECT A.BRCH_CD       AS BRCH_CD
+                  ,D.BRCH_SNM      AS BRCH_NM
+                  ,D.SERVICE_NO    AS BRCH_SERVICE_NO
+                  ,A.CUST_CD       AS CUST_CD
+                  ,B.CUST_NM       AS CUST_NM
+                  ,TOTAL_AMT       AS SALE_AMT
+                  ,SUPPLY_AMT      AS SALE_SUPPLY_AMT
+                  ,VAT_AMT         AS SALE_VAT_AMT
+              FROM T_SALEBACK A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                 ON D.BRCH_CD = A.BRCH_CD
+             WHERE A.APRV_DT = #{SALE_APRV_DT}
+    <if test='SALE_APRV_TM_FR != null and SALE_APRV_TM_FR != ""'>
+               AND A.APRV_TM &gt;=  CAST(#{SALE_APRV_TM_FR} AS VARCHAR(4)) ||'00'
+    </if>
+    <if test='SALE_APRV_TM_TO != null and SALE_APRV_TM_TO != "" '>
+               AND A.APRV_TM &lt;= CAST(#{SALE_APRV_TM_TO} AS VARCHAR(4)) ||'59'
+    </if>
+           ) A
+ </select>
+    
+ <select id="selectSaleMasterList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleMasterList][매출마스터리스트]+*/
+    SELECT A.SN         AS SN
+          ,'1'          AS SALE_GB
+          ,CASE WHEN A.ORD_TYPE_CD='34' THEN 'Y' ELSE 'N' END AS REWARD_YN
+          ,A.TOTAL_AMT  AS TOTAL_AMT
+          ,A.SUPPLY_AMT AS SUPPLY_AMT
+          ,A.VAT_AMT    AS VAT_AMT
+          ,A.ITEM_CNT   AS ITEM_CNT
+      FROM T_SALE A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+     WHERE A.APRV_DT = #{SALE_APRV_DT}
+    <if test='SALE_APRV_TM_FR != null and SALE_APRV_TM_FR != ""'>
+               AND A.APRV_TM &gt;=  CAST(#{SALE_APRV_TM_FR} AS VARCHAR(4)) ||'00'
+    </if>
+    <if test='SALE_APRV_TM_TO != null and SALE_APRV_TM_TO != "" '>
+               AND A.APRV_TM &lt;= CAST(#{SALE_APRV_TM_TO} AS VARCHAR(4)) ||'59'
+    </if>
+    UNION ALL
+    SELECT A.SN         AS SN
+          ,'2'          AS SALE_GB
+          ,CASE WHEN A.ORD_TYPE_CD='34' THEN 'Y' ELSE 'N' END AS REWARD_YN
+          ,A.TOTAL_AMT  AS TOTAL_AMT
+          ,A.SUPPLY_AMT AS SUPPLY_AMT
+          ,A.VAT_AMT    AS VAT_AMT
+          ,A.ITEM_CNT   AS ITEM_CNT
+      FROM T_SALEBACK A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+     WHERE A.APRV_DT = #{SALE_APRV_DT}
+    <if test='SALE_APRV_TM_FR != null and SALE_APRV_TM_FR != ""'>
+               AND A.APRV_TM &gt;=  CAST(#{SALE_APRV_TM_FR} AS VARCHAR(4)) ||'00'
+    </if>
+    <if test='SALE_APRV_TM_TO != null and SALE_APRV_TM_TO != "" '>
+               AND A.APRV_TM &lt;= CAST(#{SALE_APRV_TM_TO} AS VARCHAR(4)) ||'59'
+    </if>
+     ORDER BY SN
+</select>
+    
+ <select id="selectSaleDetail"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleDetail][매출상세]+*/
+    SELECT CAST(#{SALE_SERVICE_NO} AS VARCHAR(20))            AS SALE_SERVICE_NO
+          ,CAST(#{SN}              AS VARCHAR(20))            AS SN
+          ,SALE_APRV_DT
+          ,SALE_APRV_TM
+          ,SALE_GB
+          ,REWARD_YN
+          ,BARCODE
+          ,TOTAL_AMT
+          ,SUPPLY_AMT
+          ,VAT_AMT
+          ,LIST_CNT
+          ,'' AS DATA_MEMO
+      FROM (
+            SELECT A.APRV_DT       AS SALE_APRV_DT
+                  ,A.APRV_TM       AS SALE_APRV_TM
+                  ,'1'             AS SALE_GB
+                  ,CASE WHEN A.ORD_TYPE_CD='34' THEN 'Y' ELSE 'N' END AS REWARD_YN
+                  ,A.TOTAL_AMT     AS TOTAL_AMT
+                  ,A.SUPPLY_AMT    AS SUPPLY_AMT
+                  ,A.VAT_AMT       AS VAT_AMT
+                  ,A.ITEM_CNT      AS LIST_CNT
+                  ,F_S_ORD_BARCODE('SALE',CAST(#{SN} AS VARCHAR(20))) AS BARCODE
+              FROM T_SALE A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                 ON D.BRCH_CD = A.BRCH_CD
+             WHERE A.SN = #{SN}
+            UNION ALL
+            SELECT A.APRV_DT       AS SALE_APRV_DT
+                  ,A.APRV_TM       AS SALE_APRV_TM
+                  ,'2'             AS SALE_GB
+                  ,CASE WHEN A.ORD_TYPE_CD='34' THEN 'Y' ELSE 'N' END AS REWARD_YN
+                  ,A.TOTAL_AMT     AS TOTAL_AMT
+                  ,A.SUPPLY_AMT    AS SUPPLY_AMT
+                  ,A.VAT_AMT       AS VAT_AMT
+                  ,A.ITEM_CNT      AS LIST_CNT
+                  ,F_S_ORD_BARCODE('SALEBACK',CAST(#{SN} AS VARCHAR(20))) AS BARCODE
+              FROM T_SALEBACK A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                 ON D.BRCH_CD = A.BRCH_CD
+             WHERE A.SN = #{SN}
+           ) A
+ </select>
+    
+ <select id="selectSaleDetailList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleDetailList][매출상세리스트]+*/
+    SELECT E.SNO              AS SNO
+          ,E.ITEM_CD
+          ,F.ITEM_NM
+          ,F.UNIT
+          ,E.ITEM_QTY
+          ,E.ORD_WP2_AMT      AS UNIT_AMT
+          ,E.TOTAL_AMT        AS TOTAL_AMT
+          ,E.SUPPLY_AMT       AS SUPPLY_AMT
+          ,E.VAT_AMT          AS VAT_AMT
+          ,E.EXP_DT
+          ,E.PROD_NO
+          ,F.MED_CD
+          ,F.SPEC_CD
+          ,G.CD_NM            AS SPEC_NM
+          ,F.ITEM_PYOJUN_CD
+          ,F.ITEM_DAEPYO_CD
+          ,F.BOHUM_CD
+          ,F.BOHUM_UNIT
+          ,F.PAY_ITEM_YN
+          ,F.TAX_YN           AS VAT_YN
+          ,F.SUBDIV_YN
+          ,''                 AS DETAIL_MEMO
+      FROM T_SALE A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+      JOIN T_SALE_DTL E
+        ON E.SN = A.SN
+      JOIN T_ITEM F
+        ON F.ITEM_CD = E.ITEM_CD
+      JOIN T_CODE G
+        ON G.P_CODE = '109'
+       AND G.CODE = F.SPEC_CD
+     WHERE A.SN = #{SN}
+
+    UNION ALL
+
+    SELECT E.SNO              AS SNO
+          ,E.ITEM_CD
+          ,F.ITEM_NM
+          ,F.UNIT
+          ,E.ITEM_QTY
+          ,E.ORD_WP2_AMT      AS UNIT_AMT
+          ,E.TOTAL_AMT        AS TOTAL_AMT
+          ,E.SUPPLY_AMT       AS SUPPLY_AMT
+          ,E.VAT_AMT          AS VAT_AMT
+          ,E.EXP_DT
+          ,E.PROD_NO
+          ,F.MED_CD
+          ,F.SPEC_CD
+          ,G.CD_NM            AS SPEC_NM
+          ,F.ITEM_PYOJUN_CD
+          ,F.ITEM_DAEPYO_CD
+          ,F.BOHUM_CD
+          ,F.BOHUM_UNIT
+          ,F.PAY_ITEM_YN
+          ,F.TAX_YN           AS VAT_YN
+          ,F.SUBDIV_YN
+          ,''                 AS DETAIL_MEMO
+      FROM T_SALEBACK A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+      JOIN T_SALEBACK_DTL E
+        ON E.SN = A.SN
+      JOIN T_ITEM F
+        ON F.ITEM_CD = E.ITEM_CD
+      JOIN T_CODE G
+        ON G.P_CODE = '109'
+       AND G.CODE = F.SPEC_CD
+     WHERE A.SN = #{SN}
+     ORDER BY SNO
+ </select>
+
+ <select id="selectSaleSerial"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleSerial][매출시리얼]+*/
+    SELECT CAST(#{SALE_SERVICE_NO} AS VARCHAR(20))            AS SALE_SERVICE_NO
+          ,CAST(#{SN}              AS VARCHAR(20))            AS SN
+          ,SUM(LIST_CNT)                                      AS LIST_CNT
+          ,''                                                 AS DATA_MEMO
+      FROM (
+            SELECT COUNT(1) AS LIST_CNT
+              FROM T_SALE A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                ON D.BRCH_CD = A.BRCH_CD
+              JOIN T_SALE_SERIAL E
+                ON E.SN = A.SN
+             WHERE A.SN = #{SN}
+            UNION ALL
+            SELECT COUNT(1) AS LIST_CNT
+              FROM T_SALEBACK A
+              JOIN T_CUST B
+                ON B.CUST_CD = A.CUST_CD
+               AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+              JOIN T_DEPT C
+                ON C.DEPT_CD = B.DEPT_CD
+               AND C.DEPT_NM LIKE '온라인팜%'
+               AND C.USE_YN = 'Y'
+              JOIN T_BRANCH D
+                 ON D.BRCH_CD = A.BRCH_CD
+              JOIN T_SALEBACK_SERIAL E
+                ON E.SN = A.SN
+             WHERE A.SN = #{SN}
+           ) A
+ </select>
+    
+ <select id="selectSaleSerialList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectSaleSerialList][매출시리얼리스트]+*/
+    SELECT E.SNO
+          ,E.ITEM_CD
+          ,E.EXP_DT
+          ,E.PROD_NO
+          ,E.SERIAL_NO
+          ,E.ITEM_QTY
+          ,'' AS DETAIL_MEMO
+      FROM T_SALE A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+      JOIN T_SALE_SERIAL E
+        ON E.SN = A.SN
+     WHERE A.SN = #{SN}
+
+    UNION ALL
+
+    SELECT E.SNO
+          ,E.ITEM_CD
+          ,E.EXP_DT
+          ,E.PROD_NO
+          ,E.SERIAL_NO
+          ,E.ITEM_QTY
+          ,'' AS DETAIL_MEMO
+      FROM T_SALE A
+      JOIN T_CUST B
+        ON B.CUST_CD = A.CUST_CD
+       AND B.SERVICE_NO = #{SALE_SERVICE_NO}
+      JOIN T_DEPT C
+        ON C.DEPT_CD = B.DEPT_CD
+       AND C.DEPT_NM LIKE '온라인팜%'
+       AND C.USE_YN = 'Y'
+      JOIN T_BRANCH D
+         ON D.BRCH_CD = A.BRCH_CD
+      JOIN T_SALEBACK_SERIAL E
+        ON E.SN = A.SN
+     WHERE A.SN = #{SN}
+
+     ORDER BY SNO,ITEM_CD,EXP_DT,PROD_NO,SERIAL_NO
+ </select>
+
+<select id="selectCode"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectCode][code조회]+*/
+    SELECT COUNT(1) AS LIST_CNT
+          ,''       AS DATA_MEMO
+      FROM T_CODE
+     WHERE P_CODE IN ('109')
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="selectCodeList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiOnConnectMapper.xml][apiOnConnect.selectCode][code리스트조회]+*/
+    SELECT A.P_CODE
+          ,B.CD_NM AS P_NAME
+          ,A.CODE
+          ,A.CD_NM AS NAME
+          ,'' AS DETAIL_MEMO
+      FROM T_CODE A
+      JOIN T_CODE B
+        ON B.CODE = A.P_CODE
+       AND B.P_CODE = '0'
+     WHERE A.P_CODE IN ('109')
+       AND A.USE_YN = 'Y'
+       AND A.DEL_YN = 'N'
+     ORDER BY B.CODE
+</select>
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiOnConnectMapper.xml][apiOnConnect.insertApiHistory][API연동이력(T_API_LOG) ]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+    ) VALUES (
+          #{IP_ADDR}
+        , #{API_ID}
+        , #{API_TXT}
+        , #{INS_ID}
+        , F_S_NOW()
+        )
+</insert>
+
+</mapper>

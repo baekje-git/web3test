@@ -1,0 +1,750 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.user">
+    <select id="selectUSER01TB" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k99.user.selectUSER01TB - 회원정보조회*/
+        
+        SELECT T1.USER_ID
+              ,T1.AUTH_ID
+              ,T1.USER_NAME
+              ,T1.USER_EN_NAME
+              ,T1.USER_PWD
+              ,T1.USER_SEX
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = T1.USER_SEX) AS USER_SEX_NAME
+              ,T1.USER_PHONE
+              ,T1.SMS_AGREE_YN
+              ,T1.USER_COMPANY_PHONE
+              ,T1.USER_HOME_PHONE
+              ,T1.ADDRESS_TYPE1
+              ,T1.USER_ZIPCODE1
+              ,T1.USER_ADDRESS1
+              ,T1.USER_DETAIL_ADDRESS1
+              ,T1.IS_ROAD_ADDRESS1
+              ,T1.USER_ADDRESS_LATITUDE1
+              ,T1.USER_ADDRESS_LONGITUDE1
+              ,T1.ADDRESS_TYPE2
+              ,T1.USER_ZIPCODE2
+              ,T1.USER_ADDRESS2
+              ,T1.USER_DETAIL_ADDRESS2
+              ,T1.IS_ROAD_ADDRESS2
+              ,T1.USER_ADDRESS_LATITUDE2
+              ,T1.USER_ADDRESS_LONGITUDE2
+              ,T1.USER_EMAIL_PREFIX
+              ,T1.USER_EMAIL_SUFFIX
+              ,T1.USER_EMAIL_PREFIX||'@'||T1.USER_EMAIL_SUFFIX AS USER_EMAIL
+              ,T1.EMAIL_AGREE_YN
+              ,T1.COMPANY_NAME
+              ,T1.COMPANY_POSITION
+              ,T1.BANK_CODE
+              ,F_CODE_NM('BANK_CODE',T1.BANK_CODE) AS BANK_NAME
+              ,T1.BANK_ACCOUNT_NO
+              ,T1.BANK_OWNER_NAME
+              ,T1.UNIFORM_SIZE
+              ,T1.CHARGER_YN
+              ,T1.BCO_YN
+              ,T1.DCO_YN
+              ,T1.EDU_YN              
+              ,NVL((
+                   SELECT MIN(AUTH_CODE)
+                   FROM       USER02TB
+                   WHERE      AUTH_ID = T1.AUTH_ID
+               ), '2') AS SUPERVISOR_YN
+              ,NVL((
+                   SELECT CASE WHEN COUNT(1) >= 1 THEN 'Y' ELSE 'N' END
+                   FROM       IPER01TB
+                   WHERE      USER_ID = T1.USER_ID
+                   AND        USE_YN = 'Y'
+                   AND        TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+               ), 'N') AS APPROVE_YN
+              ,T1.TEST_CODE
+              ,T1.EDU_CHARGER_YN
+              ,T1.HOMEPAGE_USE_YN
+              ,T1.AUTH_STAGE_NO
+              ,NVL((SELECT AUTH_STAGE_NAME FROM AUTH_STAGE WHERE USER_NAME = T1.USER_NAME AND AUTH_STAGE_NO = T1.AUTH_ID),'기타') AS AUTH_STAGE_NAME
+              ,T1.IP_ADDR
+              ,T1.USER_AGENT
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+              ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+              ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+              ,T1.USER_FILE_PATH
+              ,T1.USER_FILE_NAME
+              ,TO_CHAR(T1.CHANGE_PWD_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CHANGE_PWD_DATE
+              ,CASE WHEN T1.CHANGE_PWD_DATE IS NULL OR SYSDATE - T1.CHANGE_PWD_DATE >= 180 THEN 'Y' ELSE 'N' END AS NEED_CHANGE_PWD
+              ,NVL((
+              SELECT	MIN(AUTH_CODE)
+              FROM		USER02TB
+              WHERE		AUTH_ID = T1.AUTH_ID
+              ), '2') AS SUPERVISOR_YN
+              ,NVL((
+              SELECT	CASE WHEN COUNT(1) >= 1 THEN 'Y' ELSE 'N' END
+              FROM		IPER01TB
+              WHERE		USER_ID = T1.USER_ID
+              AND		USE_YN = 'Y'
+              AND		TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+              ), 'N') AS APPROVE_YN
+              ,T1.AUTH_DCO_YMD
+              ,T1.AUTH_EDU_YMD
+              ,T1.INSPECTOR_POOL
+              ,F_CODE_NM('USER_FLAG',T1.USER_FLAG) AS USER_FLAG_NAME
+              ,F_CODE_NM(T1.PRO_ORGZ,T1.CLUB_CODE) AS CLUB_NAME
+              ,LOGIN_ID
+      FROM    USER01TB T1
+      WHERE   1=1
+        ]]>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_EN_NAME'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_EN_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'ADDRESS'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_ADDRESS1 LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_PHONE'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_PHONE LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_EMAIL'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_EMAIL_PREFIX LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'AUTH_ID'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.AUTH_ID LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>	      
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_ID'">
+          <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+          <![CDATA[
+              AND   T1.USER_ID LIKE '%' || #{CONDITION_TEXT} || '%'
+          ]]>
+          </if>       
+      </if>
+        <if test='chkDco == "Y"'>
+			AND   T1.DCO_YN = 'Y'
+        </if>
+        <if test='chkBco == "Y"'>
+			AND   T1.BCO_YN = 'Y'
+        </if>
+        <if test='chkEDU == "Y"'>
+			AND   T1.EDU_YN = 'Y'
+        </if>
+        <if test='chkAprv == "Y"'>
+			AND   EXISTS	(
+							SELECT	1
+							FROM	IPER01TB
+							WHERE	USER_ID = T1.USER_ID
+							AND		USE_YN = 'Y'
+							AND		TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+							)
+        </if>
+        <if test='chkSpv == "Y"'>
+			AND	  EXISTS	(
+							SELECT	1
+							FROM	USER02TB
+							WHERE	AUTH_ID = T1.AUTH_ID
+							AND		AUTH_CODE IN ('0', '1', '11', '12', '13')
+							)
+        </if>
+        <if test="CONDITION_CODE2 != null and CONDITION_CODE2 != '' ">
+          <![CDATA[
+              AND   T1.USER_FLAG = #{CONDITION_CODE2}
+          ]]>
+        </if>       
+      
+        ORDER BY T1.USER_NAME ASC
+    </select>
+    
+    <select id="selectUSER01TBByPK" parameterType="HashMap" resultType="HashMap">
+        /* k99.user.selectUSER01TBByPK - 회원정보조회*/
+        
+        <![CDATA[
+        SELECT T1.USER_ID
+              ,T1.AUTH_ID
+              ,T1.USER_NAME
+              ,T1.USER_EN_NAME
+              ,T1.USER_PWD
+              ,T1.USER_SEX
+              ,F_CODE_NM('SEX_CODE',T1.USER_SEX) AS USER_SEX_NAME
+              ,T1.USER_PHONE
+              ,T1.SMS_AGREE_YN
+              ,T1.USER_COMPANY_PHONE
+              ,T1.USER_HOME_PHONE
+              ,T1.ADDRESS_TYPE1
+              ,T1.USER_ZIPCODE1
+              ,T1.USER_ADDRESS1
+              ,T1.USER_DETAIL_ADDRESS1
+              ,T1.IS_ROAD_ADDRESS1
+              ,T1.USER_ADDRESS_LATITUDE1
+              ,T1.USER_ADDRESS_LONGITUDE1
+              ,T1.ADDRESS_TYPE2
+              ,T1.USER_ZIPCODE2
+              ,T1.USER_ADDRESS2
+              ,T1.USER_DETAIL_ADDRESS2
+              ,T1.IS_ROAD_ADDRESS2
+              ,T1.USER_ADDRESS_LATITUDE2
+              ,T1.USER_ADDRESS_LONGITUDE2
+              ,T1.USER_EMAIL_PREFIX
+              ,T1.USER_EMAIL_SUFFIX
+              ,T1.EMAIL_AGREE_YN
+              ,T1.COMPANY_NAME
+              ,T1.COMPANY_POSITION
+              ,T1.BANK_CODE
+              ,F_CODE_NM('BANK_CODE',T1.BANK_CODE) AS BANK_NAME
+              ,T1.BANK_ACCOUNT_NO
+              ,T1.BANK_OWNER_NAME
+              ,T1.UNIFORM_SIZE
+              ,T1.CHARGER_YN
+              ,T1.BCO_YN
+              ,T1.DCO_YN
+              ,T1.EDU_YN
+              ,T1.TEST_CODE
+              ,T1.EDU_CHARGER_YN
+              ,T1.HOMEPAGE_USE_YN
+              ,T1.AUTH_STAGE_NO
+              ,NVL((SELECT AUTH_STAGE_NAME FROM AUTH_STAGE WHERE USER_NAME = T1.USER_NAME AND AUTH_STAGE_NO = T1.AUTH_ID),'기타') AS AUTH_STAGE_NAME
+              ,T1.IP_ADDR
+              ,T1.USER_AGENT
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+              ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+              ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+              ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+              ,T1.USER_FILE_PATH
+              ,T1.USER_FILE_NAME
+              ,TO_CHAR(T1.CHANGE_PWD_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CHANGE_PWD_DATE
+              ,CASE WHEN T1.CHANGE_PWD_DATE IS NULL OR SYSDATE - T1.CHANGE_PWD_DATE >= 180 THEN 'Y' ELSE 'N' END AS NEED_CHANGE_PWD
+              ,NVL((
+              SELECT	MIN(AUTH_CODE)
+                FROM	USER02TB
+               WHERE	AUTH_ID = T1.AUTH_ID
+              ), '2') AS SUPERVISOR_YN
+              ,NVL((
+              SELECT	CASE WHEN COUNT(1) >= 1 THEN 'Y' ELSE 'N' END
+              FROM		K03_ERROR_REPORT
+              WHERE		USER_ID = T1.USER_ID
+              AND		USE_YN = 'Y'
+              AND		TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+              ), 'N') AS APPROVE_YN
+              ,T1.AUTH_DCO_YMD
+              ,T1.AUTH_EDU_YMD
+              ,T1.INSPECTOR_POOL
+              ,(SELECT    'BCO ' || SUM(CASE WHEN A.CHOOSE_BCO_YN = 'Y' THEN 1 ELSE 0 END) || '건, '
+                       || 'DCO ' || SUM(CASE WHEN A.CHOOSE_DCO_YN = 'Y' THEN 1 ELSE 0 END) || '건, '
+                       || 'DCO/BCO ' || SUM(CASE WHEN A.CHOOSE_DCOBCO_YN = 'Y' THEN 1 ELSE 0 END) || '건, '
+                       || '선임 ' || SUM(CASE WHEN A.PREDECESSOR_YN = 'Y' THEN 1 ELSE 0 END) || '건'
+               FROM    K03_DOPING_INSPECT_DCO A
+                      ,K03_DOPING_INSPECT_PAY  B
+               WHERE   A.IPNT_NO = B.IPNT_NO
+               AND     A.USER_ID = B.USER_ID
+               AND     A.USER_ID = T1.USER_ID
+               ) AS USER_CHOOSE_HISTORY
+              ,T1.USER_FLAG 
+              ,F_CODE_NM('USER_FLAG',T1.USER_FLAG) AS USER_FLAG_NAME
+              ,T1.PRO_ORGZ
+              ,F_CODE_NM('PRO_ORGZ',T1.PRO_ORGZ) AS PRO_ORGZ_NAME
+              ,T1.CLUB_CODE
+              ,F_CODE_NM(T1.PRO_ORGZ,T1.CLUB_CODE) AS CLUB_NAME 
+              ,T1.BIRTH_DT  
+              ,T1.PLAYER_NO         
+              ,T1.LOGIN_ID
+              ,T1.CLUB_GROUP
+              ,F_CODE_NM('CLUB_GROUP',T1.CLUB_GROUP) AS CLUB_GROUP_NAME       
+              ,T1.COUNTRY      
+      FROM    USER01TB T1
+      WHERE   1=1
+      AND     T1.USER_ID = #{USER_ID}
+        ]]>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_EN_NAME'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_EN_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_NAME LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'ADDRESS'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_ADDRESS1 LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_PHONE'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_PHONE LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_EMAIL'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.USER_EMAIL_PREFIX LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'AUTH_ID'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND   T1.AUTH_ID LIKE '%' || #{CONDITION_TEXT} || '%'
+	      ]]>
+	      </if>
+      </if>
+        <if test='chkDco == "Y"'>
+			AND   T1.DCO_YN = 'Y'
+        </if>
+        <if test='chkBco == "Y"'>
+			AND   T1.BCO_YN = 'Y'
+        </if>
+        <if test='chkEDU == "Y"'>
+			AND   T1.EDU_YN = 'Y'
+        </if>
+        <if test='chkAprv == "Y"'>
+			AND   EXISTS	(
+							SELECT	1
+							FROM	IPER01TB
+							WHERE	USER_ID = T1.USER_ID
+							AND		USE_YN = 'Y'
+							AND		TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN IPNT_START_DATE AND IPNT_END_DATE
+							)
+        </if>
+        <if test='chkSpv == "Y"'>
+			AND	  EXISTS	(
+							SELECT	1
+							FROM	USER02TB
+							WHERE	AUTH_ID = T1.AUTH_ID
+							AND		AUTH_CODE IN ('0', '1', '11', '12', '13')
+							)
+        </if>
+    </select>
+    
+    <update id="updateUSER01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.updateUSER01TB - 회원정보조회*/
+        
+        UPDATE  Z_USER
+        SET     USER_NM = NVL(#{USER_NM}, USER_NM)
+                ,USER_LVL = #{USER_LVL}
+                ,USE_YN = #{USE_YN}
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </update>
+    
+    <select id="selectUSER05TB" parameterType="HashMap" resultType="HashMap">
+       <![CDATA[
+       /* k99.user.selectUSER05TB -  최종학력 */
+       
+        SELECT	 T1.USER_ID
+                ,T1.EDUCATION_SEQ
+                ,T1.START_DATE
+                ,T1.END_DATE
+                ,T1.EDUCATION_LEVEL
+                ,T1.SCHOOL_NAME
+                ,T1.EDUCATION_DEGREE
+                ,T1.EDUCATION_MAJOR
+        FROM	USER05TB T1
+        WHERE	T1.USER_ID = #{USER_ID}
+        ORDER BY T1.EDUCATION_SEQ
+        ]]>
+    </select>
+    
+    <delete id="deleteUSER05TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.deleteUSER05TB -  최종학력 */
+        
+        DELETE
+        FROM    USER05TB
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </delete>
+
+    <insert id="insertUSER05TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.insertUSER05TB -  최종학력 */
+        
+        INSERT  INTO USER05TB
+                (
+                 USER_ID
+                ,EDUCATION_SEQ
+                ,START_DATE
+                ,END_DATE
+                ,EDUCATION_LEVEL
+                ,SCHOOL_NAME
+                ,EDUCATION_DEGREE
+                ,EDUCATION_MAJOR
+                )
+        VALUES  (
+                 #{USER_ID}
+                ,#{EDUCATION_SEQ}
+                ,#{START_DATE}
+                ,#{END_DATE}
+                ,#{EDUCATION_LEVEL}
+                ,#{SCHOOL_NAME}
+                ,#{EDUCATION_DEGREE}
+                ,#{EDUCATION_MAJOR}
+                )
+        ]]>
+    </insert>
+    
+    <select id="selectUSER13TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+	    /* k99.user.selectUSER13TB -  유관종목*/
+	    
+		SELECT 	T1.USER_ID
+		        ,T1.EVENT_SEQ
+		        ,T1.EVENT_CODE
+		        ,F_CODE_NM('EVENT_CODE',T1.EVENT_CODE) AS EVENT_NAME
+		        ,T1.BIGO
+        FROM	USER13TB T1
+        WHERE	T1.USER_ID = #{USER_ID}
+        ORDER BY T1.EVENT_SEQ ASC
+        ]]>
+    </select>
+    
+    <delete id="deleteUSER13TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.deleteUSER13TB -  유관종목*/
+        
+        DELETE
+        FROM    USER13TB
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </delete>
+
+    <insert id="insertUSER13TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.insertUSER13TB -  유관종목*/
+        
+        INSERT  INTO USER13TB
+                (
+                USER_ID
+                ,EVENT_SEQ
+                ,EVENT_CODE
+                ,BIGO
+                )
+        VALUES  (
+                #{USER_ID}
+                ,#{EVENT_SEQ}
+                ,#{EVENT_CODE}
+                ,#{BIGO}
+                )
+        ]]>
+    </insert>
+    
+    <select id="selectUSER06TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+	    /* k99.user.selectUSER06TB -  경력사항*/
+	    
+        SELECT	 T1.USER_ID
+                ,T1.CAREER_NO
+                ,T1.START_DATE
+                ,T1.END_DATE
+                ,T1.COMPANY_NAME
+                ,T1.COMPANY_POSITION
+        FROM	USER06TB T1
+        WHERE	T1.USER_ID = #{USER_ID}
+        ORDER BY T1.CAREER_NO
+        ]]>
+    </select>
+    
+    <delete id="deleteUSER06TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.deleteUSER06TB -  경력사항*/
+        
+        DELETE
+        FROM    USER06TB
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </delete>
+
+    <insert id="insertUSER06TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.insertUSER06TB -  경력사항*/
+        
+        INSERT  INTO USER06TB
+                (
+                USER_ID
+                ,CAREER_NO
+                ,START_DATE
+                ,END_DATE
+                ,COMPANY_NAME
+                ,COMPANY_POSITION
+                )
+        VALUES  (
+                #{USER_ID}
+                ,#{CAREER_NO}
+                ,#{START_DATE}
+                ,#{END_DATE}
+                ,#{COMPANY_NAME}
+                ,#{COMPANY_POSITION}
+                )
+        ]]>
+    </insert>
+    
+    <select id="selectUSER07TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+	    /* k99.user.selectUSER07TB - 외국어능력 */
+	    
+		SELECT   T1.USER_ID
+                ,T1.LANGUAGE_SEQ
+                ,T1.LANGUAGE_CODE
+                ,F_CODE_NM('LANGUAGE_TYPE',T1.LANGUAGE_CODE) AS LANGUAGE_NAME
+                ,T1.LISTENING_LEVEL
+                ,F_CODE_NM('LANGUAGE_LEVEL',T1.LISTENING_LEVEL) AS LISTENING_LEVEL_NAME
+                ,T1.SPEAKING_LEVEL
+                ,F_CODE_NM('LANGUAGE_LEVEL',T1.SPEAKING_LEVEL) AS SPEAKING_LEVEL_NAME
+                ,T1.WRITING_LEVEL
+                ,F_CODE_NM('LANGUAGE_LEVEL',T1.WRITING_LEVEL) AS WRITING_LEVEL_NAME
+        FROM	USER07TB T1
+        WHERE	T1.USER_ID = #{USER_ID}
+        ]]>
+    </select>
+    
+    <delete id="deleteUSER07TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.deleteUSER07TB - 외국어능력 */
+        
+        DELETE
+        FROM    USER07TB
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </delete>
+
+    <insert id="insertUSER07TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.insertUSER07TB - 외국어능력 */
+        
+        INSERT  INTO USER07TB
+                (
+                USER_ID
+                ,LANGUAGE_SEQ
+                ,LANGUAGE_CODE
+                ,LISTENING_LEVEL
+                ,SPEAKING_LEVEL
+                ,WRITING_LEVEL
+                )
+        VALUES  (
+                #{USER_ID}
+                ,#{LANGUAGE_SEQ}
+                ,#{LANGUAGE_CODE}
+                ,#{LISTENING_LEVEL}
+                ,#{SPEAKING_LEVEL}
+                ,#{WRITING_LEVEL}
+                )
+        ]]>
+    </insert>
+    
+    <select id="select0904IPNT01TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+                        SELECT	T.IPNT_UPPER_SEQ
+                                ,T.IPNT_NO
+                                ,T.IPNT_NAME
+                                ,T.IPNT_PLACE_DETAIL
+                                ,T.IPNT_DATE
+                                ,T.IPNT_TIME
+                                ,T.CONFIRM_STATUS
+                                ,T.CONFIRM_STATUS_NAME
+                                ,T.CONFIRM_DATE
+                                ,T.EXTRA_PAY
+                                ,T.TRIP_PAY
+                                ,T.TOTAL_PAY
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,#{CURR_PAGE} AS CURR_PAGE
+                                ,#{PER_PAGE} AS PER_PAGE
+                        FROM	(
+                                SELECT	T1.IPNT_UPPER_SEQ
+                                        ,T1.IPNT_NO
+                                        ,T1.IPNT_NAME
+                                        ,T1.IPNT_PLACE_DETAIL
+                                        ,T1.IPNT_DATE
+                                        ,T1.IPNT_TIME
+                                        ,T2.CONFIRM_STATUS
+                                        ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CONFIRM_STATUS' AND DTL_CODE = T2.CONFIRM_STATUS) AS CONFIRM_STATUS_NAME
+                                        ,TO_CHAR(T2.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CONFIRM_DATE
+                                        ,NVL(T3.EXTRA_PAY, 0) EXTRA_PAY
+                                        ,NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TRIP_PAY
+                                        ,NVL(T3.EXTRA_PAY, 0) + NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TOTAL_PAY
+                                FROM	IPNT01TB T1
+                                        ,IPCF01TB T2
+                                        ,IPCF02TB T3
+                                WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                                AND		T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+                                AND     T1.USE_YN = 'Y'
+                                AND		T3.USER_ID = #{USER_ID}
+                                UNION ALL
+                                SELECT	NULL AS EDNT_UPPER_SEQ
+                                        ,T1.EDNT_NO
+                                        ,T1.EDNT_NAME
+                                        ,T1.EDNT_PLACE_DETAIL
+                                        ,T1.EDNT_DATE
+                                        ,T1.EDNT_TIME
+                                        ,T2.CONFIRM_STATUS
+                                        ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'CONFIRM_STATUS' AND DTL_CODE = T2.CONFIRM_STATUS) AS CONFIRM_STATUS_NAME
+                                        ,TO_CHAR(T2.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CONFIRM_DATE
+                                        ,NVL(T3.EXTRA_PAY, 0) EXTRA_PAY
+                                        ,NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TRIP_PAY
+                                        ,NVL(T3.EXTRA_PAY, 0) + NVL(T3.TRANSFER_PAY, 0) + NVL(T3.TRANSFER_ORG_PAY, 0) + NVL(T3.DAILY_PAY, 0) + NVL(T3.FOOD_PAY, 0) + NVL(T3.INN_PAY, 0) + NVL(T3.INN_ORG_PAY, 0) AS TOTAL_PAY
+                                FROM	EDNT01TB T1
+                                        ,EDCF01TB T2
+                                        ,EDCF02TB T3
+                                WHERE	T1.EDNT_NO = T2.EDNT_NO
+                                AND		T1.EDNT_NO = T3.EDNT_NO
+                                AND		T3.USER_ID = #{USER_ID}
+                                ) T
+		                WHERE   1 = 1
+		                AND     T.IPNT_DATE LIKE #{CONDITION_CODE} || '%' 
+						ORDER BY T.IPNT_DATE || T.IPNT_TIME 
+        ]]>
+    </select>
+    
+    <select id="selectUSER12TB" resultType="HashMap" parameterType="HashMap">
+    /* "selectUSER12TB".xml -  PC 접속 가능 IP 설정*/
+        <![CDATA[
+        SELECT  T1.REQUEST_SEQ
+                ,T1.IP_ADDR
+                ,TO_CHAR(T1.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.CONFIRM_USER_ID) AS CONFIRM_USER_ID
+                ,TO_CHAR(T1.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CONFIRM_DATE
+        FROM    USER12TB T1
+        WHERE   T1.USER_ID = #{USER_ID}
+        ORDER BY T1.CREATE_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectUSER11TBByPK" resultType="HashMap" parameterType="HashMap">
+    /* "selectUSER12TB".xml -  PC 접속 가능 IP 설정*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T1.IP_ADDR
+        FROM	USER11TB T1
+        WHERE   T1.USER_ID = #{USER_ID}
+        ]]>
+    </select>
+    
+    <update id="updateUSER02TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.updateUSER02TB - */
+        
+        UPDATE  USER02TB
+        SET     AUTH_CODE = #{AUTH_CODE}
+                ,EDT_USER = #{EDT_USER}
+                ,EDT_DATE = SYSDATE
+        WHERE   AUTH_ID = #{AUTH_ID}
+        ]]>
+    </update>
+
+    <update id="updateUSER03TB" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.updateUSER03TB - */
+        
+        UPDATE  USER03TB
+        SET     AUTH_CODE = #{AUTH_CODE}
+                ,REG_USER = #{REG_USER}
+                ,REG_DATE = SYSDATE
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </update>
+    
+    <update id="initPassword" parameterType="HashMap">
+        <![CDATA[
+        /* k99.user.initPassword */
+        
+        UPDATE  Z_USER
+        SET     USER_PWD = #{USER_PWD}
+               ,USER_PWD_ORI = #{USER_PWD_ORI}
+               ,CHANGE_PWD_DATE = null
+               ,WRONG_COUNT = 0
+        WHERE   USER_ID = #{USER_ID}
+        ]]>
+    </update>
+    
+    <insert id="insertClubManager" parameterType="HashMap">
+        /* k99.user.insertClubManager */
+        INSERT INTO Z_USER (
+            USER_ID
+           ,USER_NM
+           ,USER_PWD
+           ,USER_LVL
+           ,USE_YN
+         ) VALUES (
+            #{USER_ID}
+           ,#{USER_NM}
+           ,#{USER_PWD}
+           ,#{USER_LVL}
+           ,#{USE_YN}
+         )
+    </insert>
+    	<update id="insertREAUTH02TB">
+	MERGE INTO REAUTH02TB
+		USING DUAL
+			ON (REAUTH_SEQ = #{REAUTH_SEQ} AND REAUTH_ID = #{REAUTH_ID})
+		WHEN MATCHED THEN
+			UPDATE SET 
+			REQUEST_DCO = #{REQUEST_DCO},
+			REQUEST_BCO = #{REQUEST_BCO},
+			CONFIRM_STATUS = #{CONFIRM_STATUS},
+			CONFIRM_USER = NULL,
+			CONFIRM_DATE = NULL
+		WHEN NOT MATCHED THEN
+			INSERT (
+			REAUTH_SEQ,
+			REAUTH_ID,
+			REQUEST_DCO, 
+			REQUEST_BCO,
+			CONFIRM_STATUS
+			) VALUES (
+			#{REAUTH_SEQ},
+			#{REAUTH_ID},
+			#{REQUEST_DCO},
+			#{REQUEST_BCO},
+			#{CONFIRM_STATUS}
+			)
+	</update>
+	
+	<insert id="insertREAUTH03TB">
+	INSERT INTO REAUTH03TB (
+		REAUTH_SEQ,
+		REAUTH_ID,
+		AGREE_NO1,
+		AGREE_NO2,
+		CONFIRM_STATUS,
+		REQUEST_DATE
+	) VALUES (
+		#{REAUTH_SEQ},
+		#{REAUTH_ID},
+		#{AGREE_NO1},
+		#{AGREE_NO2},
+		#{CONFIRM_STATUS},
+		SYSDATE
+	)
+	</insert>
+    
+</mapper>

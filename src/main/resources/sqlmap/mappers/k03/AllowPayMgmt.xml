@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.allowpay">
+
+    <select id="selectAllowPay" parameterType="HashMap" resultType="HashMap">
+    /* AllowPayMgmt.xml -selectAllowPay -  AllowPayMgmt.vue - 수당지급관리List*/
+        <![CDATA[
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT  T1.IPNT_UPPER_SEQ
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_NAME
+                                ,T1.IPNT_TYPE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                                ,T1.IPNT_KIND_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                                ,T1.IPNT_PERIOD_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                                ,T1.IPNT_SUPERVISOR
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME
+                                ,T1.IPNT_COLLECTOR
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME
+                                ,T1.IPNT_RESULT_MANAGER
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME
+                                ,T1.IPNT_DONE_DATE
+                                ,T1.IPNT_CHARGER_ID
+                                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                                ,T1.IPNT_EVENT_DET_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.IPNT_EVENT_DET_CODE AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                                ,T1.IPNT_DATE
+                                ,T1.IPNT_TIME
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+                                ,T1.IPNT_PROVINCE_CODE
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME
+                                ,T1.IPNT_PLACE_DETAIL
+                                ,T1.IPNT_PLACE_ZIPCODE
+                                ,T1.IPNT_PLACE_ADDRESS
+                                ,T1.IPNT_PLACE_NEWADDRESS
+                                ,T1.IPNT_PLACE_PHONE
+                                ,T1.IPNT_PLACE_LATITUDE
+                                ,T1.IPNT_PLACE_LONGITUDE
+                                ,T1.IPNT_SEX_M
+                                ,T1.IPNT_SEX_F
+                                ,T1.IPNT_SEX_MIX
+                                ,T1.IPNT_DCO
+                                ,T1.IPNT_DCO_F
+                                ,T1.IPNT_BCO
+                                ,T1.MEMO
+                                ,T1.CHOOSE_DONE_YN
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+                                ,T1.GAME_CODE
+                                ,(SELECT GAME_NAME FROM GAME01TB WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,NVL(T2.CONFIRM_STATUS, 'Z') AS CONFIRM_STATUS
+                        FROM    K03_DOPING_INSPECT_REG T1
+                                INNER JOIN K03_DOPING_INSPECT_ING_MST T2
+                                        ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        WHERE   T1.USE_YN = 'Y'
+            ]]>
+        <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+            AND   T1.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+	      ]]>
+	      </if>
+      </if>
+      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+	      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+	      <![CDATA[
+	          AND UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+	      ]]>
+	      </if>
+      </if>
+        <if test="COND_CHARGER_ID != null and COND_CHARGER_ID != ''">
+            AND   T1.IPNT_CHARGER_ID = #{COND_CHARGER_ID}
+        </if>
+		        
+                <![CDATA[
+                        ORDER BY T1.REG_DATE
+                        ) A
+                ORDER BY A.IPNT_DATE DESC, A.IPNT_TIME DESC, A.REG_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectAllowPayDetail" parameterType="HashMap" resultType="HashMap">
+    /* AllowPayMgmt.xml -selectAllowPayDetail -  AllowPayMgmtDetail.vue - 수당지급관리detail(View)*/
+        <![CDATA[
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T4.IPNT_NO
+                ,T1.USER_ID
+                ,T3.USER_NAME
+                ,T1.TRIP_PERIOD
+                ,T1.USER_ADDRESS
+                ,T1.USER_DETAIL_ADDRESS
+                ,(T1.USER_ADDRESS || ' ' || T1.USER_DETAIL_ADDRESS) AS ADDRESS
+                 ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T4.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                ,T1.USER_ADDRESS_LATITUDE
+                ,T1.USER_ADDRESS_LONGITUDE
+                ,T4.IPNT_PLACE_ADDRESS
+                ,T1.IPNT_PLACE_DETAIL
+                ,T1.IPNT_PLACE_LATITUDE
+                ,T1.IPNT_PLACE_LONGITUDE
+                ,T1.DISTANCE
+                ,(T1.DISTANCE * 2) AS DOUBLE_DISTANCE
+                ,T1.DISTANCE_DEFAULT_PAY
+                ,NVL(T1.EXTRA_PAY,0) EXTRA_PAY
+                ,NVL(T1.TRANSFER_PAY, 0) + NVL(T1.DAILY_PAY, 0) + NVL(T1.FOOD_PAY, 0) AS TRANSFER_PAY
+                ,T1.TRANSFER_ORG_PAY
+                ,T1.DAILY_PAY
+                ,T1.FOOD_PAY
+                ,NVL(T1.INN_PAY,0)  AS INN_PAY
+                ,T1.INN_ORG_PAY
+                ,NVL(T1.TRANSFER_PAY, 0) + NVL(T1.DAILY_PAY, 0) + NVL(T1.FOOD_PAY, 0) + NVL(T1.EXTRA_PAY, 0) AS INCOME_PAY
+                ,NVL(T1.TRANSFER_ORG_PAY, 0) + NVL(T1.INN_ORG_PAY, 0) AS INCOME_ORG_PAY
+                ,NVL(T1.EXTRA_PAY, 0) + NVL(T1.TRANSFER_PAY, 0) + NVL(T1.DAILY_PAY, 0) + NVL(T1.FOOD_PAY, 0) + NVL(T1.INN_PAY, 0) AS TOTAL_PAY
+                ,T1.MEMO
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T2.CHOOSE_DCO_YN
+                ,T2.CHOOSE_BCO_YN
+                ,T2.CHOOSE_DCOBCO_YN
+                ,T2.PREDECESSOR_YN
+                ,CASE WHEN NVL(T1.DISTANCE,0) <=12 THEN  '권역' 
+                      WHEN NVL(T1.DISTANCE,0) >=13 AND NVL(T1.DISTANCE,0) <=200 THEN  '1권역' 
+                      WHEN NVL(T1.DISTANCE,0) >=201 AND NVL(T1.DISTANCE,0) <=400  THEN  '2권역' 
+                      WHEN NVL(T1.DISTANCE,0) >=401 THEN  '3권역' 
+                      ELSE '1권역' END AS DISTANCE_CLASS
+        FROM    K03_DOPING_INSPECT_PAY  T1
+                LEFT OUTER JOIN K03_DOPING_INSPECT_DCO T2
+                        ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                        AND T1.USER_ID = T2.USER_ID
+                LEFT OUTER JOIN USER01TB T3
+                        ON T1.USER_ID = T3.USER_ID
+                INNER JOIN K03_DOPING_INSPECT_REG T4
+                        ON T1.IPNT_UPPER_SEQ = T4.IPNT_UPPER_SEQ
+                        AND T4.USE_YN = 'Y'
+        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ORDER BY T1.TRIP_PERIOD
+                ,CASE WHEN T2.PREDECESSOR_YN = 'Y' THEN 1
+                      WHEN T2.CHOOSE_DCO_YN = 'Y' THEN 2
+                      WHEN T2.CHOOSE_BCO_YN = 'Y' THEN 3
+                      WHEN T2.CHOOSE_DCOBCO_YN = 'Y' THEN 4
+                      ELSE 5
+                 END
+        ]]>
+    </select>
+    
+    <update id="updateAllowPayMgmt" parameterType="HashMap">
+        <![CDATA[
+        /* AllowPayMgmt.xml -updateAllowPayMgmt -  AllowPayMgmtDetail.vue - 수당지급관리detail(UPDATE)*/
+     UPDATE  K03_DOPING_INSPECT_PAY 
+        SET     TRANSFER_PAY = #{TRANSFER_PAY}
+                ,INN_PAY = #{INN_PAY}
+                ,EXTRA_PAY = #{EXTRA_PAY}
+                ,REG_USER = CASE WHEN REG_USER IS NULL THEN #{GSS.USER_ID} ELSE REG_USER END
+                ,REG_DATE = CASE WHEN REG_DATE IS NULL THEN SYSDATE ELSE REG_DATE END
+                ,EDT_USER = CASE WHEN REG_USER IS NULL THEN NULL ELSE #{GSS.USER_ID} END
+                ,EDT_DATE = CASE WHEN REG_USER IS NULL THEN NULL ELSE SYSDATE END
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     USER_ID = #{USER_ID}
+        ]]>
+    </update> 
+    </mapper>

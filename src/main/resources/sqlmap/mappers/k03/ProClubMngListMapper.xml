@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.proclubmng">
+
+    
+    <select id="selectProOrgz"  parameterType="HashMap" resultType="HashMap">
+        /* k03.proclubmng.selectProOrgz - 프로단체리스트 조회 */
+      <![CDATA[
+       SELECT DTL_CODE 
+            , CODE_NAME  
+         FROM K99_CODE_DTL
+        WHERE MST_CODE='PRO_ORGZ'
+         ]]>
+    </select>
+    
+    
+    <select id="selectProClubCode" parameterType="HashMap"  resultType="HashMap">
+        /* k03.proclubmng.selectProClubCode - 프로클럽코드 조회 */
+      <![CDATA[
+       SELECT DTL_CODE 
+            , CODE_NAME  
+         FROM K99_CODE_DTL
+        WHERE 1=1
+          AND MST_CODE IN(
+                           SELECT DTL_CODE 
+                             FROM K99_CODE_DTL
+                            WHERE MST_CODE='PRO_ORGZ' 
+                         )
+                            ]]>
+         <if test="PARAM1 != null and PARAM1 != '' ">
+					      <![CDATA[
+					          AND MST_CODE=  #{PARAM1}
+					      ]]>
+					      </if>
+
+    </select>
+    
+    
+    <select id="selectProClubList" parameterType="HashMap"  resultType="HashMap">
+        /* k03.proclubmng.selectProClubList - 프로구단리스트 조회 */
+      <![CDATA[
+		    SELECT A.MST_CODE AS CLUB_ORGZ 
+		     , B.CODE_NAME AS CLUB_ORGZ_NM
+		     , A.DTL_CODE AS CLUB_CD
+		     , A.CODE_NAME AS CLUB_NM
+		     , A.OPTION1 AS CLUB_ENG_NM
+		     , A.OPTION2 AS CLUB_ADDRESS 
+		     , A.OPTION3 AS CLUB_TEL_NO
+		     , A.OPTION4 AS CLUB_CEO_NM
+		     , A.OPTION5 AS CLUB_SERVICE_NO
+		     , A.OPTION6 AS ETC1
+		     , A.OPTION7 AS ETC2
+		     , A.OPTION8 AS ETC3
+		     , A.OPTION9 AS ETC4
+		     , A.OPTION10 AS FILE_SEQ /* 구단이미지 저장용 */
+		     , A.USE_YN  
+		     , A.REG_USER
+		     , A.REG_DATE
+		     , A.EDT_USER
+		     , A.EDT_DATE
+		  FROM K99_CODE_DTL A
+		  JOIN  K99_CODE_DTL B ON B.DTL_CODE = A.MST_CODE AND B.MST_CODE='PRO_ORGZ' 
+		 WHERE 1=1
+		   AND A.USE_YN = 'Y'
+  ]]>
+    <if test="CLUB_ORGZ != null and CLUB_ORGZ != '' ">
+      <![CDATA[
+           AND A.MST_CODE = #{CLUB_ORGZ}
+       ]]>
+	</if>
+
+    <if test="CLUB_CD != null and CLUB_CD != '' ">
+	   <![CDATA[
+	       AND A.DTL_CODE = #{CLUB_CD}
+       ]]>
+	</if>
+    </select>
+    
+    <select id="selectProClubDetail" parameterType="HashMap"  resultType="HashMap">
+        /* k03.proclubmng.selectProClubDetail - 프로구단리스트 조회 */
+      <![CDATA[
+		    SELECT A.MST_CODE AS CLUB_ORGZ
+		     , B.CODE_NAME AS CLUB_ORGZ_NM 
+		     , A.DTL_CODE AS CLUB_CD
+		     , A.CODE_NAME AS CLUB_NM
+		     , A.OPTION1 AS CLUB_ENG_NM
+		     , A.OPTION2 AS CLUB_ADDRESS 
+		     , A.OPTION3 AS CLUB_TEL_NO
+		     , A.OPTION4 AS CLUB_CEO
+		     , A.OPTION5 AS CLUB_SERVICE_NO
+		     , A.OPTION6 AS ETC1
+		     , A.OPTION7 AS ETC2
+		     , A.OPTION8 AS ETC3
+		     , A.OPTION9 AS ETC4
+		     , A.OPTION10 AS FILE_SEQ /* 구단이미지 저장용 */
+		     , A.USE_YN  
+		     , A.REG_USER
+		     , A.REG_DATE
+		     , A.EDT_USER
+		     , A.EDT_DATE		
+		  FROM K99_CODE_DTL A
+		  JOIN  K99_CODE_DTL B ON B.DTL_CODE = A.MST_CODE AND B.MST_CODE='PRO_ORGZ' 
+		 WHERE 1=1
+           AND A.MST_CODE = #{CLUB_ORGZ}
+           AND A.DTL_CODE = #{CLUB_CD}
+           ]]>
+    </select>
+    
+    <insert id="insertClubMngReg" parameterType="HashMap">
+        /* k03.proclubmng.insertClubMngReg */
+        
+        INSERT INTO K99_CODE_DTL 
+		( 
+		   MST_CODE
+		 , DTL_CODE
+		 , CODE_NAME
+		 , SORT_ORDER
+		 , OPTION1
+		 , OPTION2
+		 , OPTION3
+		 , OPTION4
+		 , OPTION5
+		 , OPTION6
+		 , OPTION7
+		 , OPTION8
+		 , OPTION9 
+		 , USE_YN
+		 , REG_USER
+		 , REG_DATE
+		 , EDT_USER
+		 , EDT_DATE
+		 )
+		VALUES
+		(
+		   #{CLUB_ORGZ}
+		 , #{CLUB_CD}
+		 , #{CLUB_NM}
+		 , (SELECT NVL(MAX(SORT_ORDER),0)+1 FROM K99_CODE_DTL WHERE MST_CODE=#{CLUB_ORGZ} )
+		 , #{CLUB_ENG_NM}
+		 , #{CLUB_ADDRESS}
+		 , #{CLUB_TEL_NO}
+		 , #{CLUB_CEO}
+		 , #{CLUB_SERVICE_NO}
+		 , ''
+		 , ''
+		 , ''
+		 , ''
+		 , 'Y'
+		 , #{GSS.USER_ID}
+		 , SYSDATE
+		 , #{GSS.USER_ID}
+		 , SYSDATE
+		)
+    </insert>
+    
+    <update id="updateClubMngEdit" parameterType="HashMap">
+        /* k03.proclubmng.updateClubMngEdit - 프로구단 수정 */
+        
+	    UPDATE K99_CODE_DTL 
+	       SET CODE_NAME = #{CLUB_NM}
+			 , OPTION1   = #{CLUB_ENG_NM}
+			 , OPTION2   = #{CLUB_ADDRESS}
+			 , OPTION3   = #{CLUB_TEL_NO}
+			 , OPTION4   = #{CLUB_CEO}
+			 , OPTION5   = #{CLUB_SERVICE_NO}
+			 , EDT_USER  = #{GSS.USER_ID}
+			 , EDT_DATE  = SYSDATE
+		 WHERE MST_CODE  = #{CLUB_ORGZ}
+		   AND DTL_CODE  = #{CLUB_CD}
+	</update>
+    
+     <update id="deleteClubMngEdit" parameterType="HashMap">
+    UPDATE K99_CODE_DTL 
+       SET USE_YN='N' 
+         , EDT_USER  = #{GSS.USER_ID}
+		 , EDT_DATE  = SYSDATE
+	 WHERE MST_CODE = #{CLUB_ORGZ}
+	   AND DTL_CODE = #{CLUB_CD}
+	 </update>
+	 
+	  <update id="updateClubMngFileSeq" parameterType="HashMap">
+	    /* k03.proclubmng.updateClubMngFileSeq - 구단별 이미지 번호 업데이트 */
+	       
+	    UPDATE K99_CODE_DTL 
+	       SET OPTION10 = #{FILE_SEQ} 
+	         , EDT_USER = #{GSS.USER_ID}
+	         , EDT_DATE = SYSDATE
+	     WHERE MST_CODE = #{CLUB_ORGZ}
+	       AND DTL_CODE = #{CLUB_CD}
+     </update>
+     
+     <select id="selectClubGroup" parameterType="HashMap"  resultType="HashMap">
+        /* k03.proclubmng.selectClubGroup - 구단별 그룹 조회 */
+     
+		SELECT A.DTL_CODE AS GROUP_CD
+		     , A.CODE_NAME AS GROUP_NM
+		     , A.OPTION1 AS CLUB_CODE
+		     , A.SORT_ORDER
+		     , A.USE_YN      
+		     , NULL as ROW_STATUS 
+		 FROM K99_CODE_DTL A
+		WHERE A.MST_CODE = 'CLUB_GROUP'
+		  AND A.OPTION1 = #{CLUB_CD}
+		  AND A.USE_YN = 'Y'
+		ORDER BY A.SORT_ORDER     
+     </select>
+     
+     <insert id="insertClubGroup" parameterType="HashMap">
+        <selectKey resultType="string" keyProperty="NEW_GROUP_CD" order="BEFORE">
+               SELECT TO_CHAR(NVL(MAX(TO_NUMBER(A.DTL_CODE)),0)+1)     
+				FROM K99_CODE_DTL A
+				WHERE A.MST_CODE = 'CLUB_GROUP'				        
+        </selectKey>
+        
+        /* k03.proclubmng.insertClubGroup - 구단별 그룹 입력 */
+     
+        INSERT INTO K99_CODE_DTL 
+        ( 
+           MST_CODE
+         , DTL_CODE
+         , CODE_NAME
+         , SORT_ORDER
+         , OPTION1         
+         , USE_YN
+         , REG_USER
+         , REG_DATE         
+         )
+        VALUES
+        (
+           'CLUB_GROUP'
+         , #{NEW_GROUP_CD}
+         , #{GROUP_NM}
+         , #{SORT_ORDER}
+         , #{CLUB_CD}
+         , 'Y'
+         , #{GSS.USER_ID}
+         , SYSDATE
+        )     
+     </insert>
+     
+     <update id="updateClubGroup" parameterType="HashMap">
+        /* k03.proclubmng.updateClubGroup - 구단별 그룹 수정 */
+     
+	     UPDATE K99_CODE_DTL 
+           SET CODE_NAME = #{GROUP_NM} 
+             , SORT_ORDER = #{SORT_ORDER}
+             , EDT_USER = #{GSS.USER_ID}
+             , EDT_DATE = SYSDATE
+         WHERE MST_CODE = 'CLUB_GROUP'
+           AND DTL_CODE = #{GROUP_CD}
+           AND OPTION1 = #{CLUB_CD}
+     </update>
+     
+     <update id="deleteClubGroup" parameterType="HashMap">
+       /* k03.proclubmng.deleteClubGroup - 구단별 그룹 수정 */
+     
+        UPDATE K99_CODE_DTL 
+           SET USE_YN = 'N' 
+             , EDT_USER = #{GSS.USER_ID}
+             , EDT_DATE = SYSDATE
+         WHERE MST_CODE = 'CLUB_GROUP'
+           AND DTL_CODE = #{GROUP_CD}
+           AND OPTION1 = #{CLUB_CD}
+     </update>
+     
+     <select id="selectClubCdCnt" parameterType="HashMap" resultType="HashMap">
+        /* k03.proclubmng.selectClubCdCnt - 구단코드 중복체크 */
+     
+		SELECT COUNT(*) AS CNT
+		  FROM K99_CODE_DTL T
+		 WHERE T.MST_CODE = #{CLUB_ORGZ}
+		   AND T.DTL_CODE = #{CLUB_CD}     
+     </select>
+    
+</mapper>

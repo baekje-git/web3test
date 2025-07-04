@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k06.notice">
+    <resultMap id="ResultNoticeListMap" type="HashMap">    
+		<result column="PAGE" property="PAGE" />
+		<result column="LIST_NO" property="LIST_NO" />
+		<result column="BOARD" property="BOARD" />
+		<result column="BOARD_SEQ" property="BOARD_SEQ" />
+		<result column="SUBJECT" property="SUBJECT" />
+		<result column="SUMMARY" property="SUMMARY" />
+		<result column="CONTENTS" property="CONTENTS" jdbcType="CLOB" javaType="java.lang.String" />
+		<result column="USE_YN" property="USE_YN" />
+		<result column="NOTICE_YN" property="NOTICE_YN" />
+		<result column="VOTE_YN" property="VOTE_YN" />
+		<result column="MULTI_YN" property="MULTI_YN" />
+		<result column="CLOSE_DATE" property="CLOSE_DATE" />
+		<result column="CLOSE_TIME" property="CLOSE_TIME" />
+		<result column="CLICK_COUNT" property="CLICK_COUNT" />
+		<result column="IP_ADDR" property="IP_ADDR" />
+		<result column="USER_AGENT" property="USER_AGENT" />
+		<result column="IPNT_STEP_CD" property="IPNT_STEP_CD" />
+		<result column="IPNT_STEP_NM" property="IPNT_STEP_NM" />
+		<result column="FILE_YN" property="FILE_YN" />
+		<result column="REPLY_CNT" property="REPLY_CNT" />
+		<result column="NEW_YN" property="NEW_YN" />
+		<result column="REG_USER" property="REG_USER" />
+		<result column="REG_DATE" property="REG_DATE" />
+		<result column="EDT_USER" property="EDT_USER" />
+		<result column="EDT_DATE" property="EDT_DATE" />
+		<result column="ALL_COUNT" property="ALL_COUNT" />
+		<result column="CURR_PAGE" property="CURR_PAGE" />
+		<result column="PER_PAGE" property="PER_PAGE" />
+		<result column="REPLY_USER" property="REPLY_USER" />
+		<result column="NOTICE_GB_CD" property="NOTICE_GB_CD" />
+	</resultMap>
+	
+	
+
+    <select id="selectBDNT01TB" parameterType="HashMap" resultMap="ResultNoticeListMap">
+	<![CDATA[
+	/* (NoticeMapper.xml) - k06.notice.selectBDNT01TB.일반공지등록조회 */
+        SELECT 	C.* FROM (
+        SELECT  FLOOR((ROWNUM - 1) / 1000000 + 1) AS PAGE
+        		,B.*     
+        FROM    (
+        		SELECT  ROWNUM AS LIST_NO
+        				,A.*
+        		FROM	(
+                        SELECT  T1.BOARD
+                        		,T1.BOARD_SEQ
+                                ,T1.SUBJECT
+                                ,T1.SUMMARY
+                                ,T1.CONTENTS
+                                ,T1.USE_YN
+                                ,T1.NOTICE_YN
+                                ,T1.VOTE_YN
+				                ,T1.MULTI_YN
+				                ,TO_CHAR(T1.CLOSE_DATE, 'YYYY-MM-DD') AS CLOSE_DATE 
+				                ,TO_CHAR(T1.CLOSE_DATE, 'HH24:MI') AS CLOSE_TIME
+                                ,T1.CLICK_COUNT
+                                ,T1.IP_ADDR
+                                ,T1.USER_AGENT
+				                ,T1.IPNT_STEP_CD
+				                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_STEP_CD' AND DTL_CODE = T1.IPNT_STEP_CD) AS IPNT_STEP_NM
+                                ,(CASE WHEN ( SELECT COUNT(FILE_NAME) AS CNT FROM BDNT02TB WHERE BOARD = T1.BOARD AND BOARD_SEQ = T1.BOARD_SEQ  ) = 0  THEN 'N' ELSE 'Y' END ) AS FILE_YN
+        						,(SELECT COUNT(REPLY_SEQ) AS CNT FROM BDNT03TB WHERE BOARD = T1.BOARD AND BOARD_SEQ = T1.BOARD_SEQ) AS REPLY_CNT
+                                ,CASE WHEN TO_CHAR(SYSDATE, 'YYYYMMDD') - TO_CHAR( REG_DATE, 'YYYYMMDD' ) <= 7 THEN 'Y' ELSE 'N' END AS NEW_YN
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_NAME = T1.REG_USER) AS REG_USER
+		                        ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+		                        ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+		                        ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                                ,1 AS CURR_PAGE
+                                ,10000000 AS PER_PAGE
+                                ,T1.REPLY_USER
+                                ,T1.NOTICE_GB_CD
+                        FROM    BDNT01TB T1 
+                        WHERE   1 = 1
+                        AND		BOARD = #{BOARD}
+                ]]>
+			        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'SUBJECT'">
+			            AND   T1.SUBJECT LIKE '%' || #{CONDITION_TEXT} || '%'
+			        </if>
+			        <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'REG_USER'">
+			            AND   (SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) LIKE '%' || #{CONDITION_TEXT} || '%'
+	        		</if>
+                    <if test="IPNT_STEP_CD != null and IPNT_STEP_CD != ''">
+                        AND   T1.IPNT_STEP_CD = #{IPNT_STEP_CD} 
+                    </if>
+                    <if test='USER_FLAG != null and USER_FLAG != "" and USER_FLAG != "M"'> 
+                        AND    (T1.NOTICE_GB_CD ='TOT' OR T1.IPNT_STEP_CD = DECODE( #{USER_FLAG} , 'P','PAR','R','PAR','M','ADM','D','ISP','E','ISP','TOT' ) OR T1.NOTICE_GB_CD IS NULL  )
+                    </if>
+                    <if test='START_DT != null and START_DT != "" and END_DT != null and END_DT != "" '> 
+                        AND  T1.REG_DATE BETWEEN TO_DATE(REPLACE(#{START_DT},'-',''),'YYYYMMDD') AND TO_DATE(REPLACE(#{END_DT},'-',''),'YYYYMMDD')
+                    </if>
+                    
+                <![CDATA[
+                        ORDER BY T1.REG_DATE
+                        ) A
+                ORDER BY A.NOTICE_YN DESC, A.REG_DATE DESC
+                ) B
+        ) C
+        WHERE	1=1 
+        ORDER BY C.REG_DATE DESC
+        ]]> 
+    </select>
+    
+    <select id="selectBDNT01TBRows" parameterType="HashMap" resultMap="ResultNoticeListMap">
+	<![CDATA[
+	/* (NoticeMapper.xml) - k06.notice.selectBDNT01TBRow.일반공지등록 개수한정 조회 */
+                     SELECT BOARD,BOARD_SEQ,SUBJECT,REG_USER,REG_DATE,EDT_USER,EDT_DATE 
+                                  FROM (  SELECT  T1.BOARD
+                        		,T1.BOARD_SEQ
+                                ,T1.SUBJECT
+                                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+		                        ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+		                        ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+		                        ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                        FROM    BDNT01TB T1
+                        WHERE   1 = 1
+                        AND		BOARD = #{BOARD}
+                        ORDER BY  T1.NOTICE_YN DESC, T1.REG_DATE DESC
+                        ) 
+                                WHERE ROWNUM <=#{ROWCNT}
+        ]]> 
+    </select>
+    
+    
+    <resultMap id="ResultNoticeDetailMap" type="HashMap">    
+		<result column="BOARD" property="BOARD" />
+		<result column="BOARD_SEQ" property="BOARD_SEQ" />
+		<result column="SUBJECT" property="SUBJECT" />
+		<result column="SUMMARY" property="SUMMARY" />
+		<result column="CONTENTS" property="CONTENTS" jdbcType="CLOB" javaType="java.lang.String" />
+		<result column="USE_YN" property="USE_YN" />
+		<result column="NOTICE_YN" property="NOTICE_YN" />
+		<result column="VOTE_YN" property="VOTE_YN" />
+		<result column="MULTI_YN" property="MULTI_YN" />
+		<result column="CLOSE_DATE" property="CLOSE_DATE" />
+		<result column="CLOSE_TIME" property="CLOSE_TIME" />
+		<result column="CLICK_COUNT" property="CLICK_COUNT" />
+		<result column="IP_ADDR" property="IP_ADDR" />
+		<result column="USER_AGENT" property="USER_AGENT" />
+		<result column="IPNT_STEP_CD" property="IPNT_STEP_CD" />
+		<result column="IPNT_STEP_NM" property="IPNT_STEP_NM" />
+		<result column="REG_USER_ID" property="REG_USER_ID" />
+		<result column="REG_USER" property="REG_USER" />
+		<result column="REG_DATE" property="REG_DATE" />
+		<result column="EDT_USER" property="EDT_USER" />
+		<result column="EDT_DATE" property="EDT_DATE" />
+		<result column="REPLY_USER" property="REPLY_USER" />
+		<result column="REPLY_DATE" property="REPLY_DATE" />
+		<result column="REPLY_CONTENTS" property="REPLY_CONTENTS" jdbcType="CLOB" javaType="java.lang.String"/>
+		<result column="NOTICE_GB_CD" property="NOTICE_GB_CD" />
+	</resultMap>
+
+    <select id="selectBDNT01TBByPK" parameterType="HashMap" resultMap="ResultNoticeDetailMap">
+     <![CDATA[
+     /* (NoticeMapper.xml) - k06.notice.selectBDNT01TBByPK.일반공지상세조회 */
+       SELECT  T1.BOARD
+        		,T1.BOARD_SEQ
+                ,T1.SUBJECT
+                ,T1.SUMMARY
+                ,T1.CONTENTS
+                ,T1.USE_YN
+                ,T1.NOTICE_YN
+                ,T1.VOTE_YN
+                ,T1.MULTI_YN
+                ,TO_CHAR(T1.CLOSE_DATE, 'YYYY-MM-DD') AS CLOSE_DATE 
+                ,TO_CHAR(T1.CLOSE_DATE, 'HH24:MI') AS CLOSE_TIME
+                ,CASE WHEN T1.CLOSE_DATE < SYSDATE THEN 'Y' ELSE 'N' END AS CLOSE_YN
+                ,T1.CLICK_COUNT
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.IPNT_STEP_CD
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_STEP_CD' AND DTL_CODE = T1.IPNT_STEP_CD) AS IPNT_STEP_NM
+                ,T1.REG_USER AS REG_USER_ID
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+          		,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+          		,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+          		,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REPLY_USER) AS REPLY_USER
+                ,TO_CHAR(T1.REPLY_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REPLY_DATE
+                ,T1.REPLY_CONTENTS
+                ,T1.NOTICE_GB_CD
+        FROM    BDNT01TB T1
+        WHERE   T1.BOARD = #{BOARD}
+        AND		T1.BOARD_SEQ = #{BOARD_SEQ}
+ ]]>
+    </select>
+    
+    <select id="selectBDNT01TBSequence" resultType="Integer">
+        /* (NoticeMapper.xml) - k06.notice.selectBDNT01TBSequence.일반공지등록 시퀀스조회 */
+        <![CDATA[
+        SELECT  NVL(MAX(T1.BOARD_SEQ), 0) + 1 AS BOARD_SEQ
+        FROM    BDNT01TB T1
+        ]]>
+    </select>
+    
+    <select id="selectBDNT01TBSequenceMap" parameterType="java.util.HashMap"   resultType="java.util.HashMap">
+        /* (NoticeMapper.xml) - k06.notice.selectBDNT01TBSequence.일반공지등록 시퀀스조회 */
+        <![CDATA[
+        SELECT  NVL(MAX(T1.BOARD_SEQ), 0) + 1 AS BOARD_SEQ
+        FROM    BDNT01TB T1
+        ]]>
+    </select>
+    <insert id="insertBDNT01TB" parameterType="HashMap">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.insertBDNT01TB.게시판등록  */
+        INSERT  INTO BDNT01TB
+                (
+                BOARD
+                ,BOARD_SEQ
+                ,SUBJECT
+                ,SUMMARY
+                ,CONTENTS
+                ,USE_YN
+                ,NOTICE_YN
+                ,VOTE_YN
+                ,MULTI_YN
+                ,CLOSE_DATE
+                ,CLICK_COUNT
+                ,IPNT_STEP_CD
+                ,REG_USER
+                ,REG_DATE
+                ,IP_ADDR
+                ,USER_AGENT
+                ,NOTICE_GB_CD
+                )
+        VALUES  (
+        		#{BOARD}
+                ,#{BOARD_SEQ}
+                ,#{SUBJECT}
+                ,#{SUMMARY}
+                ,#{CONTENTS}
+                ,#{USE_YN}
+                ,#{NOTICE_YN}
+                ,#{VOTE_YN}
+                ,#{MULTI_YN}
+                ,TO_DATE(#{CLOSE_DATE},'YYYY-MM-DD HH24:MI')
+                ,0
+                ,#{IPNT_STEP_CD}
+                ,#{REG_USER}
+                ,SYSDATE
+                ,#{IP_ADDR}
+                ,#{USER_AGENT}
+                ,#{NOTICE_GB_CD}
+                )
+        ]]>
+    </insert>
+    
+    <delete id="deleteBDNT01TB" parameterType="HashMap">
+        <![CDATA[
+        DELETE FROM BDNT01TB
+        WHERE	BOARD = #{BOARD}
+        AND		BOARD_SEQ = #{BOARD_SEQ}
+        ]]>
+    </delete>
+    
+    
+    <insert id="insertBDNT01TB_VOTE_ITEM" parameterType="HashMap">
+    <![CDATA[        
+       INSERT  INTO BDNT01TB_VOTE_ITEM
+                (
+                 BOARD_SEQ
+                ,ITEM_SEQ
+                ,ITEM_TITLE                
+                )
+        VALUES  (
+        		 #{BOARD_SEQ}
+                ,#{ITEM_SEQ}
+                ,#{ITEM_TITLE}                
+				)
+    ]]>
+    </insert>
+    
+    <delete id="deleteBDNT01TB_VOTE_ITEM" parameterType="HashMap">
+    <![CDATA[
+        DELETE FROM BDNT01TB_VOTE_ITEM
+         WHERE BOARD_SEQ = #{BOARD_SEQ}
+    ]]>
+    </delete>
+    
+    <update id="updateBDNT01TB" parameterType="HashMap">
+        <![CDATA[
+        UPDATE  BDNT01TB
+        SET     SUBJECT = #{SUBJECT}
+                ,SUMMARY = #{SUMMARY}
+                ,CONTENTS = #{CONTENTS}
+                ,USE_YN = #{USE_YN}
+                ,NOTICE_YN = #{NOTICE_YN}
+                ,VOTE_YN = #{VOTE_YN}
+                ,MULTI_YN = #{MULTI_YN}
+                ,CLOSE_DATE = TO_DATE(#{CLOSE_DATE},'YYYY-MM-DD HH24:MI')
+                ,EDT_USER = #{EDT_USER}
+                ,IPNT_STEP_CD = #{IPNT_STEP_CD}
+                ,EDT_DATE = SYSDATE
+                ,NOTICE_GB_CD =#{NOTICE_GB_CD}
+        WHERE   BOARD = #{BOARD}
+        AND		BOARD_SEQ = #{BOARD_SEQ}
+        ]]>
+    </update>
+    
+    
+    <select id="selectBDNT01TB_VOTE_RESULT" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+    /* (NoticeMapper.xml) - k06.notice.selectBDNT01TB_VOTE_RESULT.일반공지투표결과조회 */
+    	  SELECT A.BOARD_SEQ
+			   , A.ITEM_SEQ
+			   , A.ITEM_TITLE
+			   , MAX(A.ITEM_SEQ) OVER() AS MAX_ITEM_SEQ
+			   , NVL(B3.VOTE_CNT,0) AS VOTE_CNT
+			   , NVL(B3.VOTE_USER,'') AS VOTE_USER
+               , B.REG_USER
+			   , B.REG_DATE                  
+    	  FROM BDNT01TB_VOTE_ITEM A
+    	  LEFT OUTER JOIN BDNT01TB_VOTE_RESULT B 
+			ON A.BOARD_SEQ = B.BOARD_SEQ 
+			AND A.ITEM_SEQ = B.ITEM_SEQ 
+			AND B.REG_USER = #{REG_USER}
+    	  LEFT OUTER JOIN (	SELECT
+								  B2.BOARD_SEQ
+								, B2.ITEM_SEQ
+								, COUNT(B2.ITEM_SEQ) AS VOTE_CNT
+								, LISTAGG(NVL(U.USER_NAME,'')||'('||B2.REG_USER||')', ', ') WITHIN GROUP(ORDER BY NVL(U.USER_NAME,'')||'('||B2.REG_USER||')') AS VOTE_USER 
+							FROM
+								BDNT01TB_VOTE_RESULT B2 LEFT OUTER JOIN USER01TB U ON B2.REG_USER = U.USER_ID 
+							GROUP BY
+								B2.BOARD_SEQ
+								, B2.ITEM_SEQ) B3 
+			ON A.BOARD_SEQ = B3.BOARD_SEQ 
+			AND A.ITEM_SEQ = B3.ITEM_SEQ
+    	 WHERE A.BOARD_SEQ = #{BOARD_SEQ}
+    	 ORDER BY A.ITEM_SEQ
+    ]]>
+    </select>
+    
+    <select id="selectBDNT01TB_VOTE_OPTION" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+    /* (NoticeMapper.xml) - k06.notice.selectBDNT01TB_VOTE_OPTION.일반공지투표옵션조회 */
+    	  SELECT A.ITEM_TITLE AS text
+                 ,NVL(B3.VOTE_CNT,0) AS value 
+    	  FROM BDNT01TB_VOTE_ITEM A
+    	  LEFT OUTER JOIN (	SELECT
+								  B2.BOARD_SEQ
+								, B2.ITEM_SEQ
+								, COUNT(B2.ITEM_SEQ) AS VOTE_CNT
+								, LISTAGG(NVL(U.USER_NAME,'')||'('||B2.REG_USER||')', ', ') WITHIN GROUP(ORDER BY NVL(U.USER_NAME,'')||'('||B2.REG_USER||')') AS VOTE_USER 
+							FROM
+								BDNT01TB_VOTE_RESULT B2 LEFT OUTER JOIN USER01TB U ON B2.REG_USER = U.USER_ID 
+							GROUP BY
+								B2.BOARD_SEQ
+								, B2.ITEM_SEQ) B3 
+			ON A.BOARD_SEQ = B3.BOARD_SEQ  
+			AND A.ITEM_SEQ = B3.ITEM_SEQ
+    	 WHERE A.BOARD_SEQ = #{BOARD_SEQ}
+    	 ORDER BY A.ITEM_SEQ
+    ]]>
+    </select>
+    
+    <select id="selectBDNT02FileInfo" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.selectBDNT02FileInfo.일반공지파일정보조회 */
+        SELECT  T1.BOARD
+                ,T1.BOARD_SEQ
+                ,T1.FILE_SEQ
+                ,T1.FILE_PATH
+                ,T1.FILE_NAME
+                ,T1.FILE_ORIGIN_NAME
+                ,T1.FILE_EXT
+                ,T1.FILE_SIZE
+                ,T1.REG_USER
+                ,T1.USE_YN
+        FROM    BDNT02TB T1
+        WHERE   T1.BOARD = #{BOARD}
+        AND 	T1.BOARD_SEQ = #{BOARD_SEQ}
+        ]]>
+        <if test="FILE_SEQ != null and FILE_SEQ != ''">
+            AND   T1.FILE_SEQ = #{FILE_SEQ}
+        </if>
+        <![CDATA[
+        AND      T1.USE_YN = 'Y'
+        ORDER BY T1.FILE_SEQ
+        ]]>
+    </select>
+    
+    <resultMap id="ResultReplyListMap" type="HashMap">    
+		<result column="PAGE" property="PAGE" />
+		<result column="LIST_SEQUENCE" property="LIST_SEQUENCE" />
+		<result column="BOARD" property="BOARD" />
+		<result column="BOARD_SEQ" property="BOARD_SEQ" />
+		<result column="REPLY_SEQ" property="REPLY_SEQ" />
+		<result column="REPLY_STEP" property="REPLY_STEP" />
+		<result column="REPLY_CONTENTS" property="REPLY_CONTENTS" jdbcType="CLOB" javaType="java.lang.String"/>
+	    <result column="REG_USER" property="REG_USER" />
+		<result column="REG_USER_NM" property="REG_USER_NM" />
+		<result column="REG_DATE" property="REG_DATE" />
+		<result column="REPLY_ALL_COUNT" property="REPLY_ALL_COUNT" />
+		<result column="REPLY_CURR_PAGE" property="REPLY_CURR_PAGE" />
+		<result column="REPLY_PER_PAGE" property="REPLY_PER_PAGE" />
+	</resultMap>
+    
+    <select id="selectNoticeReplyList" parameterType="hashMap" resultMap="ResultReplyListMap">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.selectNoticeReplyList.일반공지댓글내역조회 */
+        SELECT  C.PAGE
+             , C.LIST_SEQUENCE
+             , C.BOARD
+             , C.BOARD_SEQ
+             , C.REPLY_SEQ
+             , C.REPLY_STEP
+             , C.REPLY_CONTENTS
+             , C.REG_USER
+             , C.REG_USER_NM
+             , TO_CHAR(C.REG_DATE,'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+             , C.REPLY_ALL_COUNT
+             , C.REPLY_CURR_PAGE
+             , C.REPLY_PER_PAGE
+          FROM (
+        SELECT  FLOOR((ROWNUM - 1) / 1000000 + 1) AS PAGE
+        		,B.*     
+        FROM    (
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+				        SELECT  T1.BOARD
+				                ,T1.BOARD_SEQ
+				                ,T1.REPLY_SEQ
+				                ,T1.REPLY_STEP
+				                ,T1.REPLY_CONTENTS
+				                ,T1.REG_USER
+				                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER_NM
+				                ,T1.REG_DATE
+				                ,COUNT(1) OVER() AS REPLY_ALL_COUNT
+                                , 1  AS REPLY_CURR_PAGE
+                                , 1000000 AS REPLY_PER_PAGE
+				        FROM    BDNT03TB T1
+				        WHERE   T1.BOARD = #{BOARD}
+				        AND 	T1.BOARD_SEQ = #{BOARD_SEQ}
+				        ORDER BY T1.REPLY_SEQ DESC, REPLY_STEP ASC
+                        ) A
+                ORDER BY A.REPLY_SEQ DESC, A.REPLY_STEP DESC
+                ) B
+        ) C
+        WHERE	C.PAGE = 1				        
+        ]]>
+    </select>
+    
+    <select id="selectBDNT03TBSequence" parameterType="hashMap" resultType="Integer">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.selectBDNT03TBSequence.일반공지댓글순번조회 */
+        SELECT  NVL(MAX(T1.REPLY_SEQ), 0) + 1 AS REPLY_SEQ
+        FROM    BDNT03TB T1
+        ]]>
+    </select>
+    
+    <insert id="insertReplyDetail" parameterType="hashMap">
+        <![CDATA[  
+        /* (NoticeMapper.xml) - k06.notice.insertReplyDetail.일반공지댓글저장 */
+        INSERT  INTO BDNT03TB
+                (
+                BOARD
+                ,BOARD_SEQ
+                ,REPLY_SEQ
+                ,REPLY_GROUP
+                ,REPLY_STEP
+                ,REPLY_POS
+                ,REPLY_CONTENTS
+                ,REG_USER
+                ,REG_DATE
+                ,IP_ADDR
+                ,USER_AGENT
+                )
+        VALUES  (
+        		#{BOARD}
+        		,#{BOARD_SEQ}
+                ,#{REPLY_SEQ}
+                ,#{REPLY_GROUP}
+                ,#{REPLY_STEP}
+                ,#{REPLY_POS}
+                ,#{REPLY_CONTENTS}
+                ,#{REG_USER}
+                ,SYSDATE
+                ,#{IP_ADDR}
+                ,#{USER_AGENT}
+				)
+        ]]>
+    </insert>
+    
+    <update id="updateBDNT03TB" parameterType="hashMap">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.updateBDNT03TB.일반공지댓글수정저장 */
+        UPDATE  BDNT03TB
+        SET     REPLAY_CONTENTS = #{REPLY_CONTENTS}
+                ,EDT_USER = #{EDT_USER}
+                ,EDT_DATE = SYSDATE
+        WHERE   BOARD = #{BOARD}
+        AND		BOARD_SEQ = #{BOARD_SEQ}
+        AND		REPLY_SEQ = #{REPLY_SEQ}
+        ]]>
+    </update>
+    
+    <delete id="deleteReplyDetail" parameterType="hashMap">
+        <![CDATA[
+        /* (NoticeMapper.xml) - k06.notice.deleteBDNT03TB.일반공지댓글삭제 */
+        DELETE FROM BDNT03TB
+        WHERE	BOARD = #{BOARD}
+        AND     BOARD_SEQ = #{BOARD_SEQ}
+        AND     REPLY_SEQ = #{REPLY_SEQ}
+        ]]>
+    </delete>
+    
+    <insert id="insertBDNT01TB_VOTE_RESULT" parameterType="hashMap">
+    <![CDATA[
+    /* (NoticeMapper.xml) - k06.notice.insertBDNT01TB_VOTE_RESULT.일반공지투표결과저장 */
+        INSERT  INTO BDNT01TB_VOTE_RESULT
+                (
+                 BOARD_SEQ
+                ,ITEM_SEQ                
+                ,REG_USER
+                ,REG_DATE                
+                )
+        VALUES  (
+        		 #{BOARD_SEQ}
+                ,#{ITEM_SEQ}
+                ,#{REG_USER}
+                ,SYSDATE
+				)
+    ]]>    
+    </insert>
+    
+    <delete id="deleteBDNT01TB_VOTE_RESULT" parameterType="hashMap">
+    /* (NoticeMapper.xml) - k06.notice.deleteBDNT01TB_VOTE_RESULT.일반공지투표결과삭제 */
+       DELETE FROM BDNT01TB_VOTE_RESULT
+        WHERE BOARD_SEQ = #{BOARD_SEQ}
+          AND REG_USER = #{REG_USER}
+    </delete>
+    
+</mapper>
+ 

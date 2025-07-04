@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.SendMessage">
+    <select id="selectPlayerRTP" parameterType="HashMap" resultType="HashMap">
+		SELECT PR.PLAYER_NO,
+		       PR.PLAYER_NAME,
+		       PR.PLAYER_SEX,
+		       PR.BIRTH_DT,
+		       PR.PLAYER_EMAIL,
+		       PR.PLAYER_PHONE,
+			   (SELECT CODE_NAME
+		          FROM CODE01TB T1 
+		         WHERE T1.MST_CODE = 'PLAYER_GROUP'
+				  AND T1.DTL_CODE = PR.PLAYER_GROUP) AS GROUP_NM,		       
+		       PR.PLAYER_GROUP,
+			   (SELECT CODE_NAME
+				  FROM CODE01TB T1 
+				  WHERE T1.MST_CODE = 'PLAYER_GUBUN'
+				    AND T1.DTL_CODE = PR.PLAYER_GUBUN) AS GUBUN_NM,			       
+		       PR.PLAYER_GUBUN,
+		       PR.REG_USER,
+		       PR.REG_DATE,
+		       PR.EDT_USER,
+		       PR.EDT_DATE
+		FROM PLAYER_RTP PR
+	   WHERE 1=1
+	    <if test="COND_GUBUN != null and COND_GUBUN != ''">
+		AND  PR.PLAYER_GUBUN = #{COND_GUBUN}
+		</if>
+		<if test="COND_GROUP != null and COND_GROUP != ''">
+		AND  PR.PLAYER_GROUP = #{COND_GROUP}
+		</if>
+		<if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+		AND  PR.PLAYER_NAME LIKE '%'||#{CONDITION_TEXT}||'%'
+		</if>
+		ORDER BY TO_NUMBER(PR.PLAYER_NO) DESC    
+    </select>
+    
+    <select id="selectPlayerRTP_PK" parameterType="HashMap" resultType="HashMap">
+		SELECT PR.PLAYER_NO,
+		       PR.PLAYER_NAME,
+		       PR.PLAYER_SEX,
+		       PR.BIRTH_DT,
+		       PR.PLAYER_EMAIL,
+		       PR.PLAYER_PHONE,
+			   (SELECT CODE_NAME
+		          FROM CODE01TB T1 
+		         WHERE T1.MST_CODE = 'PLAYER_GROUP'
+				  AND T1.DTL_CODE = PR.PLAYER_GROUP) AS GROUP_NM,		       
+		       PR.PLAYER_GROUP,
+			   (SELECT CODE_NAME
+				  FROM CODE01TB T1 
+				  WHERE T1.MST_CODE = 'PLAYER_GUBUN'
+				    AND T1.DTL_CODE = PR.PLAYER_GUBUN) AS GUBUN_NM,			       
+		       PR.PLAYER_GUBUN,
+		       PR.REG_USER,
+		       PR.REG_DATE,
+		       PR.EDT_USER,
+		       PR.EDT_DATE
+		FROM PLAYER_RTP PR
+	   WHERE PR.PLAYER_NO = #{PLAYER_NO}
+	    <if test="COND_GUBUN != null and COND_GUBUN != ''">
+		AND  PR.PLAYER_GUBUN = #{COND_GUBUN}
+		</if>
+		<if test="COND_GROUP != null and COND_GROUP != ''">
+		AND  PR.PLAYER_GROUP = #{COND_GROUP}
+		</if>
+		<if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+		AND  PR.PLAYER_NAME LIKE '%'||#{CONDITION_TEXT}||'%'
+		</if>
+		ORDER BY TO_NUMBER(PR.PLAYER_NO) DESC    
+    </select>
+    
+    <select id="selectSendHistory" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+		SELECT A.MSG_ID,
+               A.SEND_TYPE,
+               A.SCHEDULE_TYPE,
+               A.SUBJECT,
+               A.SMS_MSG,
+               A.CALLBACK,
+               A.NOW_DATE,
+               A.SEND_DATE,
+               A.DEST_INFO,
+               A.RESERVED1,
+               A.RESERVED2,
+               A.RESERVED3
+		FROM   (SELECT A.MSG_ID,
+				       'SMS' AS SEND_TYPE,
+				       A.SCHEDULE_TYPE,
+				       A.SUBJECT,
+				       A.SMS_MSG,
+				       A.CALLBACK,
+				       A.NOW_DATE,
+				       A.SEND_DATE,
+				       A.DEST_INFO,
+				       A.RESERVED1,
+				       A.RESERVED2,
+				       A.RESERVED3
+				FROM SDK_SMS_REPORT A 
+				WHERE A.RESERVED1 = 'ADTIS'
+				AND A.RESERVED2 = 'KADA0350 > smsSend'
+	]]>   		
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+        AND     A.DEST_INFO LIKE CONCAT('%',#{CONDITION_TEXT},'%')
+        </if>
+    <![CDATA[  				
+				UNION ALL
+				SELECT A.MSG_ID,
+				       'MMS' AS SEND_TYPE,
+				       A.SCHEDULE_TYPE,
+				       A.SUBJECT,
+				       A.MMS_MSG,
+				       A.CALLBACK,
+				       A.NOW_DATE,
+				       A.SEND_DATE,
+				       A.DEST_INFO,
+				       A.RESERVED1,
+				       A.RESERVED2,
+				       A.RESERVED3
+				FROM SDK_MMS_REPORT A 
+				WHERE A.RESERVED1 = 'ADTIS'
+				AND A.RESERVED2 = 'KADA0350 > smsSend'
+    ]]>         
+        <if test="CONDITION_TEXT != null and CONDITION_TEXT != ''">
+        AND     A.DEST_INFO LIKE CONCAT('%',#{CONDITION_TEXT},'%')
+        </if>
+    <![CDATA[				
+				) A
+		ORDER BY A.NOW_DATE DESC    
+	]]>	
+    </select>
+    
+    <update id="insertPlayerRTP" parameterType="hashMap">
+        MERGE INTO PLAYER_RTP S
+        USING DUAL ON (S.PLAYER_NO = #{PLAYER_NO})
+        WHEN MATCHED THEN
+        	UPDATE SET
+        	    S.PLAYER_NAME = #{PLAYER_NAME},
+        	    S.PLAYER_SEX = #{PLAYER_SEX},        	    
+        	    S.PLAYER_PHONE = #{PLAYER_PHONE},
+        	    S.BIRTH_DT = #{BIRTH_DT},  
+			    S.PLAYER_GROUP = #{PLAYER_GROUP},
+			    S.PLAYER_GUBUN = #{PLAYER_GUBUN},
+			    S.EDT_USER = #{EDT_USER},			    
+			    S.EDT_DATE = SYSDATE
+        WHEN NOT MATCHED THEN 
+			INSERT(
+			    PLAYER_NO,
+			    PLAYER_NAME,
+			    PLAYER_SEX,			    
+			    PLAYER_PHONE,
+			    BIRTH_DT,
+			    PLAYER_GROUP,
+			    PLAYER_GUBUN,
+			    REG_USER,
+			    REG_DATE
+			) VALUES (
+			    PLAYER_RTP_SEQ.NEXTVAL,
+			    #{PLAYER_NAME},
+			    #{PLAYER_SEX},			    
+			    #{PLAYER_PHONE},
+			    #{BIRTH_DT},
+			    #{PLAYER_GROUP},
+			    #{PLAYER_GUBUN},
+			    #{REG_USER},
+			    SYSDATE
+			)    
+    </update>
+</mapper>

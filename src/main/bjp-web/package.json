@@ -1,0 +1,60 @@
+{
+  "name": "quasar-project",
+  "version": "0.0.1",
+  "description": "A Quasar Project",
+  "productName": "백제약품",
+  "author": "",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "set NODE_ENV=local && quasar dev",
+    "build": "set NODE_ENV=local && quasar build",
+    "build-prod": "set NODE_ENV=production && quasar build",
+    "build-dev": "set NODE_ENV=development && quasar build"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/keyboard": "^6.0.1",
+    "@jamescoyle/vue-icon": "^0.1.2",
+    "@mdi/js": "^7.4.47",
+    "@quasar/extras": "^1.16.4",
+    "@vuepic/vue-datepicker": "^7.2.0",
+    "axios": "^1.5.0",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.3.1",
+    "medium-zoom": "^1.1.0",
+    "mitt": "^3.0.1",
+    "mobile-detect": "^1.4.5",
+    "moment": "^2.29.4",
+    "path": "^0.12.7",
+    "quasar": "^2.6.0",
+    "request": "^2.88.2",
+    "signature_pad": "^4.1.7",
+    "sockjs-client": "^1.6.1",
+    "swiper": "^11.1.1",
+    "vue": "^3.4.14",
+    "vue-router": "^4.0.0",
+    "vue3-apexcharts": "^1.4.4",
+    "vue3-datepicker": "^0.4.0",
+    "vue3-signature": "^0.2.4",
+    "vuex": "^4.1.0",
+    "webstomp-client": "^1.2.6",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^1.3.0",
+    "autoprefixer": "^10.4.2",
+    "eslint": "^8.10.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "postcss": "^8.4.14",
+    "prettier": "^2.5.1"
+  },
+  "engines": {
+    "node": "^20||^18 || ^16 || ^14.19",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}

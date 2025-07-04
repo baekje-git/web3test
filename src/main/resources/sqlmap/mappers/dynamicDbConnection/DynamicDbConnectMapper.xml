@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dynamicDbConnection">
+    
+    <sql id="reg_getConnectionInfoListSearch">
+        <if test = 'DB_CONNECT_KEY != NULL and DB_CONNECT_KEY != "" '>AND DB_CONNECT_KEY = #{DB_CONNECT_KEY} </if>
+    </sql>
+    
+    <select id="getConnectionInfoList"   parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT 
+            * 
+        FROM tbl_dynamic_db_connection_info      
+        WHERE 1 = 1
+        <include refid="reg_getConnectionInfoListSearch"/>
+    </select>       
+
+</mapper>

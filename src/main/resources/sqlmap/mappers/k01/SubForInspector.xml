@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k01.main.subinspector">
+
+    <select id="selectScheduleMonth" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* k01.main.subinspector.selectScheduleMonth - 검사관 검사 가능 일정 */
+       SELECT *
+	    FROM    (SELECT T.USER_ID  AS PLAYER_ID,
+				        T.START_DT,
+				        T.END_DT,
+				        T.INSP_POSSIBLE_YN AS LOCATION_CD,
+				        CASE WHEN INSP_POSSIBLE_YN='Y' THEN '가능' ELSE '불가' END AS LOCATION_CD_NM,
+				        CASE WHEN INSP_POSSIBLE_YN='Y' THEN '가능' ELSE '불가' END AS LOCATION_NM,
+				        T.SCHEDULE_MEMO,
+				        U1.USER_NAME AS REG_USER_NAME,
+				        U2.USER_NAME AS EDT_USER_NAME
+				 FROM K03_INSPECTOR_SCHEDULE T
+				 LEFT OUTER JOIN USER01TB U3 ON T.USER_ID = U3.USER_ID
+				 LEFT OUTER JOIN USER01TB U1 ON T.REG_USER = U1.USER_ID
+				 LEFT OUTER JOIN USER01TB U2 ON T.EDT_USER = U2.USER_ID
+				 WHERE T.USER_ID = #{PLAYER_ID} ) A          
+	   WHERE 1=1
+    ]]>      
+        <if test=" !LOCATION_CD_NM.isEmpty() ">
+            AND A.LOCATION_NM IN         
+	        <foreach collection="LOCATION_CD_NM" item="item"  open="(" close=")" separator=",">
+	            #{item}
+	        </foreach>
+        </if>
+        <if test=" LOCATION_CD_NM.isEmpty() ">
+            AND 1=2 /* INSP_POSSIBLE_YN 가 비었을 경우 강제로 결과가 없도록 처리 */
+        </if>
+    </select>
+    
+    <select id="selectTermCheckByinspector" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+      /* k01.main.subinspector.selectTermCheckByinspector - 저장할 검사관 일정의 중복체크  */
+      
+		 SELECT A.USER_ID AS PLAYER_ID,
+		        SUBSTR(A.START_DT,1,8) AS START_DT,
+		        SUBSTR(A.START_DT,9) AS START_DT2,
+		        SUBSTR(A.END_DT,1,8) AS END_DT,
+		        SUBSTR(A.END_DT,9) AS END_DT2,
+		        A.INSP_POSSIBLE_YN AS LOCATION_CD,
+		        CASE WHEN INSP_POSSIBLE_YN='Y' THEN '가능' ELSE '불가' END AS LOCATION_CD_NM,
+		        A.SCHEDULE_MEMO
+		 FROM K03_INSPECTOR_SCHEDULE A
+		 WHERE A.START_DT <= #{END_DT} 
+		 AND A.END_DT >= #{START_DT} 
+		 AND A.USER_ID = #{PLAYER_ID}
+	]]>	 
+	  <if test="MODE=='UPDATE'">
+	     AND (A.START_DT != #{OLD_START_DT} AND A.END_DT != #{OLD_END_DT})
+	  </if>
+    </select>
+    
+    <insert id="insertInspectorSchedule" parameterType="HashMap">
+        /* k01.main.subinspector.insertInspectorSchedule - 검사관 검사 가능 일정 등록 */
+    
+        INSERT INTO K03_INSPECTOR_SCHEDULE (
+            USER_ID,
+            START_DT,
+            END_DT,
+            INSP_POSSIBLE_YN,
+            SCHEDULE_MEMO,
+            REG_USER,
+            REG_DATE
+        ) VALUES (
+            #{PLAYER_ID},
+            #{START_DT},
+            #{END_DT},
+            #{LOCATION_CD},
+            #{SCHEDULE_MEMO},
+            #{REG_USER},
+            SYSDATE
+        )
+    </insert>
+    
+    <update id="updateInspectorSchedule" parameterType="HashMap">
+        /* k01.main.subinspector.updateInspectorSchedule - 검사관 검사 가능 일정 수정 */
+        
+        UPDATE K03_INSPECTOR_SCHEDULE
+           SET START_DT = #{START_DT},
+	           END_DT = #{END_DT},
+	           INSP_POSSIBLE_YN = #{LOCATION_CD},
+	           SCHEDULE_MEMO = #{SCHEDULE_MEMO},
+	           EDT_USER = #{EDT_USER},
+	           EDT_DATE = SYSDATE
+	     WHERE USER_ID = #{PLAYER_ID}
+           AND START_DT = #{OLD_START_DT}
+           AND END_DT = #{OLD_END_DT}    
+    </update>
+    
+    <delete id="deleteInspectorSchedule" parameterType="HashMap">
+        /* k01.main.subinspector.deleteInspectorSchedule - 검사관 검사 가능 일정 삭제 */
+        
+        DELETE 
+          FROM K03_INSPECTOR_SCHEDULE
+         WHERE USER_ID = #{PLAYER_ID}
+           AND START_DT = #{START_DT}
+           AND END_DT = #{END_DT} 
+    </delete>
+    
+</mapper>
+ 

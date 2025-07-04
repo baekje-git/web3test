@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k05.ReAuth">
+    <select id="selectREAUTH01TB" parameterType="HashMap" resultType="HashMap">
+    /* ReAuthMgmtMapper.xml . 재인증관리 . selectREAUTH01TB */
+   	    SELECT  ROWNUM AS LIST_SEQUENCE
+   				,A.*
+   		FROM	(
+        SELECT 	T1.REAUTH_SEQ,
+    	    	T1.SUBJECT,
+    		    T1.START_DATE,
+    			T1.END_DATE,
+    			T1.REG_USER,
+    			TO_CHAR(T1.REG_DATE, 'YYYYMMDD') AS REG_DATE,
+    			T1.USE_YN,
+    			COUNT(1) OVER() AS ALL_COUNT
+    	FROM REAUTH01TB T1
+	<where>
+	<if test="USE_YN != null and USE_YN != ''">
+		AND	T1.USE_YN = #{USE_YN}
+	</if>
+	</where>
+    ORDER BY T1.END_DATE DESC, T1.REAUTH_SEQ DESC
+                   ) A
+    </select>
+    <select id="selectREAUTH03TB" parameterType="HashMap" resultType="HashMap">
+    /* ReAuthMgmtMapper.xml . 재인증관리 서약서 쿼리 . selectREAUTH03TB */
+	SELECT REAUTH_SEQ,
+	       REAUTH_ID,
+	       AGREE_NO1,
+	       AGREE_NO2,
+	       REQUEST_DATE,
+	       CONFIRM_STATUS
+	FROM REAUTH03TB
+	WHERE 1=1
+	AND REAUTH_ID = #{USER_ID}
+    </select>
+    
+	<insert id="insertREAUTH">
+	INSERT INTO REAUTH03TB (
+		REAUTH_SEQ,
+		REAUTH_ID,
+		AGREE_NO1,
+		AGREE_NO2,
+		CONFIRM_STATUS,
+		REQUEST_DATE
+	) VALUES (
+		#{REAUTH_SEQ},
+		#{REAUTH_ID},
+		#{AGREE_NO1},
+		#{AGREE_NO2},
+		#{CONFIRM_STATUS},
+		SYSDATE
+	)
+	</insert>
+
+</mapper>

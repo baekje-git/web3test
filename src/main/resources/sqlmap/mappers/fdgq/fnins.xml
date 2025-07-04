@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgq.fnins">
+   	<select id="selectFdgqFninsList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgq.fnins.selectFdgqFninsList (fnins.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+		  ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+		  ,G.BE04              AS WRITER_NM  /* 시험지시자 */
+		  ,FN_FMT_DT(G.BE03)	   AS WRITER_DT  /* 시험지시자 확인일 */
+		  ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgq-fnins' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+      FROM T_FDGP_BPR A
+      JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      JOIN t_fdgP_pack E
+        ON E.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNINS G
+        ON G.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDG_QNA TFQ
+	  	ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND F.PROD_MANAGER_ID IS NOT NULL
+	   <if test="START_PROD_DT != null and START_PROD_DT != '' and END_PROD_DT != null and END_PROD_DT != ''">
+       AND A.PROD_DT between REPLACE(#{START_PROD_DT},'-','') AND REPLACE(#{END_PROD_DT},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="FNINS_NM != null and FNINS_NM != ''">
+       AND G.BE04 LIKE CONCAT('%',#{WRITER_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgqFnins" parameterType="HashMap">
+    /* fdgq.fnins.insertFdgqFnins */
+
+                INSERT INTO T_FDGQ_FNINS
+                SET PROD_NO = #{eData.PROD_NO}
+					,A01 = #{eData.A01}
+					,A02 = #{eData.A02}
+					,TEST_REQ_NO = #{eData.TEST_REQ_NO}
+					,A04 = #{eData.A04}
+					,TEST_GRD_NO = FN_QCTC_NO('')
+					,A06 = #{eData.A06}
+					,BE03 = #{eData.BE03}
+					,BE04 = #{eData.BE04}
+					,B0101 = #{eData.B0101}
+				    ,REG_ID = #{userData.USER_ID}
+				    ,REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+					 A01 = #{eData.A01}
+					,A02 = #{eData.A02}
+					,A04 = #{eData.A04}
+					,A06 = #{eData.A06}
+					,BE03 = #{eData.BE03}
+					,BE04 = #{eData.BE04}
+					,B0101 = #{eData.B0101}
+			        ,EDT_ID = #{userData.USER_ID}
+			        ,EDT_DTM = NOW()
+    </insert>
+</mapper>

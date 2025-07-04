@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:mvc="http://www.springframework.org/schema/mvc"
+        xmlns:task="http://www.springframework.org/schema/task"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+                http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+                http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd">
+
+
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                    <value>text/html; charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                    <value>application/json; charset=UTF-8</value>
+                    </list>
+                </property>
+                <property name="objectMapper">
+                    <bean class="ever.support.jackson.CustomObjectMapper"/>
+                </property>
+            </bean>
+            <bean class="org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                    <value>application/xml; charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <task:annotation-driven/>
+
+    <!-- <mvc:resources mapping="/resources/**" location="/resources/" /> -->
+
+    <bean id="fileDownloadView" class="ever.support.file.FileDownloadView"/>
+    
+    <bean id="barcodeView" class="ever.support.barcode.BarcodeView"/>
+
+    <bean id="beanNameViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+        <property name="order" value="0" />
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+        <property name="prefix" value="/WEB-INF/views/" />
+        <property name="suffix" value=".jsp" />
+        <property name="order" value="1" />
+    </bean>
+
+    <context:component-scan base-package="ever,kada,chem, baekje">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+
+    <bean id="commonInterceptor" class="ever.support.interceptor.JwtInterceptor" />
+    <!-- <bean id="commonInterceptor" class="ever.support.interceptor.CommonInterceptor" /> -->
+    <bean id="webContentInterceptor" class="org.springframework.web.servlet.mvc.WebContentInterceptor">
+        <property name="cacheSeconds"           value="0"/>
+        <property name="useExpiresHeader"       value="true"/>
+        <property name="useCacheControlHeader"  value="true"/>
+        <property name="useCacheControlNoStore" value="true"/>
+    </bean>
+
+    <!--  서블릿 / 로 걸었을때 스태틱 접근 -->
+    <mvc:resources mapping="/common/**" location="/common/" />
+    <mvc:resources mapping="/dist/**" location="/dist/" />
+
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/common/**"/>
+            <mvc:exclude-mapping path="/dwr/**"/>
+            <mvc:exclude-mapping path="/cmmn/error.do"/>
+            <mvc:exclude-mapping path="/login/**"/>
+            <mvc:exclude-mapping path="/jwt/**"/>
+            <mvc:exclude-mapping path="/dist/**"/>
+            <mvc:exclude-mapping path="/index.do"/>
+            <mvc:exclude-mapping path="/"/>
+            <mvc:exclude-mapping path="/main/newQa"/>
+            <mvc:exclude-mapping path="/main/newQaFiles"/>
+            <mvc:exclude-mapping path="/main/findLoginId"/>
+            <mvc:exclude-mapping path="/main/findLoginPw"/>
+            <mvc:exclude-mapping path="/main/sendTempPw"/>
+            <mvc:exclude-mapping path="/main/editPassword"/>
+            <mvc:exclude-mapping path="/payment/wpaystdPayAuthCardRequest"/>
+            <mvc:exclude-mapping path="/main/selectLoginUrl"/>
+
+            <!-- websocket -->
+            <mvc:exclude-mapping path="/ws/info"/>
+            <mvc:exclude-mapping path="/**/websocket/"/>
+            <!-- websocket -->
+
+            <!-- inicis(결제) 관련 -->
+            <mvc:exclude-mapping path="/inicis/**"/>
+            
+            <mvc:exclude-mapping path="/print/**"/>
+            
+            <mvc:exclude-mapping path="/payment/reqSimplePay"/>
+
+            <mvc:exclude-mapping path="/sample/**"/>
+            <mvc:exclude-mapping path="/cmmnFile/getImage"/>
+            <mvc:exclude-mapping path="/cmmnFile/agreementFileDownLoad"/>
+            <mvc:exclude-mapping path="/bindList/k99.code/selectCodeDtl"/>
+            <mvc:exclude-mapping path="/bindRow/k05.playerMng/selectPlayerCnt3"/>
+            
+            <mvc:exclude-mapping path="/payment/wpaystdPayAuthCardRequest"/>
+            <mvc:exclude-mapping path="/payment/wpaystdPayAuthCardReturn"/>
+            <mvc:exclude-mapping path="/payment/wpaystdMemRegForm"/>
+            <mvc:exclude-mapping path="/payment/wpaystdMemRegRequest"/>
+            <mvc:exclude-mapping path="/payment/wpaystdMemRegReturn"/>
+            
+            <ref bean="commonInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!-- <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/common/**"/>
+            <ref bean="webContentInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors> -->
+
+    <mvc:cors>
+	    <mvc:mapping path="/**"
+	        allowed-origins="*"
+	        allowed-methods="GET, POST, PUT, DELETE, PATCH, OPTIONS"
+	        allowed-headers="*"
+	        allow-credentials="true"
+	        max-age="3600" />
+    </mvc:cors>
+
+</beans>

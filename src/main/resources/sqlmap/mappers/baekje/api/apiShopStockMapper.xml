@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiShopStock">
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiShopStockMapper.xml][apiShopStockMapper.insertApiHistory][API연동이력(T_API_LOG) ]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+        , MOD_ID
+        , ERR_MSG
+    ) VALUES (
+          #{API_IP}
+        , #{API_ID}
+        , #{API_TXT}
+        , #{API_INS}
+        , CURRENT TIMESTAMP
+        , #{API_MOD}
+        , #{ERR_MSG}
+        )
+</insert>
+
+<select id="checkAuth"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiShopStockMapper.xml][apiShopStockMapper.selectAuthCheck][인증체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_KEY},'') = '' THEN 'API키값이 누락되었습니다'
+                           WHEN USER_STRING1 != #{API_KEY} THEN 'API키값이 일치하지 않습니다'
+                           WHEN IFNULL(#{API_IP},'') = '' THEN 'IP가 확인되지 않습니다'
+                           WHEN USER_STRING2 != #{API_IP} AND USER_STRING3 != #{API_IP} AND USER_STRING4 != #{API_IP} AND USER_STRING5 != #{API_IP} AND USER_STRING6 != #{API_IP} THEN '승인되지 않은 IP입니다'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE='581'
+       AND CODE = #{API_SHOP_ID}
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+
+<select id="selectStockHmp"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    /*+[apiShopStockMapper.xml][apiShopStockMapper.selectStockHmp][재고조회-한미몰]+*/
+	SELECT B.BRCH_CD
+	      ,B.ITEM_CD
+	      ,(CASE WHEN C.AVAIL_STOCK >= IFNULL(D.USER_INT3,0) THEN CEIL((CEIL(C.AVAIL_STOCK*A.USER_INT1/100)*IFNULL(B.DIV_RATE,A.USER_INT5))/100) ELSE 0 END) AS STOCK_QTY
+	      ,B.WP2_AMT AS LAST_PRICE
+	      ,(CASE WHEN E.SPEC_CD ='04' THEN 'Y' ELSE 'N' END) AS ITEM_GB
+	      ,IFNULL(E.SUBDIV_YN,'N') as UNIT_GB
+	      ,IFNULL(B.MAX_AVAIL_STOCK,0) AS MAX_AVAIL_STOCK
+          /*
+	      ,C.AVAIL_STOCK
+	      ,IFNULL(B.DIV_RATE,A.USER_INT5) AS DIV_RATE
+	      ,B.SHOP_GB_CD
+	      */
+	  FROM T_CODE A
+	  JOIN T_SHOP_ITEM_PRICE B
+	    ON B.SHOP_GB_CD = '03'
+	   AND B.BRCH_CD = A.CODE
+	   AND B.USE_YN = 'Y'
+	  JOIN T_ITEM_STOCK C
+	    ON C.ITEM_CD = B.ITEM_CD
+	   AND C.BRCH_CD = B.BRCH_CD
+	   AND C.USE_YN  = 'Y'
+	  LEFT JOIN T_CODE D
+	    ON D.P_CODE = '962'
+	   AND D.CODE = B.BRCH_CD
+	   AND D.USE_YN = 'Y'
+	  JOIN T_ITEM E
+	    ON E.ITEM_CD = B.ITEM_CD
+	 WHERE A.P_CODE = '936'
+	   AND A.USER_STRING3 = 'Y'
+	   AND A.USE_YN = 'Y'
+    <if test='STOCK_CODE != null and STOCK_CODE != ""'>
+       AND A.CODE = #{STOCK_CODE}
+    </if>
+    <if test='ITEM_CODE_LIKE != null and ITEM_CODE_LIKE != ""'>
+       AND B.ITEM_CD LIKE CONCAT(#{ITEM_CODE_LIKE},'%')
+    </if>
+</select>
+
+</mapper>

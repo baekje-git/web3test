@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="freOrd">
+    <insert id="saveSearchIpHistory" parameterType="java.util.HashMap" >
+        /* comOrd.saveSearchIpHistory 품목검색이력IP */
+        INSERT INTO T_WEB_SEARCH_IP_LOG
+             ( SEARCH_DTM
+             , LOGIN_ID
+             , BRCH_CD
+             , CUST_CD
+             , IP_ADDR
+             , SEARCH_TEXT
+             , INS_ID
+             , INS_DTM
+             )
+        VALUES
+             ( F_S_NOW()
+             , #{loginId}
+             , #{brchCd}
+             , #{custCd}
+             , #{ipAddr}
+             , #{H_SEARCH_GB}||#{H_SEARCH_NM}||#{H_SEARCH_MAKER}||#{H_SEARCH_INGNO}||#{H_SEARCH_EFFNO}||#{ORD_MAKER_CD}
+             , #{loginId}
+             , F_S_NOW()
+             )
+    </insert>
+
+    <select id="selectFreOrdList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* freOrd.selectFreOrdList 다빈도 리스트 조회 */
+        SELECT
+            Z.*
+            ,SUBSTRING(CASE WHEN Z.PAY_ITEM_YN = 'Y' THEN '급여' ELSE '비급여' END, 1, 1) AS PAY_ITEM_NM
+        FROM (
+        SELECT
+               B.ITEM_CD
+               ,D.ITEM_NM AS ITEM_NM
+               ,D.BOHUM_CD
+               ,D.ITEM_PYOJUN_CD
+               ,D.PAY_ITEM_YN
+               ,D.MED_CD
+	           ,D.SMALLBOX_QTY /* 소 */
+	           ,D.MIDBOX_QTY   /* 중 */
+	           ,D.LARGEBOX_QTY /* 대 */
+               ,F_S_CODE('114',D.PACK_CD,'NAME') PACK_NM
+               ,MAX(F_S_INT('ISZERO',F.WP2_AMT,D.WP2_AMT)) AS ORD_WP2_AMT
+               ,MAX(F_S_INT('ISZERO',F.BP_AMT,D.BP_AMT))   AS ORD_BP_AMT
+               ,COALESCE(D.ITEM_NM, '') || ' ' || COALESCE(D.UNIT, '')  AS ITEM_NM_UNIT
+               ,COALESCE(G.MAKER_NM, '') AS MAKER_NM
+               ,COALESCE(D.ITEM_NM, '') AS ITEM_NM
+               ,COALESCE(D.UNIT, '') AS UNIT
+               ,CASE WHEN MAX(F.MAX_ORD_QTY) > 0 THEN MAX(F.MAX_ORD_QTY) ELSE MAX(E.AVAIL_STOCK) END AS AVAIL_STOCK
+               ,'' AS WEB_BACK_USE_YN
+               ,'' AS PRICE_DOWN_YN
+               ,'' AS PRICE_DOWN_INFO
+               ,SUBSTRING(P.CD_NM, 1, 1) AS MED_NM
+               ,COUNT(A.SN)     AS COUNT_QTY
+               ,SUM(CASE WHEN A.APRV_DT BETWEEN F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'0') AND F_S_ADDDATE('M','C',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-0') THEN B.ITEM_QTY ELSE 0 END ) AS ITEM_QTY_1
+               ,SUM(CASE WHEN A.APRV_DT BETWEEN F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-1') AND F_S_ADDDATE('M','L',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-1')  THEN B.ITEM_QTY ELSE 0 END ) AS ITEM_QTY_2
+               ,SUM(CASE WHEN A.APRV_DT BETWEEN F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-2') AND F_S_ADDDATE('M','L',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD') ,'-2')  THEN B.ITEM_QTY ELSE 0 END ) AS ITEM_QTY_3
+               ,CEIL(SUM(B.ITEM_QTY)/3.0) AS AVG_QTY
+               ,ROW_NUMBER() OVER (ORDER BY COUNT(A.SN) DESC) AS RNUM
+               ,0 AS REQ_QTY
+               ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y'
+                             ELSE 'N'
+                        END
+                   FROM T_WEB_MY_ITEM X
+                  WHERE X.CUST_CD = #{custCd}
+                    AND X.ITEM_CD = B.ITEM_CD
+                ) AS FAVORITE_YN /* 관심품목여부(TO-BE 추가) */
+               ,IFNULL(SUBSTR(H.ITEM_GENERIC_CD ,1,4),'') AS ITEM_INGREDIENT_CD
+               ,IFNULL((SELECT X.ITEM_KIND_NO
+                          FROM T_ITEM_EFFICACY X
+                         WHERE X.ITEM_GENERIC_CD = H.ITEM_GENERIC_CD
+                         FETCH FIRST 1 ROW ONLY
+                       ), '') AS ITEM_KIND_NO
+        FROM T_SALE A
+        JOIN T_SALE_DTL B
+          ON B.SN = A.SN
+        JOIN T_CUST C
+          ON C.CUST_CD = A.CUST_CD
+        JOIN T_ITEM D
+          ON D.ITEM_CD = B.ITEM_CD
+         AND D.SUBDIV_YN = 'N'
+         AND D.USE_YN = 'Y'
+        JOIN T_ITEM_STOCK E
+          ON E.ITEM_CD = B.ITEM_CD
+         AND E.BRCH_CD = C.DLV_BRCH_CD
+         AND E.AVAIL_STOCK>0
+        LEFT JOIN T_ITEM_PRICE F
+          ON F.ITEM_CD = D.ITEM_CD
+         AND F.BRCH_CD = C.DLV_BRCH_CD
+        LEFT JOIN T_MAKER G
+          ON D.MAKER_CD = G.MAKER_CD
+        LEFT JOIN T_CODE P
+          ON 1=1
+         AND P.P_CODE = '101'
+         AND P.CODE = D.MED_CD
+        LEFT JOIN T_ITEM_PYOJUN H
+          ON H.ITEM_PYOJUN_CD = D.ITEM_PYOJUN_CD
+       WHERE A.ORD_TYPE_CD != '34'
+         AND E.WEB_USE_YN = 'Y'
+          <if test="today != null and today !='' "  >
+             AND A.APRV_DT BETWEEN F_S_ADDDATE('M','F', #{today}, '-2')  AND #{today}
+             AND A.ORD_DT BETWEEN F_S_ADDDATE('M','C', #{today}, '-3')  AND #{today}
+          </if>
+          <if test="START_DT != null and START_DT !='' and END_DT != null and END_DT !='' "  >
+              AND A.ORD_DT BETWEEN #{START_DT}  AND #{END_DT}
+          </if>
+          <if test="custCd != null and custCd != ''">
+              AND A.CUST_CD = #{custCd}
+          </if>
+          <if test="keyword != null and keyword != '' ">
+              AND (D.BOHUM_CD = #{bohumCd} OR
+                   D.ITEM_NM LIKE #{itemNm}
+                  )
+          </if>
+            <if test="makerNm != null and makerNm !=''">
+                <bind name="makerNm" value='"%" + makerNm + "%"'/>
+                AND G.MAKER_NM LIKE #{makerNm}
+            </if>
+            <if test="H_MED_PAY_GB == 'GNR_PAY' and H_MED_PAY_GB != '' ">
+                AND D.PAY_ITEM_YN = 'Y' AND D.MED_CD = '01'
+            </if>
+            <if test="H_MED_PAY_GB == 'GNR_UNPAY' and H_MED_PAY_GB != '' ">
+                AND D.PAY_ITEM_YN <![CDATA[<>]]> 'Y' AND D.MED_CD = '01'
+            </if>
+            <if test="H_MED_PAY_GB == 'PRO_PAY' and H_MED_PAY_GB != '' ">
+                AND D.PAY_ITEM_YN = 'Y' AND D.MED_CD = '02'
+            </if>
+            <if test="H_MED_PAY_GB == 'PRO_UNPAY' and H_MED_PAY_GB != '' ">
+                AND D.PAY_ITEM_YN <![CDATA[<>]]> 'Y' AND D.MED_CD = '02'
+            </if>
+            <if test='searchAll == "N"'>
+                <if test='professionalYn == "N" and generalYn == "Y"'>
+                    AND D.MED_CD = '01'
+                </if>
+                <if test='professionalYn == "Y" and generalYn == "N"'>
+                    AND D.MED_CD = '02'
+                </if>
+                <if test='paymentYn == "N" and nonPaymentYn == "Y"'>
+                    AND D.PAY_ITEM_YN = 'N'
+                </if>
+                <if test='paymentYn == "Y" and nonPaymentYn == "N"'>
+                    AND D.PAY_ITEM_YN = 'Y'
+                </if>
+            </if>
+         GROUP BY B.ITEM_CD, D.ITEM_NM, D.BOHUM_CD, D.ITEM_PYOJUN_CD, D.PAY_ITEM_YN, D.MED_CD, G.MAKER_NM, D.ITEM_NM, D.UNIT, P.CD_NM, H.ITEM_GENERIC_CD, D.PACK_CD,D.SMALLBOX_QTY,D.MIDBOX_QTY,D.LARGEBOX_QTY
+         ) Z
+         WHERE 1 = 1
+         <if test='excludingOutOfOtock == "Y"'>
+            AND Z.AVAIL_STOCK <![CDATA[>]]> 0
+         </if>
+         ORDER BY Z.AVG_QTY DESC, Z.COUNT_QTY DESC, Z.RNUM
+    </select>
+
+    <update id="saveBasketItem" parameterType="java.util.HashMap" >
+        /* freOrd.saveBasketItem 다빈도 품목 장바구니 담기 */
+        MERGE INTO T_WEB_BASKET A
+        USING (SELECT
+                      A.CUST_CD                                        AS CUST_CD
+                     ,F_S_EMPTY(#{basketGbCd},'')                    AS BASKET_GB_CD
+                     ,A.ITEM_GB_CD                                     AS ITEM_GB_CD
+                     ,A.ITEM_CD                                        AS ITEM_CD
+                     ,1                                                AS ITEM_CNT
+                     ,F_S_DAY()                                        AS ORD_DT
+                     ,'06'                                             AS ORD_PATH_CD
+                     ,A.TAX_YN                                         AS VAT_YN
+                     ,A.BRCH_CD                                        AS BRCH_CD
+                     ,A.DLV_BRCH_CD                                    AS DLV_BRCH_CD
+                     ,A.DLV_GB_CD                                      AS DLV_GB_CD
+                     ,F_S_EMPTY(#{userId},'')                          AS ORD_USER_ID
+                     ,IFNULL(ORD_BP_AMT,0)                             AS ORD_BP_AMT
+                     ,IFNULL(ORD_WP2_AMT,0)                            AS ORD_WP2_AMT
+                     ,A.BRCH_BP_AMT                                    AS BP_AMT
+                     ,BRCH_BP1_AMT                                     AS BP1_AMT
+                     ,BRCH_WP2_AMT                                     AS WP2_AMT
+                     ,IFNULL(ORD_BP_AMT,0)                             AS SALES_BP_AMT
+                     ,IFNULL(ORD_WP2_AMT,0)                            AS SALES_WP2_AMT
+                     ,A.MAX_ORD_QTY                                    AS MAX_ITEM_QTY
+                     ,'02'                                                     AS GUBUN
+                 FROM V_ITEM_ORDER A
+                WHERE A.CUST_CD    = #{custCd}
+                  AND A.ITEM_CD    = #{saveItemCd}
+                  AND A.FORBID_YN  = 'N'
+                  AND A.SUBDIV_YN  = 'N'
+                  AND A.ITEM_GB_CD = #{saveItemGbCd}
+                  AND A.MED_CD     IN ('01','02')
+                FETCH FIRST 1 ROW ONLY
+              ) B
+           ON A.CUST_CD      = B.CUST_CD
+          AND A.BASKET_GB_CD = B.BASKET_GB_CD
+          AND A.ITEM_GB_CD   = B.ITEM_GB_CD
+          AND A.ITEM_CD      = B.ITEM_CD
+        WHEN MATCHED THEN
+        UPDATE
+           SET ITEM_QTY      = A.ITEM_QTY + #{saveItemQty}
+              ,ITEM_CNT      = B.ITEM_CNT
+              ,ORD_DT        = B.ORD_DT
+              ,ORD_PATH_CD   = B.ORD_PATH_CD
+              ,ORD_BP_AMT    = B.ORD_BP_AMT
+              ,ORD_WP2_AMT   = B.ORD_WP2_AMT
+              ,BP1_AMT       = B.BP1_AMT
+              ,BP_AMT        = B.BP_AMT
+              ,WP2_AMT       = B.WP2_AMT
+              ,SALES_BP_AMT  = B.SALES_BP_AMT
+              ,SALES_WP2_AMT = B.SALES_WP2_AMT
+              ,MAX_ITEM_QTY  = B.MAX_ITEM_QTY
+              ,GUBUN        = B.GUBUN
+              ,VAT_YN        = B.VAT_YN
+              ,BRCH_CD       = B.BRCH_CD
+              ,DLV_BRCH_CD   = B.DLV_BRCH_CD
+              ,DLV_GB_CD     = B.DLV_GB_CD
+              ,ORD_USER_ID   = B.ORD_USER_ID
+              ,DEL_YN        = 'N'
+              ,MOD_ID        = B.ORD_USER_ID
+              ,MOD_DTM       = CURRENT TIMESTAMP
+        WHEN NOT MATCHED THEN
+        INSERT (
+              CUST_CD
+            , BASKET_GB_CD
+            , ITEM_GB_CD
+            , ITEM_CD
+            , ITEM_QTY
+            , ITEM_CNT
+            , ORD_DT
+            , ORD_PATH_CD
+            , ORD_BP_AMT
+            , ORD_WP2_AMT
+            , BP1_AMT
+            , BP_AMT
+            , WP2_AMT
+            , SALES_BP_AMT
+            , SALES_WP2_AMT
+            , MAX_ITEM_QTY
+            , GUBUN
+            , VAT_YN
+            , BRCH_CD
+            , DLV_BRCH_CD
+            , DLV_GB_CD
+            , ORD_USER_ID
+            , DEL_YN
+            , INS_ID
+            , INS_DTM     )
+        VALUES (
+             B.CUST_CD
+            ,B.BASKET_GB_CD
+            ,B.ITEM_GB_CD
+            ,B.ITEM_CD
+            ,#{saveItemQty}
+            ,B.ITEM_CNT
+            ,B.ORD_DT
+            ,B.ORD_PATH_CD
+            ,B.ORD_BP_AMT
+            ,B.ORD_WP2_AMT
+            ,B.BP1_AMT
+            ,B.BP_AMT
+            ,B.WP2_AMT
+            ,B.SALES_BP_AMT
+            ,B.SALES_WP2_AMT
+            ,B.MAX_ITEM_QTY
+            ,B.GUBUN
+            ,B.VAT_YN
+            ,B.BRCH_CD
+            ,B.DLV_BRCH_CD
+            ,B.DLV_GB_CD
+            ,B.ORD_USER_ID
+            ,'N'
+            ,B.ORD_USER_ID
+            ,CURRENT TIMESTAMP )
+        ELSE IGNORE
+    </update>
+
+    <select id="searchFreOrdBasketList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* freOrd.searchFreOrdBasketList 다빈도 장바구니 조회 */
+        SELECT
+           A.ITEM_CD
+          ,A.BASKET_GB_NM
+          ,A.ITEM_GB_NM
+          ,A.ITEM_NM
+          ,A.MAKER_NM
+          ,A.ORD_WP2_AMT
+          ,A.ITEM_QTY
+          ,A.SUM_ITEM_QTY
+          ,A.MIN_ORD_QTY
+          ,A.MAX_ORD_QTY
+          ,A.AVAIL_STOCK
+          ,CASE WHEN #{userGbCd} IN ('10','20')  THEN A.WP2_CHG_YN
+                ELSE 'N'
+                END  AS WP2_CHG_YN
+          ,A.MIN_WP2_AMT
+          ,A.SALE_UNIT_QTY
+          , 'N' AS FAVORITE_YN /* 관심품목여부(TO-BE 추가) */
+          , B.PAY_ITEM_YN /* 급여, 비급여 여부(TO-BE 추가) */
+          , B.PAY_ITEM_NM /* 급여, 비급여 여부 명(TO-BE 추가) */
+          , B.MED_CD /* 일반, 전문 코드(TO-BE 추가) */
+          , B.MED_NM /* 일반, 전문 코드명(TO-BE 추가) */
+          , B.G_DLV_BRCH_FLAG /* 광역 여부 플래그(TO-BE 추가) */
+          , A.ITEM_QTY AS ITEM_QTY_ORG /* 원주문갯수(TO-BE 추가) */
+        FROM V_WEB_BASKET A
+        JOIN V_ITEM_GORDER B
+          ON B.ITEM_CD = A.ITEM_CD
+         AND B.CUST_CD = A.CUST_CD
+         AND B.DLV_BRCH_USE_YN = 'Y'
+         AND B.WEB_USE_YN = 'Y'
+        WHERE A.CUST_CD = #{custCd}
+          AND A.BASKET_GB_CD = #{basketGbCd}
+        <if test='gDlvBrchFlag == "G"'>
+          AND B.G_DLV_BRCH_FLAG = 'G'
+        </if>
+        ORDER BY A.INS_DTM DESC
+    </select>
+
+    <update id="updateBasketItemQty"  parameterType="java.util.HashMap" >
+        /* freOrd.updateBasketItemQty 다빈도 장바구니 수량 수정 */
+        UPDATE T_WEB_BASKET
+           SET ITEM_QTY      = F_S_EMPTY(#{itemQty},1)
+             , ORD_WP2_AMT   = F_S_EMPTY(#{ordWp2Amt},ORD_WP2_AMT)
+             , MOD_ID        = F_S_EMPTY(#{userId},'')
+             , MOD_DTM       = CURRENT TIMESTAMP
+         WHERE CUST_CD      = F_S_EMPTY( #{custCd} ,'')
+           AND ITEM_CD      = F_S_EMPTY( #{saveItemCd},'')
+           AND BASKET_GB_CD = #{basketGbCd}
+           AND ITEM_GB_CD   = #{saveItemGbCd}
+    </update>
+
+    <insert id="deleteOneFreOrdBasketMove" parameterType="java.util.HashMap" >
+        /* freOrd.deleteOneFreOrdBasketMove 장바구니 한건 취소시 MOVE */
+        INSERT INTO T_WEB_BASKETMOVE
+             ( BASKET_GB_CD
+             , ORD_PATH_CD
+             , ITEM_GB_CD
+             , CUST_CD
+             , BRCH_CD
+             , ORD_DT
+             , VAT_YN
+             , ITEM_CNT
+             , SUPPLY_AMT
+             , VAT_AMT
+             , TOTAL_AMT
+             , DLV_GB_CD
+             , ORD_USER_ID
+             , ITEM_CD
+             , ITEM_QTY
+             , ORD_BP_AMT
+             , ORD_WP2_AMT
+             , BP_AMT
+             , BP1_AMT
+             , WP2_AMT
+             , SALES_BP_AMT
+             , SALES_WP2_AMT
+             , MAX_ITEM_QTY
+             , EXP_DT
+             , PROD_NO
+             , DLV_BRCH_CD
+             , ORD_MEMO
+             , DEL_YN
+             , INS_ID
+             , INS_DTM
+             , MOD_ID
+             , MOD_DTM)
+        SELECT BASKET_GB_CD
+             , ORD_PATH_CD
+             , ITEM_GB_CD
+             , CUST_CD
+             , BRCH_CD
+             , ORD_DT
+             , VAT_YN
+             , ITEM_CNT
+             , SUPPLY_AMT
+             , VAT_AMT
+             , TOTAL_AMT
+             , DLV_GB_CD
+             , ORD_USER_ID
+             , ITEM_CD
+             , ITEM_QTY
+             , ORD_BP_AMT
+             , ORD_WP2_AMT
+             , BP_AMT
+             , BP1_AMT
+             , WP2_AMT
+             , SALES_BP_AMT
+             , SALES_WP2_AMT
+             , MAX_ITEM_QTY
+             , EXP_DT
+             , PROD_NO
+             , DLV_BRCH_CD
+             , ORD_MEMO
+             , 'Y'
+             , INS_ID
+             , INS_DTM
+             , F_S_EMPTY(#{userId},'')     AS MOD_ID
+             , CURRENT TIMESTAMP           AS MOD_DTM
+          FROM T_WEB_BASKET A
+         WHERE A.CUST_CD = #{custCd}
+           AND A.BASKET_GB_CD = #{basketGbCd}
+           AND A.ITEM_GB_CD = #{saveItemGbCd}
+           AND A.ITEM_CD = #{saveItemCd}
+           AND A.DLV_BRCH_CD = F_S_EMPTY(#{dlvBrchCd}, A.DLV_BRCH_CD)
+    </insert>
+
+    <delete id="deleteFreOrdBasket" parameterType="java.util.HashMap">
+        /* freOrd.deleteFreOrdBasket 장바구니 삭제 */
+        DELETE
+          FROM T_WEB_BASKET A
+         WHERE A.CUST_CD = #{custCd}
+           AND A.BASKET_GB_CD = #{basketGbCd}
+           AND A.ITEM_GB_CD = #{saveItemGbCd}
+           AND A.ITEM_CD = #{saveItemCd}
+           AND A.DLV_BRCH_CD = F_S_EMPTY(#{dlvBrchCd}, A.DLV_BRCH_CD)
+    </delete>
+
+    <select id="selectHistoryList"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* freOrd.selectHistoryList 다빈도 제품 출고 이력 */
+        SELECT
+             A.ITEM_NM_UNIT         AS ITEM_NM
+            ,IFNULL(A.APRV_DT,'')    AS ORD_DT
+            ,A.ORD_WP2_AMT          AS WP2_AMT
+            ,A.ITEM_QTY
+            ,IFNULL(A.SERIAL_NO,'') AS SERIAL_NO
+            ,IFNULL(A.EXP_DT,'')    AS EXP_DT
+         FROM V_SALE_DTL A
+        WHERE A.CUST_CD IN (#{custCd},F_S_OLD_CUST(#{custCd}))
+          AND ITEM_CD = #{selItemCd}
+          AND APRV_DT <![CDATA[>]]>  F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD'), #{sellMonth})
+        ORDER BY ORD_DT DESC, SN DESC ,SNO DESC
+    </select>
+
+    <select id="selectAccShpmntQty" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* comOrd.selectAccShpmntQty 누적 출하 수량 조회 */
+        SELECT (SELECT IFNULL(SUM(B.ITEM_QTY), 0)
+                  FROM T_SALE A
+                  JOIN T_SALE_DTL B
+                    ON B.SN = A.SN
+                   AND B.ITEM_CD = #{selItemCd}
+                 WHERE A.CUST_CD IN (#{custCd}, F_S_OLD_CUST(#{custCd}))
+                   AND A.APRV_DT <![CDATA[>]]> F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD'), #{sellMonth})
+               ) AS SALE_CNT /* 매출 */
+             , (SELECT IFNULL(SUM(-B.ITEM_QTY), 0)
+                  FROM T_SALEBACK A
+                  JOIN T_SALEBACK_DTL B
+                    ON B.SN = A.SN
+                   AND B.ITEM_CD = #{selItemCd}
+                 WHERE A.CUST_CD IN (#{custCd}, F_S_OLD_CUST(#{custCd}))
+                   AND A.APRV_DT <![CDATA[>]]> F_S_ADDDATE('M','F',VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD'), #{sellMonth})
+               ) AS BACK_CNT /* 반품 */
+          FROM DUAL
+    </select>
+
+    <insert id="insertWebgateDtl" parameterType="java.util.HashMap" >
+        /* comOrd.insertWebgateDtl 주문등록 DTL */
+        <selectKey keyProperty="SNO" resultType="int" order="BEFORE">
+            SELECT F_S_NULL(MAX(SNO),0)+1
+              FROM T_WEBGATE_DTL
+             WHERE SN = #{SN}
+        </selectKey>
+            INSERT INTO T_WEBGATE_DTL
+                 ( SN
+                 , SNO
+                 , ITEM_GB_CD
+                 , ITEM_CD
+                 , ITEM_QTY
+                 , ORD_BP_AMT
+                 , ORD_WP2_AMT
+                 , BP_AMT
+                 , BP1_AMT
+                 , WP2_AMT
+                 , ORD_PATH_CD
+                 , DEL_YN
+                 , INS_ID
+                 , INS_DTM)
+            SELECT F_S_EMPTY(#{SN},'')               AS SN
+                 , F_S_EMPTY(#{SNO},'')             AS SNO
+                 , ITEM_GB_CD                       AS ITEM_GB_CD
+                 , ITEM_CD                          AS ITEM_CD
+                 , F_S_EMPTY(#{ITEM_QTY},'')        AS ITEM_QTY
+                 , ORD_BP_AMT                       AS ORD_BP_AMT
+                 , ORD_WP2_AMT                      AS ORD_WP2_AMT
+                 , BP_AMT                           AS BP_AMT
+                 , BP1_AMT                          AS BP1_AMT
+                 , WP2_AMT                          AS WP2_AMT
+                 , A.GUBUN                          AS ORD_PATH_CD
+                 , 'N'                              AS DEL_YN
+                 , F_S_EMPTY(#{USER_ID},'')     AS INS_ID
+                 , CURRENT TIMESTAMP                AS INS_DTM
+            FROM T_WEB_BASKET A
+            JOIN T_CUST B
+              ON B.BRCH_CD = A.BRCH_CD
+             AND B.CUST_CD = A.CUST_CD
+           WHERE A.DEL_YN         = 'N'
+             AND A.CUST_CD        = #{CUST_CD}
+             AND A.BASKET_GB_CD   = #{BASKET_GB_CD}
+             AND A.ITEM_GB_CD     = #{ITEM_GB_CD}
+             AND A.ITEM_CD        = #{ITEM_CD}
+             AND A.DLV_BRCH_CD    = F_S_EMPTY(#{DLV_BRCH_CD},B.DLV_BRCH_CD)
+    </insert>
+
+    <insert id="insertWebgate" parameterType="java.util.HashMap" >
+        /* comOrd.insertWebgate 주문등록 */
+        INSERT INTO T_WEBGATE
+             ( SN
+             , ORD_DT
+             , ORD_TM
+             , ORD_TYPE_CD
+             , CUST_CD
+             , BRCH_CD
+             , DLV_BRCH_CD
+             , DLV_GB_CD
+             , ITEM_CNT
+             , URGENT_YN
+             , CNCL_YN
+             , ORD_MEMO
+             , DEPT_CD
+             , VAT_YN
+             , EMP_ID
+             , ITEM_CD
+             , SUPPLY_AMT
+             , VAT_AMT
+             , TOTAL_AMT
+             , BPP_AMT
+             , ORD_USER_ID
+             , INS_ID
+             , INS_DTM
+             )
+        SELECT F_S_EMPTY(#{SN},'')                      AS SN
+             , VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYYYMMDD')  AS ORD_DT
+             , REPLACE(CHAR(CURRENT TIME),':','')       AS ORD_TM
+             , CASE WHEN MAX(C.CUST_GB_CD) !='03' THEN '01' ELSE '05' END AS ORD_TYPE_CD
+             , F_S_EMPTY(#{CUST_CD},'')              AS CUST_CD
+             , F_S_EMPTY(#{BRCH_CD},'')              AS BRCH_CD
+             , F_S_EMPTY(#{DLV_BRCH_CD},MAX(C.DLV_BRCH_CD)) AS DLV_BRCH_CD
+             , '03'                                      AS DLV_GB_CD
+             , COUNT(A.SNO)                              AS ITEM_CNT
+             , 'N'                                       AS URGENT_YN
+             , 'N'                                       AS CNCL_YN
+             , F_S_EMPTY(#{ORD_MEMO},'')                 AS ORD_MEMO
+             , F_S_EMPTY(#{DEPT_CD},'')              AS DEPT_CD
+             , 'Y'                                       AS VAT_YN
+             , F_S_EMPTY(#{EMP_ID},'')               AS EMP_ID
+             , F_S_EMPTY(#{ITEM_CD},'')                  AS ITEM_CD
+             , SUM(F_S_CALCAMT(B.TAX_YN,A.ORD_WP2_AMT,A.ITEM_QTY,'SUP')) AS SUPPLY_AMT
+             , SUM(F_S_CALCAMT(B.TAX_YN,A.ORD_WP2_AMT,A.ITEM_QTY,'VAT')) AS VAT_AMT
+             , SUM(F_S_CALCAMT(B.TAX_YN,A.ORD_WP2_AMT,A.ITEM_QTY,'TOT')) AS TOT_AMT
+             , SUM(A.ORD_BP_AMT*A.ITEM_QTY)              AS BPP_AMT
+             , F_S_EMPTY(#{USER_ID},'')              AS ORD_USER_ID
+             , F_S_EMPTY(#{GSS.USER_ID},'')              AS INS_ID
+             , CURRENT TIMESTAMP                         AS INS_DTM
+          FROM T_WEBGATE_DTL  A
+          JOIN T_ITEM B
+            ON B.ITEM_CD = A.ITEM_CD
+          JOIN T_CUST C
+            ON C.CUST_CD = F_S_EMPTY(#{CUST_CD},'')
+         WHERE A.SN = #{SN}
+    </insert>
+
+    <insert id="moveComOrdBasket" parameterType="java.util.HashMap" >
+        /* comOrd.moveComOrdBasket 장바구니 MOVE */
+        INSERT INTO T_WEB_BASKETMOVE
+             ( BASKET_GB_CD
+             , ORD_PATH_CD
+             , ITEM_GB_CD
+             , CUST_CD
+             , BRCH_CD
+             , ORD_DT
+             , VAT_YN
+             , ITEM_CNT
+             , SUPPLY_AMT
+             , VAT_AMT
+             , TOTAL_AMT
+             , DLV_GB_CD
+             , ORD_USER_ID
+             , ITEM_CD
+             , ITEM_QTY
+             , ORD_BP_AMT
+             , ORD_WP2_AMT
+             , BP_AMT
+             , BP1_AMT
+             , WP2_AMT
+             , SALES_BP_AMT
+             , SALES_WP2_AMT
+             , MAX_ITEM_QTY
+             , EXP_DT
+             , PROD_NO
+             , DLV_BRCH_CD
+             , ORD_MEMO
+             , DEL_YN
+             , ORD_SN
+             , INS_ID
+             , INS_DTM
+             , MOD_ID
+             , MOD_DTM
+             )
+        SELECT BASKET_GB_CD
+             , ORD_PATH_CD
+             , ITEM_GB_CD
+             , CUST_CD
+             , BRCH_CD
+             , ORD_DT
+             , VAT_YN
+             , ITEM_CNT
+             , SUPPLY_AMT
+             , VAT_AMT
+             , TOTAL_AMT
+             , DLV_GB_CD
+             , ORD_USER_ID
+             , ITEM_CD
+             , ITEM_QTY
+             , ORD_BP_AMT
+             , ORD_WP2_AMT
+             , BP_AMT
+             , BP1_AMT
+             , WP2_AMT
+             , SALES_BP_AMT
+             , SALES_WP2_AMT
+             , MAX_ITEM_QTY
+             , EXP_DT
+             , PROD_NO
+             , DLV_BRCH_CD
+             , ORD_MEMO
+             , 'N'
+             , F_S_EMPTY(#{SN},0)
+             , INS_ID
+             , INS_DTM
+             , F_S_EMPTY(#{GSS.USER_ID},'')     AS MOD_ID
+             , CURRENT TIMESTAMP                AS MOD_DTM
+          FROM T_WEB_BASKET A
+         WHERE A.CUST_CD        = #{CUST_CD}
+           AND A.BASKET_GB_CD   = #{BASKET_GB_CD}
+           AND A.ITEM_GB_CD     = #{ITEM_GB_CD}
+           AND A.ITEM_CD        = #{ITEM_CD}
+           AND A.DLV_BRCH_CD    = F_S_EMPTY(#{DLV_BRCH_CD},A.DLV_BRCH_CD)
+    </insert>
+
+    <update id="procItemStockUpdate" statementType="CALLABLE" parameterType="java.util.HashMap">
+        {CALL P_ITEM_STOCK(
+             'P_WEB_I'
+            , #{SN}
+            , #{USER_ID}
+            , #{O_VAL               ,mode=OUT ,jdbcType=VARCHAR}
+            , #{O_MSG               ,mode=OUT ,jdbcType=VARCHAR}
+            )}
+    </update>
+
+    <select id="selectItemDetailInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* comOrd.selectItemDetailInfo 제품상세정보 */
+        SELECT A.ITEM_NM /* 제품명 */
+             , A.UNIT /* 규격 */
+             , B.MAKER_NM /* 제약사 */
+             , A.BOHUM_CD /* 보험코드 */
+             , CASE WHEN A.TAKEBACK_YN = 'Y' THEN '반품제약'
+                    ELSE '반품불가'
+               END TAKEBACK /* 반품 */
+             , '유효기간 6개월 미만 불가' AS TAKEBACK_COND
+             , 12 AS BOX_PROCURE_S
+             , 48 AS BOX_PROCURE_M
+             , 144 AS BOX_PROCURE_L
+             , 3 AS MIN_ORD_QTY
+             , 10 AS MAX_ORD_QTY
+             , '24.01.01 | 25,000원' AS POLICY_PRICE
+             , '24년 1월 중순 ~ 2월 초 예정' AS INCMNG_SCHDL
+          FROM T_ITEM A
+          LEFT JOIN T_MAKER B
+            ON B.MAKER_CD = A.MAKER_CD
+         WHERE A.ITEM_CD = #{selItemCd}
+    </select>
+</mapper>

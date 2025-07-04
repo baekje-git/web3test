@@ -1,0 +1,196 @@
+* {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;  
+}
+
+body {
+  margin: 0;
+  padding: 0;  
+}
+
+h1 {
+  font-size: 22px;
+  margin: 20px 0 25px;  
+  border-bottom: 2px solid #000;
+}
+
+
+
+/* A4 �꽕�젙 */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .wrap {
+    margin: 0;
+    border: initial;
+    border-radius: initial;
+    width: initial;
+    min-height: initial;
+    box-shadow: initial;
+    background: initial;
+    page-break-after: always;
+  }
+}
+
+
+.space {
+  padding: 0 130px;
+}
+.flex {
+  display: flex;
+}
+.flex-between {  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.flex-end {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+.align-end {
+  align-items: end;
+}
+.align-center {
+  align-items: center;
+}
+.text-center {
+  text-align: center;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+.font-bold {
+  font-weight: bold;
+}
+.font-nomal {
+  font-weight: normal;
+}
+.font-big {
+  font-size: 16px;
+}
+.font-small {
+  font-size: 12px;
+}
+
+.gap-10 {
+  gap: 10px;
+}
+
+.gap-20 {
+  gap: 20px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.font-gray {
+  color: #aaa;
+}
+
+
+
+
+.wrap {
+  width: 21cm;
+  min-height: 29.7cm;
+  /* padding: 1.5cm 1.5cm 2cm 1.5cm;   */
+  padding: 1.5cm 1cm 2cm 1cm;  
+  font-size: 14px;
+  letter-spacing: -1px;
+
+  border: 1px solid rgba(0, 0, 0, 0.1); /* 援щ텇�꽑 */
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+.table-wrap {
+  margin: 10px 0;
+}
+table {
+  text-align: center;
+  width: 100%;
+  border-collapse : collapse;  
+  font-size: 12px;
+}
+thead th {
+  border: 1px solid;    
+  color: navy;
+  padding: 6px;
+}
+tbody td {
+  border: 1px solid;
+  padding: 6px 10px;
+}
+
+tbody td:nth-child(3) {
+  text-align: left;
+}
+
+table.type_01 tr th:nth-child(1),
+table.type_01 tr td:nth-child(1) {
+  border-left: 0;
+}
+
+table.type_01 tr th:nth-last-child(1),
+table.type_01 tr td:nth-last-child(1) {
+  border-right: 0;
+}
+
+table.type_01 tbody tr:last-child td {
+  padding-block: 6px;
+  padding-left: 64px;
+  text-align: left;
+}
+
+.barcode_area img {
+  display: block;
+}
+
+.text-box {
+  padding: 20px;
+  width: 100%;
+  border: 1px solid;
+}
+
+.write > div {
+  width: 68px;
+}
+
+.write > div:last-child {
+  width: 80px;
+}
+
+.right {
+  width: 40%;
+}
+
+.print {
+  position: sticky;
+  top: 20px;
+  left: 4%;
+  cursor:pointer;
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border: 2px solid rgba(0, 0, 0, 0.1); /* 援щ텇?꽑 */
+}

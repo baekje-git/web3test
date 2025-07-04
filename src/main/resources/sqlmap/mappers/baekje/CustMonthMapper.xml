@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="custMonth">
+
+    <select id="selectCustCreditMonth" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        /* custMonth.selectCustCreditMonth 외상매출장 월조회 */
+        SELECT A.BALANCE_YM                                    /* 월 */
+      ,A.SALE_AMT                                      /* 매출 */
+      ,A.PAYBACK_AMT                                   /* 수금할인 */
+      ,A.BACK_AMT                                      /* 반품 */
+      ,IFNULL(B.SUBDIV_BACK_AMT,0) AS SUBDIV_BACK_AMT  /* 소분반품 */
+      ,A.SALE_2 AS TOTAL_AMT                           /* 순매출액 */
+      ,IFNULL(B.PURE_BACK_AMT,0) AS PURE_BACK_AMT      /* 순반품액 */
+      ,IFNULL(C.PRE_TOTAL_AMT, 0) AS PRE_TOTAL_AMT     /* 매출(16_15) */
+      ,A.PAY_CASH_AMT                                  /* 입금(현금) */
+      ,A.BALANCE_MOV_AMT AS PAY_ETC_AMT                /* 기타(잔고대체) */
+      ,A.BALANCE_A_AMT                                 /* 잔고액 */
+      ,A.ROTATE_DAY                                    /* 회전일 */
+      /*,A.PAY_OM_AMT*/                                /* 입금(어음) */
+  FROM V_BALANCE_MONTH A
+  LEFT OUTER JOIN ( 
+                    SELECT S.APRV_YM 
+                         , SUM(IFNULL(S.SUBDIV_BACK_AMT,0)) AS SUBDIV_BACK_AMT 
+                         , SUM(IFNULL(S.NORMAL_BACK_AMT,0)) AS NORMAL_BACK_AMT
+                         , SUM(IFNULL(S.PURE_BACK_AMT,0)) AS PURE_BACK_AMT
+                      FROM ( 
+                             SELECT SUBSTRING(APRV_DT,1,6) AS APRV_YM
+                                   , SUM(CASE WHEN ORD_TYPE_CD     IN ('33','35') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS SUBDIV_BACK_AMT
+                                   , SUM(CASE WHEN ORD_TYPE_CD NOT IN ('33','35') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS NORMAL_BACK_AMT
+                                   , SUM(CASE WHEN ORD_TYPE_CD NOT IN ('34','91') AND BACK_GB_CD IN ('02','04','05') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS PURE_BACK_AMT
+                               FROM T_SALEBACK
+                              WHERE CUST_CD = #{custCd}
+                                AND APRV_DT LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+                              GROUP BY SUBSTRING(APRV_DT,1,6), ORD_TYPE_CD
+                           ) S
+                      GROUP BY S.APRV_YM
+                  ) B
+    ON A.BALANCE_YM  =  B.APRV_YM
+  LEFT OUTER JOIN (
+                    SELECT SUBSTR(F_S_ADDDATE('M','C', T.BALANCE_YM, 1),1,6)  BALANCE_YM   
+                          , SUM(T.PRE_TOTAL_AMT) AS PRE_TOTAL_AMT
+                      FROM (
+                            SELECT CASE WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_0 AND B.SEL_TO_DT_0 THEN SUBSTR(B.SEL_FR_DT_0, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_1 AND B.SEL_TO_DT_1 THEN SUBSTR(B.SEL_FR_DT_1, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_2 AND B.SEL_TO_DT_2 THEN SUBSTR(B.SEL_FR_DT_2, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_3 AND B.SEL_TO_DT_3 THEN SUBSTR(B.SEL_FR_DT_3, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_4 AND B.SEL_TO_DT_4 THEN SUBSTR(B.SEL_FR_DT_4, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_5 AND B.SEL_TO_DT_5 THEN SUBSTR(B.SEL_FR_DT_5, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_6 AND B.SEL_TO_DT_6 THEN SUBSTR(B.SEL_FR_DT_6, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_7 AND B.SEL_TO_DT_7 THEN SUBSTR(B.SEL_FR_DT_7, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_8 AND B.SEL_TO_DT_8 THEN SUBSTR(B.SEL_FR_DT_8, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_9 AND B.SEL_TO_DT_9 THEN SUBSTR(B.SEL_FR_DT_9, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_10 AND B.SEL_TO_DT_10 THEN SUBSTR(B.SEL_FR_DT_10, 1 ,6)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_11 AND B.SEL_TO_DT_11 THEN SUBSTR(B.SEL_FR_DT_11, 1 ,6)
+                                    END AS BALANCE_YM
+                                  ,CASE WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_0 AND B.SEL_TO_DT_0 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_1 AND B.SEL_TO_DT_1 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_2 AND B.SEL_TO_DT_2 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_3 AND B.SEL_TO_DT_3 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_4 AND B.SEL_TO_DT_4 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_5 AND B.SEL_TO_DT_5 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_6 AND B.SEL_TO_DT_6 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_7 AND B.SEL_TO_DT_7 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_8 AND B.SEL_TO_DT_8 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_9 AND B.SEL_TO_DT_9 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_10 AND B.SEL_TO_DT_10 THEN (A.SALE_AMT + A.BACK_AMT)
+                                        WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_11 AND B.SEL_TO_DT_11 THEN (A.SALE_AMT + A.BACK_AMT)
+                                    END AS PRE_TOTAL_AMT
+                               FROM T_CUST_BALANCE_DAY A
+                                    , (
+                                        SELECT  REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 1 MONTH, ISO), '-', '') AS SEL_FR_DT_0
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 0 MONTH, ISO), '-', '') AS SEL_TO_DT_0
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 2 MONTH, ISO), '-', '') AS SEL_FR_DT_1
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 1 MONTH, ISO), '-', '') AS SEL_TO_DT_1
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 3 MONTH, ISO), '-', '') AS SEL_FR_DT_2
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 2 MONTH, ISO), '-', '') AS SEL_TO_DT_2
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 4 MONTH, ISO), '-', '') AS SEL_FR_DT_3
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 3 MONTH, ISO), '-', '') AS SEL_TO_DT_3
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 5 MONTH, ISO), '-', '') AS SEL_FR_DT_4
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 4 MONTH, ISO), '-', '') AS SEL_TO_DT_4
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 6 MONTH, ISO), '-', '') AS SEL_FR_DT_5
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 5 MONTH, ISO), '-', '') AS SEL_TO_DT_5
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 7 MONTH, ISO), '-', '') AS SEL_FR_DT_6
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 6 MONTH, ISO), '-', '') AS SEL_TO_DT_6
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 8 MONTH, ISO), '-', '') AS SEL_FR_DT_7
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 7 MONTH, ISO), '-', '') AS SEL_TO_DT_7
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 9 MONTH, ISO), '-', '') AS SEL_FR_DT_8
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 8 MONTH, ISO), '-', '') AS SEL_TO_DT_8
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 10 MONTH, ISO), '-', '') AS SEL_FR_DT_9
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 9 MONTH, ISO), '-', '') AS SEL_TO_DT_9
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 11 MONTH, ISO), '-', '') AS SEL_FR_DT_10
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 10 MONTH, ISO), '-', '') AS SEL_TO_DT_10
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 12 MONTH, ISO), '-', '') AS SEL_FR_DT_11
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 11 MONTH, ISO), '-', '') AS SEL_TO_DT_11
+                                        FROM  ( SELECT CAST(#{endDt} AS VARCHAR(8)) AS ED_DT FROM DUAL ) X
+                                    ) B
+                              WHERE A.BALANCE_DT BETWEEN VARCHAR_FORMAT(DATE(SUBSTR(#{endDt}, 1, 4) || '-01-16') - 1 MONTH, 'YYYYMMDD' ) AND SUBSTR(#{endDt}, 1, 4) || '1215'
+                                AND CUST_CD = #{custCd}
+                           ) T
+                     GROUP BY T.BALANCE_YM
+       ) C
+    ON C.BALANCE_YM = A.BALANCE_YM
+ WHERE A.CUST_CD = #{custCd}
+   AND A.BALANCE_YM LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+ ORDER BY A.BALANCE_YM DESC
+    </select>
+    <!-- 
+    <select id="selectCustCreditMonth2" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        /* custMonth.selectCustCreditMonth 외상매출장 월조회 */
+        SELECT A.BALANCE_YM
+              ,SUM(A.SALE_AMT) AS SALE_AMT
+              ,SUM(A.BACK_AMT) AS BACK_AMT
+              ,MAX(A.ROTATE_DAY) AS ROTATE_DAY
+              ,MAX(A.PROFIT_RATE1) AS PROFIT_RATE1
+              ,MAX(A.PROFIT_RATE2) AS PROFIT_RATE2
+              ,SUM(A.PAYBACK_AMT) AS PAYBACK_AMT
+              ,SUM(A.TOTAL_AMT) AS TOTAL_AMT
+              ,SUM(A.PAY_CASH_AMT) AS PAY_CASH_AMT
+              ,SUM(A.PAY_OM_AMT) AS PAY_OM_AMT
+              ,SUM(A.PAY_ETC_AMT) AS PAY_ETC_AMT
+              ,SUM(A.BALANCE_MOV_AMT) AS BALANCE_MOV_AMT
+              ,SUM(A.BALANCE_A_AMT) AS BALANCE_A_AMT
+              ,SUM(A.NOPAY_OM_BILL_AMT) AS NOPAY_OM_BILL_AMT
+              ,SUM(A.PAY_OM_BILL_AMT) AS PAY_OM_BILL_AMT
+              ,SUM(A.SUBDIV_BACK_AMT) AS SUBDIV_BACK_AMT
+              ,SUM(A.NORMAL_BACK_AMT) AS NORMAL_BACK_AMT
+              ,SUM(A.PURE_BACK_AMT) AS PURE_BACK_AMT
+              ,SUM(A.PRE_TOTAL_AMT) AS PRE_TOTAL_AMT
+              ,SUM(A.MASK_AMT) AS MASK_AMT
+              ,SUM(A.PAY_AMT) AS PAY_AMT
+          FROM (
+
+                SELECT A.BALANCE_YM
+                      ,A.SALE_AMT
+                      ,A.BACK_AMT
+                      ,A.ROTATE_DAY
+                      ,A.PROFIT_RATE1
+                      ,A.PROFIT_RATE2
+                      ,A.PAYBACK_AMT
+                      ,A.SALE_2 AS TOTAL_AMT
+                      ,A.PAY_CASH_AMT
+                      ,A.PAY_OM_AMT
+                      ,A.BALANCE_MOV_AMT AS PAY_ETC_AMT
+                      ,A.BALANCE_MOV_AMT
+                      ,A.BALANCE_A_AMT
+                      ,A.YET_AMT AS NOPAY_OM_BILL_AMT
+                      ,A.PAY_OM_BILL_AMT
+                      ,0 AS SUBDIV_BACK_AMT
+                      ,0 AS NORMAL_BACK_AMT
+                      ,0 AS PURE_BACK_AMT
+                      ,0 AS PRE_TOTAL_AMT
+                      ,0 AS MASK_AMT
+                      ,0 AS PAY_AMT
+                  FROM V_BALANCE_MONTH A
+                 WHERE A.CUST_CD = #{custCd}
+                   AND A.BALANCE_YM LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+
+                UNION ALL
+
+                SELECT SUBSTRING(APRV_DT,1,6) AS BALANCE_YM
+                      ,0 AS SALE_AMT
+                      ,0 AS BACK_AMT
+                      ,0 AS ROTATE_DAY
+                      ,0 AS PROFIT_RATE1
+                      ,0 AS PROFIT_RATE2
+                      ,0 AS PAYBACK_AMT
+                      ,0 AS TOTAL_AMT
+                      ,0 AS PAY_CASH_AMT
+                      ,0 AS PAY_OM_AMT
+                      ,0 AS PAY_ETC_AMT
+                      ,0 AS BALANCE_MOV_AMT
+                      ,0 AS BALANCE_A_AMT
+                      ,0 AS NOPAY_OM_BILL_AMT
+                      ,0 AS PAY_OM_BILL_AMT
+                      ,SUM(CASE WHEN ORD_TYPE_CD     IN ('33','35') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS SUBDIV_BACK_AMT
+                      ,SUM(CASE WHEN ORD_TYPE_CD NOT IN ('33','35') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS NORMAL_BACK_AMT
+                      ,SUM(CASE WHEN ORD_TYPE_CD NOT IN ('34','91') AND BACK_GB_CD IN ('02','04','05') THEN IFNULL(TOTAL_AMT,0) ELSE 0 END) AS PURE_BACK_AMT
+                      ,0 AS PRE_TOTAL_AMT
+                      ,0 AS MASK_AMT
+                      ,0 AS PAY_AMT
+                  FROM T_SALEBACK
+                 WHERE CUST_CD = #{custCd}
+                   AND APRV_DT LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+                 GROUP BY SUBSTRING(APRV_DT,1,6)
+
+                UNION ALL
+
+                SELECT T.BALANCE_YM
+                      ,0 AS SALE_AMT
+                      ,0 AS BACK_AMT
+                      ,0 AS ROTATE_DAY
+                      ,0 AS PROFIT_RATE1
+                      ,0 AS PROFIT_RATE2
+                      ,0 AS PAYBACK_AMT
+                      ,0 AS TOTAL_AMT
+                      ,0 AS PAY_CASH_AMT
+                      ,0 AS PAY_OM_AMT
+                      ,0 AS PAY_ETC_AMT
+                      ,0 AS BALANCE_MOV_AMT
+                      ,0 AS BALANCE_A_AMT
+                      ,0 AS NOPAY_OM_BILL_AMT
+                      ,0 AS PAY_OM_BILL_AMT
+                      ,0 AS SUBDIV_BACK_AMT
+                      ,0 AS NORMAL_BACK_AMT
+                      ,0 AS PURE_BACK_AMT
+                      ,SUM(T.PRE_TOTAL_AMT) AS PRE_TOTAL_AMT
+                      ,0 AS MASK_AMT
+                      ,0 AS PAY_AMT
+                  FROM (
+                            SELECT CASE WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_0 AND B.SEL_TO_DT_0 THEN SUBSTR(B.SEL_FR_DT_0, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_1 AND B.SEL_TO_DT_1 THEN SUBSTR(B.SEL_FR_DT_1, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_2 AND B.SEL_TO_DT_2 THEN SUBSTR(B.SEL_FR_DT_2, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_3 AND B.SEL_TO_DT_3 THEN SUBSTR(B.SEL_FR_DT_3, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_4 AND B.SEL_TO_DT_4 THEN SUBSTR(B.SEL_FR_DT_4, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_5 AND B.SEL_TO_DT_5 THEN SUBSTR(B.SEL_FR_DT_5, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_6 AND B.SEL_TO_DT_6 THEN SUBSTR(B.SEL_FR_DT_6, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_7 AND B.SEL_TO_DT_7 THEN SUBSTR(B.SEL_FR_DT_7, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_8 AND B.SEL_TO_DT_8 THEN SUBSTR(B.SEL_FR_DT_8, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_9 AND B.SEL_TO_DT_9 THEN SUBSTR(B.SEL_FR_DT_9, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_10 AND B.SEL_TO_DT_10 THEN SUBSTR(B.SEL_FR_DT_10, 1 ,6)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_11 AND B.SEL_TO_DT_11 THEN SUBSTR(B.SEL_FR_DT_11, 1 ,6)
+                                    END AS BALANCE_YM
+                                  , CASE WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_0 AND B.SEL_TO_DT_0 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_1 AND B.SEL_TO_DT_1 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_2 AND B.SEL_TO_DT_2 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_3 AND B.SEL_TO_DT_3 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_4 AND B.SEL_TO_DT_4 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_5 AND B.SEL_TO_DT_5 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_6 AND B.SEL_TO_DT_6 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_7 AND B.SEL_TO_DT_7 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_8 AND B.SEL_TO_DT_8 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_9 AND B.SEL_TO_DT_9 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_10 AND B.SEL_TO_DT_10 THEN (A.SALE_AMT + A.BACK_AMT)
+                                          WHEN A.BALANCE_DT BETWEEN B.SEL_FR_DT_11 AND B.SEL_TO_DT_11 THEN (A.SALE_AMT + A.BACK_AMT)
+                                    END AS PRE_TOTAL_AMT
+                              FROM T_CUST_BALANCE_DAY A
+                                    , (
+                                        SELECT  REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 1 MONTH, ISO), '-', '') AS SEL_FR_DT_0
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 0 MONTH, ISO), '-', '') AS SEL_TO_DT_0
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 2 MONTH, ISO), '-', '') AS SEL_FR_DT_1
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 1 MONTH, ISO), '-', '') AS SEL_TO_DT_1
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 3 MONTH, ISO), '-', '') AS SEL_FR_DT_2
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 2 MONTH, ISO), '-', '') AS SEL_TO_DT_2
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 4 MONTH, ISO), '-', '') AS SEL_FR_DT_3
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 3 MONTH, ISO), '-', '') AS SEL_TO_DT_3
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 5 MONTH, ISO), '-', '') AS SEL_FR_DT_4
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 4 MONTH, ISO), '-', '') AS SEL_TO_DT_4
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 6 MONTH, ISO), '-', '') AS SEL_FR_DT_5
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 5 MONTH, ISO), '-', '') AS SEL_TO_DT_5
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 7 MONTH, ISO), '-', '') AS SEL_FR_DT_6
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 6 MONTH, ISO), '-', '') AS SEL_TO_DT_6
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 8 MONTH, ISO), '-', '') AS SEL_FR_DT_7
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 7 MONTH, ISO), '-', '') AS SEL_TO_DT_7
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 9 MONTH, ISO), '-', '') AS SEL_FR_DT_8
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 8 MONTH, ISO), '-', '') AS SEL_TO_DT_8
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 10 MONTH, ISO), '-', '') AS SEL_FR_DT_9
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 9 MONTH, ISO), '-', '') AS SEL_TO_DT_9
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 11 MONTH, ISO), '-', '') AS SEL_FR_DT_10
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 10 MONTH, ISO), '-', '') AS SEL_TO_DT_10
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '16' ||'000000') - 12 MONTH, ISO), '-', '') AS SEL_FR_DT_11
+                                              , REPLACE(CHAR(DATE(SUBSTR(ED_DT, 1, 6) || '15' ||'000000') - 11 MONTH, ISO), '-', '') AS SEL_TO_DT_11
+                                        FROM  ( SELECT CAST(#{endDt} AS VARCHAR(8)) AS ED_DT FROM DUAL ) X
+                                    ) B
+                             WHERE A.BALANCE_DT BETWEEN F_S_ADDDATE('M','C', SUBSTR(#{endDt}, 1, 4) || '0116', -1) AND SUBSTR(#{endDt}, 1, 4) || '1215'
+                               AND CUST_CD = #{custCd}
+                        ) T
+                 GROUP BY T.BALANCE_YM
+                 HAVING T.BALANCE_YM LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+
+                UNION ALL
+
+                SELECT SUBSTRING(APRV_DT,1,6) AS BALANCE_YM
+                      ,0 AS SALE_AMT
+                      ,0 AS BACK_AMT
+                      ,0 AS ROTATE_DAY
+                      ,0 AS PROFIT_RATE1
+                      ,0 AS PROFIT_RATE2
+                      ,0 AS PAYBACK_AMT
+                      ,0 AS TOTAL_AMT
+                      ,0 AS PAY_CASH_AMT
+                      ,0 AS PAY_OM_AMT
+                      ,0 AS PAY_ETC_AMT
+                      ,0 AS BALANCE_MOV_AMT
+                      ,0 AS BALANCE_A_AMT
+                      ,0 AS NOPAY_OM_BILL_AMT
+                      ,0 AS PAY_OM_BILL_AMT
+                      ,0 AS SUBDIV_BACK_AMT
+                      ,0 AS NORMAL_BACK_AMT
+                      ,0 AS PURE_BACK_AMT
+                      ,0 AS PRE_TOTAL_AMT
+                      ,0 AS MASK_AMT
+                      ,IFNULL(SUM(PAY_AMT), 0) AS PAY_AMT
+                  FROM V_PAY
+                 WHERE CUST_CD = #{custCd}
+                   AND APRV_DT LIKE SUBSTRING(CAST(#{endDt} AS VARCHAR(8)),1,4) || '%'
+                 GROUP BY SUBSTRING(APRV_DT, 1, 6)
+
+
+             ) A
+         GROUP BY A.BALANCE_YM
+         ORDER BY A.BALANCE_YM DESC
+    </select>
+     -->
+</mapper>

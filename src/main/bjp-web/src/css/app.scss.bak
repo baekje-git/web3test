@@ -1,0 +1,452 @@
+// app global css in SCSS form
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+* {
+  padding: 0;
+  margin: 0;
+  font-family: "Pretendard";
+  font-style: normal;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+a {
+  text-decoration: none;
+}
+p {
+  margin: 0;
+}
+ol,
+li,
+ul {
+  color: $w;
+  list-style: none;
+}
+
+thead tr th {
+  position: sticky;
+  z-index: 1;
+}
+
+thead tr:first-child th {
+  top: 0;
+}
+
+.flex_start {
+  @include flex_start;
+}
+.flex_between {
+  @include flex_between;
+}
+.flex_center {
+  @include flex_center;
+}
+.flex_end {
+  @include flex_end;
+}
+.flex_around {
+  @include flex_around;
+}
+
+.ellipsis {
+  // overflow: hidden;
+  // text-overflow: ellipsis;
+  white-space: wrap;
+}
+
+.no-date {
+  background-color: $b5;
+  text-align: center;
+  span {
+    @include fs-5;
+  }
+}
+
+
+// input
+.q-field--dense .q-field__control {
+  height: 24px;
+}
+
+//textarea
+.q-field__counter {
+  margin: 0 10px 10px 10px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+//select {
+.q-field--auto-height.q-field--dense .q-field__control,
+.q-field--auto-height.q-field--dense .q-field__native,
+.q-field--dense .q-field__control,
+.q-field--dense .q-field__marginal {
+  min-height: 22px;
+  height: 22px;
+  line-height: 12px;
+}
+.q-field__native > span {
+  @include fs-5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.select_label {
+  @include fs-5;
+}
+
+// table
+.q-table_wrap {
+  width: 100%;
+}
+.q-table__top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: $w;
+  padding: 0 !important;
+}
+.q-table__container {
+  border-radius: 0;
+}
+.q-table__card {
+  box-shadow: none;
+}
+.table_header {
+  background-color: #eee;
+}
+.table_header th {
+  @include fw-7;
+  font-size: 14px !important;
+  border-top: 2px solid $b4;
+}
+.q-table_header_title_sub {
+  @include flex_start;
+  gap: 40px;
+}
+.q-table_header_title_sub_text {
+  @include fw-7;
+  color: $b3;
+}
+.q-table_header_sub_wrap {
+  padding: 8px 0;
+}
+.q-table tr {
+  @include fs-5;
+  height: 40px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.q-table td {
+  font-size: 14px !important;
+  // border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.q-table td p {
+  font-size: 14px !important;
+}
+.q-table_header_title p {
+  @include fw-7;
+}
+.q-table_header_wrap {
+  @include flex_start;
+  gap: 8px;
+}
+
+.q-table_header_accumulate_wrap {
+  @include flex_between;
+}
+.q-table_header_accumulate {
+  @include flex_start;
+  gap: 4px;
+}
+.q-table_header_accumulate p {
+  @include fs-5;
+  @include fw-7;
+}
+
+.table_header_sub_top th,
+.table_header_sub_bottom th {
+  border: none !important;
+}
+.table_header_sub_top th {
+  width: 100%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+.table_header_sub_top,
+.table_header_sub_bottom {
+  @include flex_around;
+}
+
+.q-table_noheader {
+  @include flex_between;
+  border-bottom: 1px solid $th-line;
+  padding-bottom: 7px;
+}
+
+.q-table__grid-content {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+//sub notice Text
+.q-tableQAText,
+.q-table_readText,
+.q-table_newText {
+  @include fs-5;
+  @include fw-7;
+}
+.q-tableQAText,
+.q-table_readText {
+  color: $b4;
+  margin-right: 8px;
+}
+.q-table_newText {
+  color: $r1;
+}
+
+// table expend
+.q-table_expend_wrap {
+  background-color: $b5;
+}
+.q-table_text_wrap {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.q-table_view_text_wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.q-table_view_expendText {
+  @include fs-5;
+  white-space: normal;
+  overflow: hidden;
+}
+.q-table_sort_icon {
+  cursor: pointer;
+}
+.q-table_sort_icon span {
+  @include fs-5;
+  margin-right: 10px;
+}
+
+// 품목
+.q-table_item {
+  @include flex_start;
+  margin-left: 16px;
+  gap: 5px;
+}
+.q-table_itemTitle {
+  @include fs-5;
+  @include fw-7;
+}
+.q-table_itemTitleSub {
+  @include fs-5;
+}
+.q-table_badge_wrap {
+  @include flex_center;
+  gap: 8px;
+}
+.q-table_badge_red {
+  @include fs-5;
+  background-color: $w;
+  color: $r1;
+  padding: 0;
+}
+.q-table_badge_blue {
+  @include fs-5;
+  background-color: $w;
+  color: $b4;
+  padding: 0;
+}
+
+// 반품
+.q-table_return {
+  @include fs-5;
+  @include fw-7;
+  color: $r1;
+}
+.q-table_order {
+  @include fs-5;
+  @include fw-7;
+  color: $r1;
+}
+
+//재고
+.q-table_stock_wrap p {
+  @include fs-5;
+}
+.q-table_stock {
+  @include fs-5;
+  @include fw-7;
+  color: $r1;
+}
+
+// 이력
+.q-table_checkbox div {
+  border: none;
+}
+.q-table_checkbox .q-icon {
+  font-size: 20px;
+}
+.q-table_checkbox .q-icon {
+  color: $b3;
+}
+.q-table_checkbox_heart div {
+  border: none;
+}
+.q-table_checkbox_heart .q-icon {
+  font-size: 20px;
+}
+.q-table_checkbox_heart .q-icon {
+  color: $r1;
+}
+
+// 수량
+.q-table_number {
+  @include fs-5;
+  text-align: center;
+  width: 56px;
+  height: 24px;
+  border: 1px solid #666666;
+  border-radius: 2.4px;
+}
+.q-table_EA_wrap {
+  @include flex_center;
+}
+
+// 삭제
+.q-table_del {
+  cursor: pointer;
+}
+
+// 담기
+.q-table_cart_wrap {
+  @include flex_center;
+}
+
+// table bottom
+.q-table__bottom {
+  @include flex_between;
+  padding: 15px 0 0 0 !important;
+}
+.q-table_bottom_input .q-field__inner .q-field__control {
+  height: 40px !important;
+}
+.all_price,
+.all_right {
+  @include flex_center;
+  gap: 8px;
+}
+.all_left {
+  text-align: right;
+}
+.all_left p {
+  @include fs-5;
+  @include fw-7;
+}
+.all_left p span {
+  @include fs-5;
+  @include fw-7;
+  color: $b3;
+}
+.all_right {
+  padding: 6px 8px 6px 28px !important;
+  background-color: $b5;
+}
+.all_right p {
+  @include fs-3;
+  @include fw-7;
+  color: $b3;
+}
+.all_right p span {
+  font-size: 16px;
+  color: $b;
+  margin-left: 2px;
+}
+
+.q-table_bottom_pages_wrap {
+  @include flex_end;
+  margin: -15px 0 0 0;
+  height: 40px;
+  width: 100%;
+  background-color: #eeeeee;
+}
+.q-table_bottom_pages_wrap p {
+  @include fs-5;
+  padding: 0 16px;
+}
+
+.q-table_bottom_pagination_wrap {
+  width: 100%;
+  padding-top: 10px;
+  @include flex_center;
+}
+.q-pagination_icon .q-btn .q-icon {
+  font-size: 14px;
+}
+.q-pagination_icon span {
+  font-size: 14px;
+}
+
+.q-table_bottom_total_wrap {
+  @include flex_center;
+  background-color: $b5;
+  width: 100%;
+  padding: 8px;
+  margin-top: -15px;
+  div:nth-child(1) {
+    width: 75%;
+    p {
+      @include fs-5;
+      @include fw-7;
+    }
+  }
+  div:nth-child(2) {
+    width: 25%;
+    p {
+      @include fs-5;
+    }
+  }
+}
+
+// Q/A
+.q-table_QA_wrap {
+  background-color: rgba(31, 63, 130, 0.07) !important;
+  .q-table_QA {
+    padding: 20px 0;
+    margin-left: 85px;
+    p {
+      @include flex_start;
+      gap: 8px;
+      span {
+        @include fs-5;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+    }
+    p:nth-child(1) {
+      margin-bottom: 30px;
+    }
+  }
+}
+
+// dialog
+.q-dialog__inner--minimized > div {
+  max-width: none !important;
+}
+
+//check
+
+.q-table--col-auto-width {
+  padding: 0 0 0 16px !important;
+}
+.q-checkbox--dense .q-checkbox__inner {
+  width: 0.4em;
+  min-width: 0.4em;
+  height: 0.4em;
+}

@@ -1,0 +1,1110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k02.inspectorReport">
+    
+    <select id="selectSupervisorYn" parameterType="HashMap" resultType="HashMap">
+        SELECT NVL(MIN(AUTH_CODE),'2') AS RESULT
+          FROM USER01TB U1,USER02TB U2
+         WHERE U2.AUTH_ID = U1.AUTH_ID
+          AND U1.USER_ID = #{USER_ID}    
+    </select>
+        
+    <select id="selectInspectReport" parameterType="HashMap" resultType="HashMap">
+        /* k02.inspectorReport.selectInspectReport - 검사실시보고 */
+    
+		SELECT *
+		 FROM(SELECT  'ADTIS' AS GUBUN,T1.IPNT_UPPER_SEQ
+                      ,T1.IPNT_NO
+                      ,T1.IPNT_NAME
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                      ,T1.IPNT_KIND_CODE
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                      ,T1.IPNT_PERIOD_CODE
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                      ,T1.IPNT_SUPERVISOR
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME
+                      ,T1.IPNT_COLLECTOR
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME
+                      ,T1.IPNT_RESULT_MANAGER
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME
+                      ,T1.IPNT_DONE_DATE
+                      ,T1.IPNT_CHARGER_ID
+                      ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+                      ,TO_CHAR(T1.IPNT_INDICATION) AS IPNT_INDICATION
+                      ,TO_CHAR(T1.IPNT_CHOOSE_METHOD) AS IPNT_CHOOSE_METHOD
+                      ,TO_CHAR(T1.IPNT_REMARK) AS IPNT_REMARK
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                      ,T1.IPNT_EVENT_DET_CODE
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.IPNT_EVENT_DET_CODE AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                      ,T1.IPNT_DATE
+                      ,T1.IPNT_TIME
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+                      ,T1.IPNT_PROVINCE_CODE
+                      ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME
+                      ,T1.IPNT_PLACE_DETAIL
+                      ,T1.IPNT_PLACE_ZIPCODE
+                      ,T1.IPNT_PLACE_ADDRESS
+                      ,T1.IPNT_PLACE_NEWADDRESS
+                      ,T1.IPNT_PLACE_PHONE
+                      ,T1.IPNT_PLACE_LATITUDE
+                      ,T1.IPNT_PLACE_LONGITUDE
+                      ,T1.IPNT_SEX_M
+                      ,T1.IPNT_SEX_F
+                      ,T1.IPNT_SEX_MIX
+                      ,T2.CNT_CHOOSE_DCO + NVL(T2.CNT_CHOOSE_DCOBCO,0) AS IPNT_DCO
+                      ,T2.CNT_CHOOSE_BCO + NVL(T2.CNT_CHOOSE_DCOBCO,0) AS IPNT_BCO
+                      ,T2.CNT_CHOOSE_DCOBCO AS IPNT_DCOBCO
+                      ,T1.MEMO
+                      ,T1.CHOOSE_DONE_YN
+                      ,T1.IP_ADDR
+                      ,T1.USER_AGENT
+                      ,T1.GAME_CODE
+                      ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                      ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                      ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                      ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                      ,NVL((SELECT COUNT(1) FROM IPNT04TB WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                      ,COUNT(1) OVER() AS ALL_COUNT    
+                      ,T3.PROCESS_STATUS                            
+               FROM IPNT01TB T1
+               LEFT OUTER JOIN (
+                               SELECT  IPNT_UPPER_SEQ
+                                       ,SUM(CASE WHEN CHOOSE_BCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_BCO
+                                       ,SUM(CASE WHEN CHOOSE_DCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_DCO
+                                       ,SUM(CASE WHEN CHOOSE_DCOBCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_DCOBCO
+                               FROM    IPNT07TB
+                               GROUP BY IPNT_UPPER_SEQ
+                               ) T2
+                  ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+               LEFT OUTER JOIN IPDN01TB T3 ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ         
+               WHERE T1.CHOOSE_DONE_YN = 'Y'
+                 AND T1.USE_YN = 'Y'
+               <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+		         AND T1.IPNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+		       </if>
+               <if test="ADMIN_YN != null and ADMIN_YN != 'ADMIN'">  
+                 AND EXISTS  (
+                             SELECT  1
+                             FROM    IPNT07TB
+                             WHERE   IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ
+                             AND     USER_ID = #{USER_ID}
+                             AND     PREDECESSOR_YN = 'Y'
+                              ) 
+              </if>                            
+              <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+                 AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+              </if>
+	          <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+	             AND UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+	          </if>            
+              UNION ALL                                        
+              SELECT 'KADAMS' AS GUBUN, T1.IPNT_UPPER_SEQ
+                     ,T1.IPNT_NO
+                     ,T1.IPNT_NAME
+                     ,F_CODE_NM('IPNT_TYPE',T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                     ,T1.IPNT_KIND_CODE
+                     ,F_CODE_NM('IPNT_KIND_CODE',T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                     ,T1.IPNT_PERIOD_CODE
+                     ,F_CODE_NM('IPNT_PERIOD_CODE',T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                     ,T1.IPNT_SUPERVISOR
+                     ,F_CODE_NM('ORGANIZATION',T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME
+                     ,T1.IPNT_COLLECTOR
+                     ,F_CODE_NM('ORGANIZATION',T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME
+                     ,T1.IPNT_RESULT_MANAGER
+                     ,F_CODE_NM('ORGANIZATION',T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME
+                     ,T1.IPNT_DONE_DATE
+                     ,T1.IPNT_CHARGER_ID
+                     ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+                     ,TO_CHAR(T1.IPNT_INDICATION) AS IPNT_INDICATION
+                     ,TO_CHAR(T1.IPNT_CHOOSE_METHOD) AS IPNT_CHOOSE_METHOD
+                     ,TO_CHAR(T1.IPNT_REMARK) AS IPNT_REMARK
+                     ,F_CODE_NM('EVENT_CODE',T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                     ,T1.IPNT_EVENT_DET_CODE
+                     ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.IPNT_EVENT_DET_CODE AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                     ,T1.IPNT_DATE
+                     ,T1.IPNT_TIME
+                     ,F_CODE_NM('PLACE_TYPE',T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+                     ,T1.IPNT_PROVINCE_CODE
+                     ,F_CODE_NM('PROVINCE_CODE',T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME
+                     ,T1.IPNT_PLACE_DETAIL
+                     ,T1.IPNT_PLACE_ZIPCODE
+                     ,T1.IPNT_PLACE_ADDRESS
+                     ,T1.IPNT_PLACE_NEWADDRESS
+                     ,T1.IPNT_PLACE_PHONE
+                     ,T1.IPNT_PLACE_LATITUDE
+                     ,T1.IPNT_PLACE_LONGITUDE
+                     ,T1.IPNT_SEX_M
+                     ,T1.IPNT_SEX_F
+                     ,T1.IPNT_SEX_MIX
+                     ,T2.CNT_CHOOSE_DCO + NVL(T2.CNT_CHOOSE_DCOBCO,0) AS IPNT_DCO
+                     ,T2.CNT_CHOOSE_BCO + NVL(T2.CNT_CHOOSE_DCOBCO,0) AS IPNT_BCO
+                     ,T2.CNT_CHOOSE_DCOBCO AS IPNT_DCOBCO
+                     ,T1.MEMO
+                     ,T1.CHOOSE_DONE_YN
+                     ,T1.IP_ADDR
+                     ,T1.USER_AGENT
+                     ,T1.GAME_CODE
+                     ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                     ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                     ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                     ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                     ,NVL((SELECT COUNT(1) FROM K03_DOPING_INSPECT_HIST WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                     ,COUNT(1) OVER() AS ALL_COUNT      
+                     ,T3.PROCESS_STATUS                           
+              FROM   K03_DOPING_INSPECT_REG T1
+              LEFT OUTER JOIN (
+                              SELECT  IPNT_UPPER_SEQ
+                                      ,SUM(CASE WHEN CHOOSE_BCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_BCO
+                                      ,SUM(CASE WHEN CHOOSE_DCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_DCO
+                                      ,SUM(CASE WHEN CHOOSE_DCOBCO_YN = 'Y' THEN 1 ELSE 0 END) AS CNT_CHOOSE_DCOBCO
+                              FROM    K03_DOPING_INSPECT_DCO
+                              GROUP BY IPNT_UPPER_SEQ
+                              ) T2
+                ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+              LEFT OUTER JOIN K03_INSPECT_ORDER T3 ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ  
+              WHERE T1.CHOOSE_DONE_YN = 'Y'
+                AND T1.USE_YN = 'Y'
+               <if test="START_DATE != null and START_DATE != '' and END_DATE != null and END_DATE != ''">
+                 AND T1.IPNT_DONE_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+               </if>                
+              <if test="ADMIN_YN != null and ADMIN_YN != 'ADMIN'">
+                AND EXISTS  (
+                             SELECT  1
+                             FROM    K03_DOPING_INSPECT_DCO
+                             WHERE   IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ
+                             AND     USER_ID = #{USER_ID}
+                             AND     PREDECESSOR_YN = 'Y'
+                             ) 
+              </if>        
+              <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NO'">
+                 AND UPPER(T1.IPNT_NO) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+              </if>
+              <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'IPNT_NAME'">
+                 AND UPPER(T1.IPNT_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+              </if>                                                                        
+        ) A           
+        ORDER BY A.REG_DATE DESC    
+    </select>
+    
+    <select id="selectDopingInspectRegByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectDopingInspectRegByPK - ADTIS,KADAMS공용  (old : selectIPNT01TBByPK) */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T1.IPNT_NO
+                ,T1.IPNT_NAME
+                ,T1.IPNT_TYPE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+                ,T1.IPNT_KIND_CODE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+                ,T1.IPNT_KIND_ETC
+                ,T1.IPNT_PERIOD_CODE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+                ,T1.IPNT_SUPERVISOR
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_SUPERVISOR) AS IPNT_SUPERVISOR_NAME
+                ,T1.IPNT_COLLECTOR
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_COLLECTOR) AS IPNT_COLLECTOR_NAME
+                ,T1.IPNT_RESULT_MANAGER
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'ORGANIZATION' AND DTL_CODE = T1.IPNT_RESULT_MANAGER) AS IPNT_RESULT_MANAGER_NAME
+                ,T1.IPNT_DONE_DATE
+                ,T1.IPNT_CHARGER_ID
+                ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+                ,TO_CHAR(T1.IPNT_INDICATION) as IPNT_INDICATION
+                ,TO_CHAR(T1.IPNT_CHOOSE_METHOD) as IPNT_CHOOSE_METHOD
+                ,T1.IPNT_REMARK
+                ,T1.IPNT_EVENT_CODE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'EVENT_CODE' AND DTL_CODE = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_NAME
+                ,T1.IPNT_EVENT_DET_CODE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'EVENT_DET_CODE' AND DTL_CODE = T1.IPNT_EVENT_DET_CODE AND OPTION2 = T1.IPNT_EVENT_CODE) AS IPNT_EVENT_DET_NAME
+                ,T1.IPNT_DATE
+                ,T1.IPNT_TIME
+                ,T1.IPNT_PLACE_TYPE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+                ,T1.IPNT_PROVINCE_CODE
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'PROVINCE_CODE' AND DTL_CODE = T1.IPNT_PROVINCE_CODE) AS IPNT_PROVINCE_NAME
+                ,T1.IPNT_PLACE_DETAIL
+                ,T1.IPNT_PLACE_ZIPCODE
+                ,T1.IPNT_PLACE_ADDRESS
+                ,T1.IPNT_PLACE_NEWADDRESS
+                ,T1.IPNT_PLACE_PHONE
+                ,T1.IPNT_PLACE_LATITUDE
+                ,T1.IPNT_PLACE_LONGITUDE                
+                ,NVL(T13.IPNT_SEX_M,0) AS IPNT_SEX_M
+                ,NVL(T13.IPNT_SEX_F,0) AS IPNT_SEX_F
+                ,NVL(T13.IPNT_SEX_MIX,0) AS IPNT_SEX_MIX
+                ,T1.IPNT_DCO
+                ,T1.IPNT_DCO_F
+                ,T1.IPNT_BCO
+                ,T1.MEMO
+                ,T1.CHOOSE_DONE_YN
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.GAME_CODE
+                ,(SELECT GAME_NAME FROM ${GAME01TB} WHERE GAME_CODE = T1.GAME_CODE) AS GAME_NAME
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,NVL((SELECT COUNT(1) FROM ${IPNT04TB} WHERE IPNT_UPPER_SEQ = T1.IPNT_UPPER_SEQ), 0) AS CNT_READ
+                ,(SELECT EMP_CODE FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS EMP_CODE
+                ,T1.LAB_BALANCE
+                ,(SELECT TT1.USER_NAME
+                    FROM USER01TB TT1
+                   WHERE TT1.USER_ID = (SELECT USER_ID FROM ${IPNT07TB} 
+                                        WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ} 
+                                          AND PREDECESSOR_YN='Y' AND ROWNUM = 1)) USER_NAME
+                , CASE WHEN TO_CHAR(SYSDATE,'YYYYMMDD')<=T1.IPNT_DONE_DATE THEN 'N'ELSE 'Y' END AS CLOSE_STATUS 
+        FROM    ${IPNT01TB} T1
+        LEFT OUTER JOIN (SELECT C.IPNT_UPPER_SEQ,
+                     SUM(DECODE(C.SEX, 'M', 1, 0)) AS IPNT_SEX_M,
+                     SUM(DECODE(C.SEX, 'F', 1, 0)) AS IPNT_SEX_F,
+                     SUM(DECODE(C.SEX, 'X', 1, 0)) AS IPNT_SEX_MIX
+                FROM (SELECT T1.IPNT_UPPER_SEQ, T2.IPNT_NO, T1.SEX
+                        FROM ${IPNT13TB} T1, ${IPNT01TB} T2
+                       WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                         AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                         AND T1.USE_YN = 'Y'
+                         AND T2.USE_YN = 'Y'
+                     GROUP BY T1.IPNT_UPPER_SEQ,
+                              T2.IPNT_NO,
+                              T1.PLAYER_NAME,
+                              T1.NATIONALITY,
+                              T1.SEX,
+                              T1.MINOR_TYPE,
+                              T1.EVENT_CODE,
+                              T1.EVENT_DET_CODE,
+                              T1.USE_YN,
+                              T1.SORT_NO,
+                              T1.PLAYER_NO) C
+                  GROUP BY C.IPNT_UPPER_SEQ) T13 ON T1.IPNT_UPPER_SEQ = T13.IPNT_UPPER_SEQ
+        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T1.USE_YN = 'Y'
+        ]]>
+    </select>
+    
+    <select id="selectDopingInspectSampleByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectDopingInspectSampleByPK - ADTIS,KADAMS공용  (old : selectIPNT02TBByPK) */
+        
+        SELECT  IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,IPNT_SEQ
+                ,IPNT_FLAG
+                ,IPNT_FLAG_NAME
+                ,IPNT_SUB_FLAG
+                ,IPNT_SUB_FLAG_NAME
+                ,IPNT_FLAG_QTY
+                ,IPNT_FLAG_QTY_F
+                ,TO_NUMBER(ANALYSIS_PAY) AS ANALYSIS_PAY
+                ,TO_NUMBER(ANALYSIS_PAY)*IPNT_FLAG_QTY AS TOT_ANALYSIS_PAY
+        FROM(
+            SELECT  T2.IPNT_NO
+                    ,T1.IPNT_SEQ
+                    ,T1.IPNT_FLAG
+                    ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'IPNT_FLAG' AND DTL_CODE = T1.IPNT_FLAG) AS IPNT_FLAG_NAME
+                    ,T1.IPNT_SUB_FLAG
+                    ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'IPNT_SUB_FLAG' AND DTL_CODE = T1.IPNT_SUB_FLAG AND OPTION1 = T1.IPNT_FLAG) AS IPNT_SUB_FLAG_NAME
+                    ,T1.IPNT_FLAG_QTY
+                    ,T1.IPNT_FLAG_QTY_F
+                    ,CASE WHEN T1.IPNT_FLAG = '1'
+                          THEN CASE WHEN T1.IPNT_SUB_FLAG = '11' THEN CASE WHEN T2.IPNT_PERIOD_CODE = '0' THEN (SELECT OPTION1 FROM CODE01TB WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE1')
+                                                                                                          ELSE (SELECT OPTION1 FROM CODE01TB WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE1_1')
+                                                                      END
+                                                                 ELSE (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE2')
+                                END
+                         WHEN T1.IPNT_FLAG = '2'
+                         THEN CASE WHEN T1.IPNT_SUB_FLAG = '21' THEN CASE WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) > 10 THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE4')
+                                                                                                     ELSE (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE4_1')
+                                                                     END
+                                   WHEN T1.IPNT_SUB_FLAG = '22' THEN CASE WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) > 10 THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE3')
+                                                                          WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) >= 6 AND  (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) <= 10 THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE3_1')
+                                                                          WHEN (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) >= 1 AND  (NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) <= 5 THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE3_2')
+                                                                     END
+                                   WHEN T1.IPNT_SUB_FLAG = '23' THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE6')
+                                   WHEN T1.IPNT_SUB_FLAG = '24' THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE5')
+                                   WHEN T1.IPNT_SUB_FLAG = '25' THEN (SELECT OPTION1 FROM ${CODE01TB} WHERE MST_CODE = 'SAMPLE_ANALYSIS_PAY' AND DTL_CODE = 'SAMPLE7')
+                              END
+                         ELSE '0'
+                     END AS ANALYSIS_PAY
+                    ,T2.IPNT_UPPER_SEQ
+            FROM  ${IPNT02TB} T1
+            INNER JOIN ${IPNT01TB} T2
+               ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+              AND T2.USE_YN = 'Y'
+            WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+            ORDER BY T1.IPNT_SEQ
+        )
+        ]]>
+    </select>
+    
+    <select id="selectDopingInspectLegendByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectDopingInspectLegendByPK - ADTIS,KADAMS공용  (old : selectIPNT03TBByPK) */
+        
+       SELECT  T1.IPNT_UPPER_SEQ
+              ,T3.IPNT_NO
+              ,T1.LEGEND_CODE
+              ,T2.CODE_NAME AS LEGEND_NAME
+        FROM ${IPNT03TB} T1
+        LEFT OUTER JOIN ${CODE01TB} T2
+          ON T2.MST_CODE = 'LEGEND_CODE'
+         AND T1.LEGEND_CODE = T2.DTL_CODE
+        INNER JOIN ${IPNT01TB} T3
+           ON T1.IPNT_UPPER_SEQ = T3.IPNT_UPPER_SEQ
+          AND T3.USE_YN = 'Y'
+        WHERE T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ORDER BY T2.SORT_ORDER
+        ]]>
+    </select>
+    
+    <select id="selectInspectFileByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectInspectFileByPK - ADTIS,KADAMS공용  (old : selectIPNT05TBByPK) */        
+        
+        SELECT   T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.IPNT_FILE_SEQ
+                ,T1.IPNT_FILE_PATH
+                ,T1.IPNT_FILE_NAME
+                ,T1.IPNT_FILE_ORIGIN_NAME
+                ,T1.IPNT_FILE_EXT
+                ,T1.IPNT_FILE_SIZE
+                ,T1.USE_YN
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+        FROM    ${IPNT05TB} T1
+       INNER JOIN ${IPNT01TB} T2
+          ON T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+         AND T2.USE_YN = 'Y'
+       WHERE (#{IPNT_UPPER_SEQ} IS NULL OR T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ})
+         AND (#{IPNT_NO} IS NULL OR T1.IPNT_NO = #{IPNT_NO})
+        ]]>
+        <if test="IPNT_FILE_SEQ != null and IPNT_FILE_SEQ != ''">
+         AND T1.IPNT_FILE_SEQ = #{IPNT_FILE_SEQ}
+        </if>
+        <![CDATA[
+         AND T1.USE_YN = 'Y'
+        ORDER BY T1.IPNT_FILE_SEQ
+        ]]>
+    </select>
+    
+    <select id="selectDopingInspectDcoByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectDopingInspectDcoByPK - ADTIS,KADAMS공용  (old : selectIPNT07TBByPK) */
+        
+        SELECT  *
+        FROM    (
+                SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,T1.USER_ID
+                        ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.USER_ID) AS USER_NAME
+                        ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = (SELECT USER_SEX FROM USER01TB WHERE USER_ID = T1.USER_ID)) AS USER_SEX
+                        ,T1.USE_POINT
+                        ,T1.USE_YN
+                        ,T1.IP_ADDR
+                        ,T1.USER_AGENT
+                        ,TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REQUEST_DATE
+                        ,T1.CHOOSE_BCO_YN
+                        ,T1.CHOOSE_DCO_YN
+                        ,T1.CHOOSE_DCOBCO_YN
+                        ,T1.PREDECESSOR_YN
+                        ,T1.USER_ADDRESS
+                        ,T1.USER_DETAIL_ADDRESS
+                        ,T1.USER_ADDRESS_LATITUDE
+                        ,T1.USER_ADDRESS_LONGITUDE
+                        ,T1.DISTANCE
+                        ,T1.DISTANCE_POINT
+                        ,T1.PERFORMANCE_POINT
+                        ,T1.SUBJECTIVE_POINT
+                        ,T1.SUPERVISOR_ID
+                        ,TO_CHAR(T1.SUPERVISOR_DATE, 'YYYY-MM-DD HH24:MI:SS') AS SUPERVISOR_DATE
+                        ,NVL(T1.PERFORMANCE_COUNT, '0') AS CNT_INSPECT_HISTORY
+                        ,DENSE_RANK() OVER(ORDER BY T1.DISTANCE) AS RANK_DISTANCE
+                        ,TO_NUMBER(NVL(T1.PERFORMANCE_POINT, '0'))
+                        + (42 - DENSE_RANK() OVER(ORDER BY T1.DISTANCE) * 2)
+                        + TO_NUMBER(NVL(T1.USE_POINT, '0'))
+                        + TO_NUMBER(NVL(T1.SUBJECTIVE_POINT, '0')) AS TOTAL_POINT
+                        ,T1.SUBJECTIVE_POINT_REASON
+                        ,T1.CHAPERON_YN
+                        ,T1.CHAPERON_COUNT
+                        ,T1.CHOOSE_CHAPERON_YN
+                FROM    ${IPNT07TB} T1
+                WHERE   T1.USE_YN = 'Y'
+                ]]>
+        <if test="IPNT_UPPER_SEQ != null and IPNT_UPPER_SEQ != ''">
+            AND T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        </if>
+        <![CDATA[
+                ) T
+        WHERE 1 = 1
+        ]]>
+        <if test="USER_ID != null and USER_ID != ''">
+           AND T.USER_ID = #{USER_ID}
+        </if>
+        <![CDATA[
+        ORDER BY T.PREDECESSOR_YN DESC, T.CHOOSE_DCO_YN DESC, T.CHOOSE_DCOBCO_YN DESC, T.CHOOSE_BCO_YN DESC ,T.CHAPERON_YN DESC ,T.USER_NAME
+        ]]>
+    </select>    
+    
+    <select id="selectInspectReportConfirm" parameterType="HashMap" resultType="HashMap">
+      /* k02.inspectorReport.selectInspectReportConfirm - ADTIS,KADAMS공용  (old : selectIPNT14TBByPK) */
+    
+        SELECT IPNT_UPPER_SEQ,
+               USER_ID,
+               TYPE
+         FROM ${IPNT14TB}
+        WHERE IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+          AND USER_ID = #{USER_ID}
+    </select>
+    
+    <select id="selectDopingInspectDcoByDCO" parameterType="HashMap" resultType="HashMap">
+    /* k02.inspectorReport.selectDopingInspectDcoByDCO - ADTIS,KADAMS공용  (old : selectIPNT07TBByDCO) */
+    
+        SELECT A.USER_ID,
+               U.USER_NAME,
+               DECODE(U.USER_SEX,'M','남','F','여') AS USER_SEX,
+               A.CHOOSE_DCO_YN,
+               A.CHOOSE_BCO_YN,
+               A.CHOOSE_DCOBCO_YN,
+               A.PREDECESSOR_YN
+          FROM ${IPNT07TB} A
+          JOIN USER01TB U
+            ON A.USER_ID = U.USER_ID
+         WHERE A.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+           AND A.USE_YN = 'Y'    
+    </select>
+    
+    <select id="selectInspectOrderByPK" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+    /* k02.inspectorReport.selectInspectOrderByPK - ADTIS,KADAMS공용  (old : select0102IPDN01TBByPk) */
+    
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.SUCCESS_STATUS
+                ,T1.IPNT_SEX_M
+                ,T1.IPNT_SEX_F
+                ,TO_CHAR(T1.MEMO) AS MEMO
+                ,T1.PROCESS_STATUS
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.CHAPERON_QTY
+                ,T1.ARRIVE_DATE
+                ,T1.ARRIVE_TIME
+                ,T1.FINISH_DATE
+                ,T1.FINISH_TIME
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T1.MANAGER_MEMO
+                ,T1.OTHER_MEMO
+                ,T2.LAB_BALANCE
+                ,T1.SP_CHECK_YN
+        FROM    ${IPDN01TB} T1
+                ,${IPNT01TB} T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T2.USE_YN = 'Y'
+        ]]>
+    </select>
+    
+    <select id="selectInspectDirSampleByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectInspectDirSampleByPK - 시료정보, ADTIS,KADAMS공용  (old : select0102IPDN02TBByPk) */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.IPNT_SEQ
+                ,T1.IPNT_FLAG
+                ,T1.IPNT_SUB_FLAG
+                ,T1.IPNT_FLAG_QTY
+                ,T1.IPNT_FLAG_QTY_F
+                ,T1.IPNT_ADDED
+                ,T1.UNIT_AMOUNT
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_SUB_FLAG' AND DTL_CODE = T1.IPNT_SUB_FLAG) AS IPNT_SUB_FLAG_NAME
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_FLAG' AND DTL_CODE = T1.IPNT_FLAG) AS IPNT_FLAG_NAME
+        FROM    ${IPDN02TB} T1
+                ,${IPNT01TB} T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ORDER BY T1.IPNT_SEQ
+        ]]>
+    </select>
+    
+    <select id="selectInspectDirPhotoByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectInspectDirPhotoByPK - ADTIS,KADAMS공용  (old : select0102IPDN03TBByPk) */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.IPNT_FILE_SEQ
+                ,T1.IPNT_FILE_PATH
+                ,T1.IPNT_FILE_NAME
+                ,T1.IPNT_FILE_ORIGIN_NAME
+                ,T1.IPNT_FILE_EXT
+                ,T1.IPNT_FILE_SIZE
+                ,T1.USE_YN
+                ,T1.REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD') AS REG_DATE
+                ,NVL(T1.GUBUN,'P') AS GUBUN
+        FROM    ${IPDN03TB} T1
+                ,${IPNT01TB} T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+        <if test="IPNT_FILE_SEQ != null and IPNT_FILE_SEQ != ''">
+            AND T1.IPNT_FILE_SEQ = #{IPNT_FILE_SEQ}
+        </if>
+        <![CDATA[
+        AND     T1.USE_YN = 'Y'
+        AND     T2.USE_YN = 'Y'
+        ORDER BY T1.IPNT_FILE_SEQ
+        ]]>
+    </select>
+    
+    <select id="selectStockConfirmByPK" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectStockConfirmByPK - ADTIS,KADAMS공용  (old : select0102IPDN03TBByPk) */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T4.IPNT_NO
+                ,T1.MASTER_CODE
+                ,T1.DETAIL_CODE
+                ,T1.IPNT_VALUE
+                ,T1.MEMO
+                ,T1.REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,T1.EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+        FROM    ${IPNT12TB} T1
+                ,${CODE01TB} T2
+                ,${CODE01TB} T3
+                ,${IPNT01TB} T4
+        WHERE   T1.MASTER_CODE = T2.DTL_CODE
+        AND     T1.DETAIL_CODE = T3.DTL_CODE
+        AND     T2.MST_CODE = 'INOUT_MASTER_CODE'
+        AND     T3.MST_CODE = 'INOUT_DETAIL_CODE'
+        AND     T1.IPNT_UPPER_SEQ = T4.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T4.USE_YN = 'Y'
+        ORDER BY T2.SORT_ORDER
+                ,T3.SORT_ORDER
+        ]]>
+    </select>    
+    
+    <select id="selectUSER01TBByIPNT07TB" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectUSER01TBByDCO - ADTIS,KADAMS공용  (old : selectUSER01TBByIPNT07TB) */
+        
+        SELECT  T1.USER_ID
+                ,T1.AUTH_ID
+                ,T1.USER_NAME
+                ,T1.USER_EN_NAME
+                ,T1.USER_PWD
+                ,T1.USER_SEX
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = T1.USER_SEX) AS USER_SEX_NAME
+                ,T1.USER_PHONE
+                ,T1.SMS_AGREE_YN
+                ,T1.USER_ZIPCODE1
+                ,T1.USER_ADDRESS1
+                ,T1.USER_DETAIL_ADDRESS1
+                ,T1.IS_ROAD_ADDRESS1
+                ,T1.USER_ADDRESS_LATITUDE1
+                ,T1.USER_ADDRESS_LONGITUDE1
+                ,T1.USER_ZIPCODE2
+                ,T1.USER_ADDRESS2
+                ,T1.USER_DETAIL_ADDRESS2
+                ,T1.IS_ROAD_ADDRESS2
+                ,T1.USER_ADDRESS_LATITUDE2
+                ,T1.USER_ADDRESS_LONGITUDE2
+                ,T1.USER_EMAIL_PREFIX
+                ,T1.USER_EMAIL_SUFFIX
+                ,T1.EMAIL_AGREE_YN
+                ,T1.COMPANY_NAME
+                ,T1.COMPANY_POSITION
+                ,T1.CHARGER_YN
+                ,T1.BCO_YN
+                ,T1.DCO_YN
+                ,T1.AUTH_STAGE_NO
+                ,T1.AUTH_STAGE_NAME
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+                ,T1.INSPECTOR_POOL
+                ,(SELECT CODE_NAME FROM ${CODE01TB} WHERE MST_CODE = 'INSPECTOR_POOL' AND DTL_CODE = T1.INSPECTOR_POOL) AS INSPECTOR_POOL_NAME
+        FROM    USER01TB T1
+                ,${IPNT07TB} T2
+        WHERE   T1.USER_ID = T2.USER_ID
+        AND     T2.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ORDER BY T2.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="validSaveCheck0102ByIPNT_NO" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.validSaveCheck0102ByIPNT_NO - ADTIS,KADAMS공용  (old : validSaveCheck0102ByIPNT_NO) */
+        
+        SELECT  COUNT(1) AS CNT
+        FROM    ${IPDN01TB} T1
+        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T1.PROCESS_STATUS = 'C'
+        ]]>
+    </select>
+    
+    <select id="selectIPDN01TBByPk" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.selectIPDN01TBByPk - ADTIS,KADAMS공용  (old : selectIPDN01TBByPk) */
+        
+        SELECT  T1.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T1.SUCCESS_STATUS
+                ,T1.IPNT_SEX_M
+                ,T1.IPNT_SEX_F
+                ,T1.MEMO
+                ,T1.PROCESS_STATUS
+                ,T1.IP_ADDR
+                ,T1.USER_AGENT
+                ,T1.CHAPERON_QTY
+                ,T1.ARRIVE_DATE
+                ,T1.ARRIVE_TIME
+                ,T1.FINISH_DATE
+                ,T1.FINISH_TIME
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REG_USER) AS REG_USER
+                ,TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                ,(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.EDT_USER) AS EDT_USER
+                ,TO_CHAR(T1.EDT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS EDT_DATE
+        FROM    ${IPDN01TB} T1
+                ,${IPNT01TB} T2
+        WHERE   T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        AND     T2.USE_YN = 'Y'
+        ]]>
+    </select>
+    
+    <insert id="insertIPDN01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.insertIPDN01TB - ADTIS,KADAMS공용  (old : insertIPDN01TB) */
+        
+        INSERT  INTO ${IPDN01TB}
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,SUCCESS_STATUS
+                ,IPNT_SEX_M
+                ,IPNT_SEX_F
+                ,MEMO
+                ,PROCESS_STATUS
+                ,IP_ADDR
+                ,USER_AGENT
+                ,REG_USER
+                ,REG_DATE
+                ,CHAPERON_QTY
+                ,ARRIVE_DATE
+                ,ARRIVE_TIME
+                ,FINISH_DATE
+                ,FINISH_TIME
+                ,MANAGER_MEMO
+                ,OTHER_MEMO
+                ,SP_CHECK_YN
+                )
+        VALUES  (
+                #{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{SUCCESS_STATUS}
+                ,#{IPNT_SEX_M}
+                ,#{IPNT_SEX_F}
+                ,#{MEMO}
+                ,'C'
+                ,#{IP_ADDR}
+                ,#{USER_AGENT}
+                ,#{REG_USER}
+                ,SYSDATE
+                ,#{CHAPERON_QTY}
+                ,REPLACE(#{ARRIVE_DATE},'-','')
+                ,TO_CHAR(TO_DATE(#{ARRIVE_TIME},'HH24:MI:SS'),'HH24MI')
+                ,REPLACE(TO_DATE(#{FINISH_DATE},'-',''),'YYYYMMDD')
+                ,TO_CHAR(TO_DATE(#{FINISH_TIME},'HH24:MI:SS'),'HH24MI')
+                ,#{MANAGER_MEMO}
+                ,#{OTHER_MEMO}
+                ,#{SP_CHECK_YN}
+                )
+        ]]>
+    </insert>
+
+    <update id="updateIPDN01TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.updateIPDN01TB - ADTIS,KADAMS공용  (old : updateIPDN01TB) */
+        
+        UPDATE  ${IPDN01TB}
+        SET     SUCCESS_STATUS = #{SUCCESS_STATUS}
+                ,IPNT_SEX_M = #{IPNT_SEX_M}
+                ,IPNT_SEX_F = #{IPNT_SEX_F}
+                ,MEMO = #{MEMO}
+                ,PROCESS_STATUS = 'C'
+                ,IP_ADDR = #{IP_ADDR}
+                ,USER_AGENT = #{USER_AGENT}
+                ,EDT_USER = #{EDT_USER}
+                ,EDT_DATE = SYSDATE
+                ,CHAPERON_QTY = #{CHAPERON_QTY}
+                ,ARRIVE_DATE = REPLACE(#{ARRIVE_DATE},'-','')
+                ,ARRIVE_TIME = TO_CHAR(TO_DATE(#{ARRIVE_TIME},'HH24:MI:SS'),'HH24MI')
+                ,FINISH_DATE = REPLACE(#{FINISH_DATE},'-','')
+                ,FINISH_TIME = TO_CHAR(TO_DATE(#{FINISH_TIME},'HH24:MI:SS'),'HH24MI')
+                ,MANAGER_MEMO = #{MANAGER_MEMO}
+                ,OTHER_MEMO = #{OTHER_MEMO}
+                ,SP_CHECK_YN = #{SP_CHECK_YN}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </update>
+    
+    <delete id="deleteIPDN02TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.deleteIPDN02TB - ADTIS,KADAMS공용  (old : deleteIPDN02TB) */
+        
+        DELETE  ${IPDN02TB}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </delete>
+    
+    <update id="insertIPDN02TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.insertIPDN02TB - ADTIS,KADAMS공용  (old : insertIPDN02TB) */
+        
+        INSERT  INTO ${IPDN02TB}
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,IPNT_SEQ
+                ,IPNT_FLAG
+                ,IPNT_SUB_FLAG
+                ,IPNT_FLAG_QTY
+                ,IPNT_FLAG_QTY_F
+                ,IPNT_ADDED
+                )
+        SELECT  #{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,NVL(MAX(IPNT_SEQ), 0) + 1
+                ,#{IPNT_FLAG}
+                ,#{IPNT_SUB_FLAG}
+                ,#{IPNT_FLAG_QTY}
+                ,#{IPNT_FLAG_QTY_F}
+                ,NVL(#{IPNT_ADDED}, 'N')
+        FROM    ${IPDN02TB}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </update>
+    
+    <update id="updateIPNTDN02TBByUNIT_AMOUNT" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.updateIPNTDN02TBByUNIT_AMOUNT - ADTIS,KADAMS공용  (old : updateIPNTDN02TBByUNIT_AMOUNT) */
+        
+        MERGE   INTO ${IPDN02TB} T1
+        USING   (
+                SELECT  A.IPNT_UPPER_SEQ
+                        ,A.IPNT_SEQ
+                        ,A.IPNT_FLAG
+                        ,A.IPNT_SUB_FLAG
+                        ,CASE   WHEN B.IPNT_PERIOD_CODE = '1' AND A.IPNT_SUB_FLAG = '11' THEN C.OPTION3
+                                ELSE C.OPTION2
+                        END AS UNIT_AMOUNT
+                FROM    ${IPDN02TB} A
+                        ,${IPNT01TB} B
+                        ,${CODE01TB} C
+                WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                AND     A.IPNT_SUB_FLAG = C.DTL_CODE
+                AND     C.MST_CODE = 'IPNT_SUB_FLAG'
+                AND     A.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                ) T2
+        ON      (
+                T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+                AND T1.IPNT_SEQ = T2.IPNT_SEQ
+                )
+        WHEN    MATCHED THEN
+                UPDATE
+                SET     T1.UNIT_AMOUNT = TO_NUMBER(T2.UNIT_AMOUNT)
+        ]]>
+    </update>
+    
+    <delete id="deleteIPDN04TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.deleteIPDN04TB - ADTIS,KADAMS공용  (old : deleteIPDN04TB) */
+        
+        DELETE
+        FROM    ${IPDN04TB}
+        WHERE   IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+        ]]>
+    </delete>
+
+    <update id="insertIPDN04TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.insertIPDN04TB - ADTIS,KADAMS공용  (old : insertIPDN04TB) */
+        
+        INSERT  INTO ${IPDN04TB}
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,IPNT_ADDED
+                ,IPNT_FLAG
+                ,IPNT_SUB_FLAG
+                ,UNIT_AMOUNT
+                ,IPNT_QTY
+                )
+        SELECT  A.IPNT_UPPER_SEQ
+                ,A.IPNT_NO
+                ,A.IPNT_ADDED
+                ,A.IPNT_FLAG
+                ,A.IPNT_SUB_FLAG
+                ,CASE   WHEN B.IPNT_PERIOD_CODE = '1' AND A.IPNT_SUB_FLAG = '11' THEN C.OPTION3
+                        ELSE C.OPTION2
+                END AS UNIT_AMOUNT
+                ,SUM(A.IPNT_FLAG_QTY)
+        FROM    (
+                SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,T1.IPNT_ADDED
+                        ,T1.IPNT_FLAG
+                        ,T1.IPNT_SUB_FLAG
+                        ,NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0) AS IPNT_FLAG_QTY
+                FROM    ${IPDN02TB} T1
+                WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                AND     T1.IPNT_SUB_FLAG <> '15'
+                UNION ALL
+                SELECT  T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,T1.IPNT_ADDED
+                        ,T1.IPNT_FLAG
+                        ,'11' AS IPNT_SUB_FLAG
+                        ,SUM(NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) AS IPNT_FLAG_QTY
+                FROM    ${IPDN02TB} T1
+                WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                AND     T1.IPNT_FLAG = '1'
+                AND     T1.IPNT_SUB_FLAG IN ('12', '13')
+                GROUP BY T1.IPNT_UPPER_SEQ
+                        ,T1.IPNT_NO
+                        ,T1.IPNT_ADDED
+                        ,T1.IPNT_FLAG
+                UNION ALL
+                SELECT  A.IPNT_UPPER_SEQ
+                        ,A.IPNT_NO
+                        ,A.IPNT_ADDED
+                        ,B.IPNT_FLAG
+                        ,B.IPNT_SUB_FLAG
+                        ,A.IPNT_FLAG_QTY
+                FROM    (
+                        SELECT  T1.IPNT_UPPER_SEQ
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_ADDED
+                                ,T1.IPNT_FLAG
+                                ,T1.IPNT_SUB_FLAG
+                                ,SUM(NVL(T1.IPNT_FLAG_QTY, 0) + NVL(T1.IPNT_FLAG_QTY_F, 0)) AS IPNT_FLAG_QTY
+                        FROM    ${IPDN02TB} T1
+                        WHERE   T1.IPNT_UPPER_SEQ = #{IPNT_UPPER_SEQ}
+                        AND     T1.IPNT_FLAG = '1'
+                        AND     T1.IPNT_SUB_FLAG = '15'
+                        GROUP BY T1.IPNT_UPPER_SEQ
+                                ,T1.IPNT_NO
+                                ,T1.IPNT_ADDED
+                                ,T1.IPNT_FLAG
+                                ,T1.IPNT_SUB_FLAG
+                        ) A
+                        ,(
+                        SELECT  #{IPNT_UPPER_SEQ} AS IPNT_UPPER_SEQ
+                                ,'1' AS IPNT_FLAG
+                                ,'11' AS IPNT_SUB_FLAG
+                        FROM    DUAL
+                        UNION ALL
+                        SELECT  #{IPNT_UPPER_SEQ} AS IPNT_UPPER_SEQ
+                                ,'1' AS IPNT_FLAG
+                                ,'12' AS IPNT_SUB_FLAG
+                        FROM    DUAL
+                        UNION ALL
+                        SELECT  #{IPNT_UPPER_SEQ} AS IPNT_UPPER_SEQ
+                                ,'1' AS IPNT_FLAG
+                                ,'13' AS IPNT_SUB_FLAG
+                        FROM    DUAL
+                        ) B
+                WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                ) A
+                ,${IPNT01TB} B
+                ,${CODE01TB} C
+        WHERE   A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+        AND     A.IPNT_SUB_FLAG = C.DTL_CODE
+        AND     A.IPNT_FLAG = C.OPTION1
+        AND     C.MST_CODE = 'IPNT_SUB_FLAG'
+        GROUP BY A.IPNT_UPPER_SEQ
+                ,A.IPNT_NO
+                ,A.IPNT_ADDED
+                ,A.IPNT_FLAG
+                ,A.IPNT_SUB_FLAG
+                ,CASE   WHEN B.IPNT_PERIOD_CODE = '1' AND A.IPNT_SUB_FLAG = '11' THEN C.OPTION3
+                        ELSE C.OPTION2
+                END
+        ]]>
+    </update>    
+    
+    <insert id="insertIPNT04TB" parameterType="HashMap">
+        <![CDATA[
+        /* k02.inspectorReport.insertIPNT04TB - ADTIS,KADAMS공용  (old : insertIPNT04TB) */
+        
+        INSERT  INTO ${IPNT04TB}
+                (
+                IPNT_UPPER_SEQ
+                ,IPNT_NO
+                ,USER_ID
+                ,IP_ADDR
+                ,USER_AGENT
+                ,READ_DATE
+                )
+        VALUES  (
+                #{IPNT_UPPER_SEQ}
+                ,#{IPNT_NO}
+                ,#{GSS.USER_ID}
+                ,#{GSS.IP_ADDR}
+                ,#{GSS.USER_AGENT}
+                ,SYSDATE
+                )
+        ]]>
+    </insert>
+    
+    <select id="selectDcoInspectChoosList" parameterType="HashMap" resultType="HashMap">
+    /* k02.inspectorReport.selectDcoInspectChoosList - ADTIS,KADAMS공용  (old : insertIPNT04TB) */
+    SELECT 'ADTIS' AS GUBUN
+              ,T1.IPNT_UPPER_SEQ
+              ,T1.IPNT_NO
+              ,T1.IPNT_NAME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+              ,T1.IPNT_KIND_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+              ,T1.IPNT_PERIOD_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+              ,T1.IPNT_DONE_DATE
+              ,T1.IPNT_CHARGER_ID
+              ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+              ,T1.IPNT_DATE
+              ,T1.IPNT_TIME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+              ,T1.IPNT_PLACE_DETAIL
+              ,T1.IPNT_PLACE_ZIPCODE
+              ,T1.IPNT_PLACE_ADDRESS
+              ,T1.IPNT_PLACE_NEWADDRESS
+              ,T1.IPNT_PLACE_PHONE
+              ,T1.IPNT_PLACE_LATITUDE
+              ,T1.IPNT_PLACE_LONGITUDE
+              ,T1.CHOOSE_DONE_YN
+              ,T2.CHOOSE_BCO_YN
+              ,T2.CHOOSE_DCO_YN
+              ,T2.CHOOSE_DCOBCO_YN
+              ,T2.PREDECESSOR_YN
+              ,T2.CHAPERON_YN
+              ,T2.CHOOSE_CHAPERON_YN
+        FROM IPNT01TB T1 , IPNT07TB T2
+        WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND T1.USE_YN = 'Y'
+        AND T2.USER_ID = #{USER_ID}
+        AND TO_DATE(RPAD( T1.IPNT_DATE ||  T1.IPNT_TIME,12,0),'YYYYMMDDHH24:MI') >= SYSDATE-10
+UNION ALL
+SELECT          'KADAMS' AS GUBUN
+              , T1.IPNT_UPPER_SEQ
+              ,T1.IPNT_NO
+              ,T1.IPNT_NAME
+              ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+              ,T1.IPNT_KIND_CODE
+              ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+              ,T1.IPNT_PERIOD_CODE
+              ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+              ,T1.IPNT_DONE_DATE
+              ,T1.IPNT_CHARGER_ID
+              ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+              ,T1.IPNT_DATE
+              ,T1.IPNT_TIME
+              ,(SELECT CODE_NAME FROM K99_CODE_DTL WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+              ,T1.IPNT_PLACE_DETAIL
+              ,T1.IPNT_PLACE_ZIPCODE
+              ,T1.IPNT_PLACE_ADDRESS
+              ,T1.IPNT_PLACE_NEWADDRESS
+              ,T1.IPNT_PLACE_PHONE
+              ,T1.IPNT_PLACE_LATITUDE
+              ,T1.IPNT_PLACE_LONGITUDE
+              ,T1.CHOOSE_DONE_YN
+              ,T2.CHOOSE_BCO_YN
+              ,T2.CHOOSE_DCO_YN
+              ,T2.CHOOSE_DCOBCO_YN
+              ,T2.PREDECESSOR_YN
+              ,T2.CHAPERON_YN
+              ,T2.CHOOSE_CHAPERON_YN
+        FROM K03_DOPING_INSPECT_REG T1 , K03_DOPING_INSPECT_DCO T2
+        WHERE T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND T1.USE_YN = 'Y'
+        AND T2.USER_ID = #{USER_ID}
+        AND TO_DATE(RPAD( T1.IPNT_DATE ||  T1.IPNT_TIME,12,0),'YYYYMMDDHH24:MI') >= SYSDATE
+     ORDER BY IPNT_DATE DESC, IPNT_TIME DESC
+    </select>
+    
+    <select id="selectRequestIPNT01TBByChargerId" parameterType="HashMap" resultType="HashMap">
+        <![CDATA[
+       /* k02.inspectorReport.selectRequestIPNT01TBByChargerId - ADTIS,KADAMS공용  (old : selectRequestIPNT01TBByChargerId) */
+       SELECT 'ADTIS' AS GUBUN
+              ,T1.IPNT_UPPER_SEQ
+              ,T1.IPNT_NO
+              ,T1.IPNT_NAME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+              ,T1.IPNT_KIND_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+              ,T1.IPNT_PERIOD_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+              ,T1.IPNT_DONE_DATE
+              ,T1.IPNT_CHARGER_ID
+              ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+              ,T1.IPNT_DATE
+              ,T1.IPNT_TIME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+              ,T1.IPNT_PLACE_DETAIL
+              ,T1.IPNT_PLACE_ZIPCODE
+              ,T1.IPNT_PLACE_ADDRESS
+              ,T1.IPNT_PLACE_NEWADDRESS
+              ,T1.IPNT_PLACE_PHONE
+              ,T1.IPNT_PLACE_LATITUDE
+              ,T1.IPNT_PLACE_LONGITUDE
+              ,T1.CHOOSE_DONE_YN
+        FROM IPNT01TB T1
+        WHERE T1.USE_YN = 'Y'
+        AND T1.IPNT_CHARGER_ID = #{USER_ID}
+        AND T1.CHOOSE_DONE_YN = 'N'
+        AND TO_DATE(T1.IPNT_DONE_DATE,'YYYYMMDD')+1 >= SYSDATE        
+        union ALL
+      SELECT 'KADAMS' AS GUBUN
+              ,T1.IPNT_UPPER_SEQ
+              ,T1.IPNT_NO
+              ,T1.IPNT_NAME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_TYPE' AND DTL_CODE = T1.IPNT_TYPE) AS IPNT_TYPE_NAME
+              ,T1.IPNT_KIND_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_KIND_CODE' AND DTL_CODE = T1.IPNT_KIND_CODE) AS IPNT_KIND_NAME
+              ,T1.IPNT_PERIOD_CODE
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'IPNT_PERIOD_CODE' AND DTL_CODE = T1.IPNT_PERIOD_CODE) AS IPNT_PERIOD_NAME
+              ,T1.IPNT_DONE_DATE
+              ,T1.IPNT_CHARGER_ID
+              ,(SELECT NVL(USER_NAME, '') || ' ' || NVL(USER_PHONE, '') FROM USER01TB WHERE USER_ID = T1.IPNT_CHARGER_ID) AS IPNT_CHARGER_NAME
+              ,T1.IPNT_DATE
+              ,T1.IPNT_TIME
+              ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'PLACE_TYPE' AND DTL_CODE = T1.IPNT_PLACE_TYPE) AS IPNT_PLACE_TYPE_NAME
+              ,T1.IPNT_PLACE_DETAIL
+              ,T1.IPNT_PLACE_ZIPCODE
+              ,T1.IPNT_PLACE_ADDRESS
+              ,T1.IPNT_PLACE_NEWADDRESS
+              ,T1.IPNT_PLACE_PHONE
+              ,T1.IPNT_PLACE_LATITUDE
+              ,T1.IPNT_PLACE_LONGITUDE
+              ,T1.CHOOSE_DONE_YN
+        FROM K03_DOPING_INSPECT_REG T1
+        WHERE T1.USE_YN = 'Y'
+        AND T1.IPNT_CHARGER_ID = #{USER_ID}
+        AND T1.CHOOSE_DONE_YN = 'N'
+        AND TO_DATE(T1.IPNT_DONE_DATE,'YYYYMMDD')+1 >= SYSDATE        
+        ORDER BY IPNT_DONE_DATE ASC, IPNT_DATE DESC, IPNT_TIME DESC
+        ]]>
+        <!-- AND TO_DATE(IPNT_DATE || IPNT_TIME,'YYYYMMDDHH24:MI') >= SYSDATE -->
+    </select>
+</mapper>

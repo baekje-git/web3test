@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="apiVanPharm">
+
+<insert id="insertApiHistory" parameterType="java.util.HashMap" >
+/*+[apiVanPharmMapper.xml][apiVanPharm.insertApiHistory][API연동이력(T_API_LOG)]+*/
+    INSERT INTO T_API_LOG (
+          IP_ADDR
+        , API_ID
+        , API_TXT
+        , INS_ID
+        , INS_DTM
+        , MOD_ID
+        , ERR_MSG
+    ) VALUES (
+          #{API_IP}
+        , #{API_ID}
+        , SUBSTR(#{API_TXT},0,3000)
+        , #{API_INS}
+        , CURRENT TIMESTAMP
+        , #{API_MOD}
+        , #{ERR_MSG}
+        )
+</insert>
+
+<select id="checkIP"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectIPCheck][IP체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_IP},'') = '' THEN 'IP가 확인되지 않습니다'
+                           WHEN USER_STRING2 != #{API_IP} AND USER_STRING3 != #{API_IP} AND USER_STRING4 != #{API_IP} AND USER_STRING5 != #{API_IP} AND USER_STRING6 != #{API_IP} AND USER_STRING7 != #{API_IP} THEN '승인되지 않은 IP입니다'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE ='583'
+       AND CODE   = 'VP'
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="checkAuth"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectAuthCheck][인증체크]+*/
+    SELECT IFNULL(MAX(CASE WHEN IFNULL(#{API_KEY},'') = '' THEN 'API키값이 누락되었습니다'
+                           WHEN USER_STRING1 != #{API_KEY} THEN 'API키값이 일치하지 않습니다'
+                           ELSE 'OK'
+                      END
+                     ),'정의된 API가 아닙니다')
+      FROM T_CODE
+     WHERE P_CODE ='583'
+       AND CODE   = 'VP'
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="selectAPIKEY"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectAPIKEY][인증키조회]+*/
+    SELECT IFNULL(USER_STRING1,'')
+      FROM T_CODE
+     WHERE P_CODE ='583'
+       AND CODE   = 'VP'
+       AND USE_YN = 'Y'
+       AND DEL_YN = 'N'
+</select>
+
+<select id="selectCustInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectCustInfo][약국사용자정보]+*/
+    SELECT /* 30:약국 */
+          A.USER_ID
+        , B.CUST_CD
+        , B.CUST_NM
+        , B.BRCH_CD
+        , C.BRCH_SNM AS BRCH_NM
+    FROM
+        T_USER A
+        JOIN T_CUST B 
+          ON B.CUST_CD=A.CUST_CD  
+         AND B.WEB_USE_YN = 'Y' 
+         AND B.DEAL_END_YN = 'N'
+         AND B.SB_GB_CD IN ('02','03')
+         AND B.CUST_GB_CD NOT IN ('09','10','11','12','13','15','18','19')
+        JOIN T_BRANCH C
+          ON C.BRCH_CD = A.BRCH_CD
+    WHERE
+            A.USE_YN = 'Y'
+        AND A.USER_GB_CD = '30' /* 10:전산관리자, 20:내부직원 , 30:거래처 */
+        AND A.LOGIN_ID = #{LOGIN_ID}
+        AND A.PASSWORD = #{LOGIN_PW}
+    ORDER BY 1, 2
+    LIMIT 1
+</select>
+
+<select id="selectEmpInfo"  parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectEmpInfo][영업사원사용자정보]+*/
+    SELECT /* 10:전산관리자 */
+          A.USER_ID
+        , '' AS CUST_CD
+        , '' AS CUST_NM
+        , A.BRCH_CD
+        , C.BRCH_SNM AS BRCH_NM
+    FROM
+        T_USER A
+        JOIN T_BRANCH C
+          ON C.BRCH_CD = A.BRCH_CD
+    WHERE
+            A.USER_GB_CD = '10'  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+        AND A.USE_YN = 'Y'
+        AND A.LOGIN_ID = #{LOGIN_ID}
+        AND A.PASSWORD = #{LOGIN_PW}
+    UNION ALL
+    SELECT /* '20','40','50','60','70','80' 내부직원 */
+          A.USER_ID
+        , '' AS CUST_CD
+        , '' AS CUST_NM
+        , A.BRCH_CD
+        , C.BRCH_SNM AS BRCH_NM
+    FROM
+        T_USER A
+        JOIN T_EMP B
+          ON B.EMP_ID = A.USER_ID
+        JOIN T_BRANCH C 
+          ON C.BRCH_CD = A.BRCH_CD
+    WHERE
+            A.USER_GB_CD IN ('20','40','50','60','70','80')  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+        AND A.USE_YN = 'Y'
+        AND A.LOGIN_ID = #{LOGIN_ID}
+        AND A.PASSWORD = #{LOGIN_PW}
+    ORDER BY 1, 2
+    LIMIT 1
+</select>
+
+<select id="selectCustList"  parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectCustList][거래처리스트]+*/
+    SELECT
+          A.CUST_CD
+        , A.CUST_NM
+        , A.CEO_NM
+    FROM
+        T_CUST A
+    JOIN
+        T_USER B
+      ON
+            B.USER_ID = #{USER_ID}
+        AND B.BRCH_CD = A.BRCH_CD
+    LEFT JOIN
+        T_EMP C
+      ON
+            C.EMP_ID = B.USER_ID
+    WHERE 1=1
+        AND A.DEPT_CD = F_S_EMPTY(C.DEPT_CD,A.DEPT_CD)
+        AND A.DEAL_END_YN = 'N'
+        AND A.SB_GB_CD IN ('02','03')
+        AND A.WEB_USE_YN   = 'Y'
+        AND A.CUST_GB_CD NOT IN('09','10','11','12','13','15','18','19')
+    <if test='CUST_NM != null and CUST_NM != ""'>
+      <bind name="CUST_NM" value='"%" +CUST_NM + "%"'/>
+        AND A.CUST_NM LIKE #{CUST_NM}
+    </if>
+    ORDER BY A.CUST_NM
+</select>
+
+<select id="checkBarcode"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.checkBarcode][반품중복접수체크]+*/
+    SELECT CASE WHEN COUNT(1) = 0 THEN 'OK' 
+                ELSE '이미 접수처리된 품목입니다' END AS CHK_MSG
+      FROM T_SALEBACKRCPT_BARCODE A
+     WHERE 1=1
+       AND CUST_CD = #{CUST_CD}
+       AND SGTIN = #{SGTIN}
+       AND SGTIN != ''
+       AND A.ORD_TYPE_CD = #{ORD_TYPE_CD}
+    <if test='REWARD_YN != null and REWARD_YN == "Y"'>
+       AND A.RCPT_SN LIKE VARCHAR_FORMAT(CURRENT TIMESTAMP,'YYMM')||'%'
+    </if>
+</select>
+
+<select id="checkTakeback"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.checkTakeback][실물반품 가능여부체크]+*/
+    SELECT CASE WHEN COUNT(1)           = 0     THEN '출고내역이 존재하지 않습니다'
+                WHEN COUNT(1)          != 1     THEN '중복출고건입니다'
+                WHEN MAX(C.TAKEBACK_YN) = 'N'   THEN '반품불가 품목입니다'
+                WHEN MAX(C.TAKEBACK_YN) = 'Y'   THEN 'OK'
+                ELSE '알려지지 않은 오류입니다' END AS CHK_MSG
+      FROM TABLE(F_T_SGTIN_TO_SERIAL(#{SGTIN})) A
+      JOIN T_SALE_SERIAL B
+        ON B.CUST_CD    = #{CUST_CD}
+       AND A.EXP_DT  LIKE '%'||B.EXP_DT
+       AND B.PROD_NO    = A.PROD_NO
+       AND B.SERIAL_NO  = A.SERIAL_NO
+       AND B.EXP_DT    != ''
+       AND B.PROD_NO   != ''
+       AND B.SERIAL_NO != ''
+      JOIN T_ITEM C
+        ON C.ITEM_CD    = B.ITEM_CD
+     WHERE A.SGTIN != ''
+</select>
+
+<select id="selectItemBarcode"  parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectItemBarcode][바코드정보조회]+*/
+    SELECT B.ITEM_CD
+          ,(CASE WHEN COALESCE(H.WP2_AMT,0)!=0 THEN COALESCE(H.WP2_AMT,0) ELSE COALESCE(E.WP2_AMT,0) END) AS ORD_WP2_AMT
+          ,B.EXP_DT
+          ,B.PROD_NO
+          ,B.SERIAL_NO
+          ,D.APRV_DT
+          ,B.SN
+          ,B.SNO
+          ,A.SGTIN
+          ,E.ITEM_NM
+          ,E.UNIT
+          ,F.MAKER_NM
+      FROM TABLE(F_T_SGTIN_TO_SERIAL(#{SGTIN})) A
+      JOIN T_SALE_SERIAL B
+        ON B.CUST_CD    = #{CUST_CD}
+       AND A.EXP_DT  LIKE '%'||B.EXP_DT
+       AND B.PROD_NO    = A.PROD_NO
+       AND B.SERIAL_NO  = A.SERIAL_NO
+       AND B.EXP_DT    != ''
+       AND B.PROD_NO   != ''
+       AND B.SERIAL_NO != ''
+      JOIN T_SALE_DTL C
+        ON C.SN = B.SN
+       AND C.SNO = B.SNO
+      JOIN T_SALE D
+        ON D.SN = B.SN
+      JOIN T_ITEM E
+        ON E.ITEM_CD = B.ITEM_CD
+      JOIN T_MAKER F
+        ON F.MAKER_CD = E.MAKER_CD
+      JOIN T_CUST G
+        ON G.CUST_CD = B.CUST_CD
+      LEFT JOIN T_ITEM_PRICE H
+        ON H.ITEM_CD = B.ITEM_CD
+       AND H.BRCH_CD = G.DLV_BRCH_CD
+     WHERE A.SGTIN != ''
+    ORDER BY B.SN DESC, B.SNO DESC, B.SERIAL_NO DESC
+    LIMIT 1
+</select>
+
+<select id="checkRewardItem"  parameterType="java.util.HashMap" resultType="string">
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.checkRewardItem][약가보상 가능여부체크]+*/
+    SELECT CASE WHEN COUNT(B.ITEM_CD)                  = 0  THEN '출고내역이 존재하지 않습니다'
+                WHEN COUNT(F.ITEM_CD)                  = 0  THEN '약가보상 품목이 아닙니다'
+                ELSE                                             'OK' 
+                END AS CHK_MSG
+      FROM TABLE(F_T_SGTIN_TO_SERIAL(#{SGTIN})) A
+      JOIN T_SALE_SERIAL B
+        ON B.CUST_CD    = #{CUST_CD}
+       AND A.EXP_DT  LIKE '%'||B.EXP_DT
+       AND B.PROD_NO    = A.PROD_NO
+       AND B.SERIAL_NO  = A.SERIAL_NO
+       AND B.EXP_DT    != ''
+       AND B.PROD_NO   != ''
+       AND B.SERIAL_NO != ''
+      JOIN T_ITEM C
+        ON C.ITEM_CD = B.ITEM_CD
+      JOIN T_SALE D
+        ON D.SN = B.SN
+      JOIN T_CUST E
+        ON E.CUST_CD = D.CUST_CD
+      LEFT JOIN T_ITEM_BOHUM F
+        ON F.ITEM_CD = B.ITEM_CD
+       AND F.BRCH_CD = E.DLV_BRCH_CD
+       AND F.REG_DT <![CDATA[<=]]> VARCHAR_FORMAT (CURRENT TIMESTAMP,'YYYYMMDD')
+       AND F.CHG_DT <![CDATA[>]]>  VARCHAR_FORMAT (CURRENT TIMESTAMP,'YYYYMMDD')
+     WHERE A.SGTIN != ''
+</select>
+
+<select id="selectRewardItemBarcode"  parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+    /*+[apiVanPharmMapper.xml][apiVanPharmMapper.selectRewardItemBarcode][약가보상 바코드정보조회]+*/
+    SELECT B.ITEM_CD
+          ,(CASE WHEN COALESCE(H.WP2_AMT,0)!=0 THEN COALESCE(H.WP2_AMT,0) ELSE COALESCE(E.WP2_AMT,0) END) AS ORD_WP2_AMT
+          ,B.EXP_DT
+          ,B.PROD_NO
+          ,B.SERIAL_NO
+          ,D.APRV_DT
+          ,B.SN
+          ,B.SNO
+          ,A.SGTIN
+          ,E.ITEM_NM
+          ,E.UNIT
+          ,F.MAKER_NM
+      FROM TABLE(F_T_SGTIN_TO_SERIAL(#{SGTIN})) A
+      JOIN T_SALE_SERIAL B
+        ON B.CUST_CD    = #{CUST_CD}
+       AND A.EXP_DT  LIKE '%'||B.EXP_DT
+       AND B.PROD_NO    = A.PROD_NO
+       AND B.SERIAL_NO  = A.SERIAL_NO
+       AND B.EXP_DT    != ''
+       AND B.PROD_NO   != ''
+       AND B.SERIAL_NO != ''
+      JOIN T_SALE_DTL C
+        ON C.SN = B.SN
+       AND C.SNO = B.SNO
+      JOIN T_SALE D
+        ON D.SN = B.SN
+      JOIN T_ITEM E
+        ON E.ITEM_CD = B.ITEM_CD
+      JOIN T_MAKER F
+        ON F.MAKER_CD = E.MAKER_CD
+      JOIN T_CUST G
+        ON G.CUST_CD = B.CUST_CD
+      LEFT JOIN T_ITEM_PRICE H
+        ON H.ITEM_CD = B.ITEM_CD
+       AND H.BRCH_CD = G.DLV_BRCH_CD
+      JOIN T_ITEM_BOHUM I
+        ON I.ITEM_CD = B.ITEM_CD
+       AND I.BRCH_CD = G.DLV_BRCH_CD
+       AND I.REG_DT <![CDATA[<=]]> VARCHAR_FORMAT (CURRENT TIMESTAMP,'YYYYMMDD')
+       AND I.CHG_DT <![CDATA[>]]>  VARCHAR_FORMAT (CURRENT TIMESTAMP,'YYYYMMDD')
+     WHERE A.SGTIN != ''
+    ORDER BY B.SN DESC, B.SNO DESC, B.SERIAL_NO DESC
+    LIMIT 1
+</select>
+
+<insert id="insertOrder"  parameterType="java.util.HashMap">
+    /*+[apiVanPharm.xml][apiVanPharm.insertOrder][반품등록]+*/
+    INSERT INTO T_SALEBACKRCPT_BARCODE 
+           (
+             RCPT_SN
+            ,RCPT_SNO
+            ,CUST_CD
+            ,SALE_SN
+            ,SALE_SNO
+            ,ITEM_CD
+            ,ITEM_QTY
+            ,SALE_WP2_AMT
+            ,EXP_DT
+            ,PROD_NO
+            ,SERIAL_NO
+            ,SGTIN
+            ,APRV_DT
+            ,BRCH_CD
+            ,ORD_TYPE_CD
+            ,INS_ID
+            ,INS_DTM
+           )
+    VALUES (
+             #{RCPT_SN}
+            ,#{RCPT_SNO}
+            ,#{CUST_CD}
+            ,#{SN}
+            ,#{SNO}
+            ,#{ITEM_CD}
+            ,1                /* ITEM_QTY */
+            ,#{ORD_WP2_AMT}
+            ,#{EXP_DT}
+            ,#{PROD_NO}
+            ,#{SERIAL_NO}
+            ,#{SGTIN}
+            ,#{APRV_DT}
+            ,(SELECT MAX(BRCH_CD) FROM T_CUST WHERE CUST_CD = #{CUST_CD})
+            ,#{ORD_TYPE_CD}
+            ,#{USER_ID}
+            ,CURRENT TIMESTAMP
+           )    
+</insert>
+
+<select id="callPBackI" parameterType="java.util.HashMap" statementType="CALLABLE">
+    /*+[apiVanPharm.xml][apiVanPharm.callPBackI][반품접수프로시져]+*/
+    {CALL P_BACK_I(
+        'BARCODE_BACK'
+      , #{RCPT_SN}
+      , #{USER_ID}
+      , #{O_VAL   ,mode=OUT ,jdbcType=VARCHAR}
+      , #{O_MSG   ,mode=OUT ,jdbcType=VARCHAR}
+     )}
+</select>
+
+
+
+</mapper>

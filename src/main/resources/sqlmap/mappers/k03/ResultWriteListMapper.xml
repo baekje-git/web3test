@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.ResultWrite">
+    <insert id="insertPaperTest" parameterType="HashMap" >
+    <![CDATA[
+        /* k03.ResultWrite.insertPaperTest -   종이검사 마스터입력 */
+        
+        INSERT 
+		  INTO K03_PAPER_TEST 
+		     (  IPNT_NO /*검사고유번호*/,
+		        IPNT_UPPER_SEQ /*검사고유순번*/,
+		        IPNT_DATE /*검사일자*/,
+		        IPNT_TIME /*검사시간*/,
+		        IPNT_SUPERVISOR /*검사기관*/,
+		        IPNT_RESULT_MANAGER /*결과관리기관*/,
+		        IPNT_COLLECTOR /*시료수집기관*/,
+		        IPNT_CTL_COORDINATOR /*검사제어조정자*/,
+		        IPNT_DCO_ID /*담당검사관*/,
+		        IPNT_EVENT_CODE /*종목*/,
+		        IPNT_EVENT_DET_CODE /*세부종목*/,
+		        IPNT_PERIOD_CODE /*검사구분*/,
+		        IPNT_NOTICE /*통지*/,
+		        PLAYER_LEVEL /*선수수준*/,
+		        TEST_COMMENT /*비고*/,
+		        STATUS /*상태*/,
+		        PLAYER_NO /*선수번호*/,
+		        USER_ID /*선수ID*/,
+		        REG_USER /*등록자*/,
+		        REG_DATE /*등록일시*/,
+		        EDT_USER /*수정자*/,
+		        EDT_DATE /*수정일시*/
+		     )
+		VALUES
+		     (
+		        #{IPNT_NO} /*검사고유번호*/,
+		        ( SELECT IPNT_UPPER_SEQ FROM K03_DOPING_INSPECT_REG WHERE IPNT_NO=#{IPNT_NO} ) /*검사고유순번*/,
+		        #{IPNT_DATE} /*검사일자*/,
+		        #{IPNT_TIME} /*검사시간*/,
+		        #{IPNT_SUPERVISOR} /*검사기관*/,
+		        #{IPNT_RESULT_MANAGER} /*결과관리기관*/,
+		        #{IPNT_COLLECTOR} /*시료수집기관*/,
+		        #{IPNT_CTL_COORDINATOR} /*검사제어조정자*/,
+		        #{IPNT_DCO_ID} /*담당검사관*/,
+		        #{IPNT_EVENT_CODE} /*종목*/,
+		        #{IPNT_EVENT_DET_CODE} /*세부종목*/,
+		        #{IPNT_PERIOD_CODE} /*검사구분*/,
+		        #{IPNT_NOTICE} /*통지*/,
+		        #{PLAYER_LEVEL} /*선수수준*/,
+		        #{TEST_COMMENT} /*비고*/,
+		        #{STATUS} /*상태*/,
+		        #{PLAYER_NO} /*선수번호*/,
+		        #{USER_ID} /*선수ID*/,
+		        #{REG_USER}/*등록자*/,
+		        SYSDATE /*등록일시*/,
+		        #{REG_USER} /*등록자*/,
+		        SYSDATE /*등록일시*/	
+		    )
+        ]]>
+    </insert>
+    
+    <insert id="insertPaperTestDtl" parameterType="HashMap" >
+    <![CDATA[
+        /* k03.ResultWrite.insertPaperTestDtl -   종이검사 시료상세입력 */
+        
+        INSERT 
+          INTO K03_PAPER_TEST_DTL 
+             (
+		        IPNT_NO /*검사고유번호*/,
+		        IPNT_SUB_SEQ /*검사순번*/,
+		        IPNT_UPPER_SEQ /*검사고유순번*/,
+		        IPNT_FLAG /*시료구분*/,
+		        IPNT_SUB_FLAG /*시료유형구분*/,
+		        SAMPLE_CODE /*시료코드*/,
+		        TIME_COLLECTION /*채취시간*/,
+		        SENT_LAB /*실험실전송*/,
+		        VOLUME /*시료용량*/,
+		        PH /*시료산도*/,
+		        SPECIFIC_GRAVITY /*시료비중*/,
+		        MENUFACTURE /*제조사*/,
+		        PARTIAL_YN /*부분시료여부*/,
+		        REG_USER /*등록자*/,
+		        REG_DATE /*등록일시*/,
+		        EDT_USER /*수정자*/,
+		        EDT_DATE /*수정일시*/
+		    )
+		VALUES
+		    (
+		        #{IPNT_NO} /*검사고유번호*/,
+		        #{IPNT_SUB_SEQ} /*검사순번*/,
+		        ( SELECT IPNT_UPPER_SEQ FROM K03_DOPING_INSPECT_REG WHERE IPNT_NO=#{IPNT_NO} ) /*검사고유순번*/,
+		        #{IPNT_FLAG} /*시료구분*/,
+		        #{IPNT_SUB_FLAG} /*시료유형구분*/,
+		        #{SAMPLE_COD} /*시료코드*/,
+		        #{TIME_COLLECTION} /*채취시간*/,
+		        #{SENT_LAB} /*실험실전송*/,
+		        #{VOLUME} /*시료용량*/,
+		        #{PH} /*시료산도*/,
+		        #{SPECIFIC_GRAVITY} /*시료비중*/,
+		        #{MENUFACTURE} /*제조사*/,
+		        #{PARTIAL_YN} /*부분시료여부*/,
+		        #{REG_USER} /*등록자*/,
+		        SYSDATE /*등록일시*/,
+		        #{REG_USER} /*등록자*/,
+		        SYSDATE /*등록일시*/		        
+		    )
+        ]]>
+    </insert>
+
+</mapper>

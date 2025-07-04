@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="system">
+	<select id="selectUseHisList" parameterType="HashMap" resultType="HashMap">
+	<include refid="system.ref_pagingHeader"/>
+	SELECT CONCAT(DATE_FORMAT(LOG_DT, '%Y.%m.%d.'), ' ', STR_TO_DATE(LOG_TM, '%H%i%s')) AS LOG_DTM
+		  ,C.URL_NM										AS URL_NM
+		  ,A.REG_ID										AS USER_ID
+		  ,B.USER_NM									AS USER_NM
+	  FROM Z_HISTORY A
+	  LEFT JOIN Z_USER B
+		ON B.USER_ID = A.REG_ID
+	  LEFT JOIN Z_PGM_URL C
+		ON C.PGM_URL = A.PGM_URL
+	 WHERE 1=1
+	 ORDER BY LOG_DTM DESC
+	<include refid="system.ref_pagingFooter"/>
+	</select>
+	
+	<select id="selectUseHisCnt" parameterType="HashMap" resultType="HashMap">
+	SELECT COUNT(*) AS TOTAL
+	  FROM Z_HISTORY
+	 WHERE 1=1
+	</select>
+
+	<select id="selectUserList" parameterType="HashMap" resultType="HashMap">
+    SELECT USER_ID
+          ,USER_NM
+          ,USER_LVL
+          ,FN_CODE('AUTH',USER_LVL) AS USER_AUTH
+          ,USER_PH
+          ,USE_YN
+          ,USER_PWD 
+      FROM Z_USER
+     WHERE 1=1
+     <if test="USER_NM != null and USER_NM != ''">
+       AND USER_NM LIKE CONCAT('%',#{USER_NM},'%')
+     </if>
+     <if test="USER_ID != null and USER_ID != ''">
+       AND USER_ID LIKE CONCAT('%',#{USER_ID},'%')
+     </if>
+     <if test="USER_PH != null and USER_PH != ''">
+       AND USER_PH LIKE CONCAT('%',#{USER_PH},'%')
+     </if>
+     <if test="USER_LVL != null and USER_LVL != ''">
+       AND USER_LVL = #{USER_LVL}
+     </if>
+    </select>
+    
+    <update id="updateUserUseYn" parameterType="hashMap">
+    UPDATE Z_USER
+       SET USE_YN = #{USE_YN}
+          ,EDT_ID = #{userData.USER_ID}
+		  ,EDT_DTM = NOW()
+     WHERE USER_ID = #{USER_ID}
+	</update>
+    
+    <insert id="insertUserData" parameterType="HashMap">
+    INSERT INTO Z_USER
+       SET USER_ID = #{USER_ID}
+          ,USER_NM = #{USER_NM}
+          ,USER_LVL = #{USER_LVL}
+          ,USER_PH = #{USER_PH}
+          ,USER_PWD = #{USER_PWD}
+          ,REG_ID = #{userData.USER_ID}
+		  ,REG_DTM = NOW()
+    </insert>
+    
+    <update id="updateUserData" parameterType="HashMap">
+    UPDATE Z_USER
+       SET USER_NM = #{USER_NM}
+          ,USER_LVL = #{USER_LVL}
+          ,USER_PH = #{USER_PH}
+          ,USER_PWD = #{USER_PWD}
+          ,EDT_ID = #{userData.USER_ID}
+		  ,EDT_DTM = NOW()
+     WHERE USER_ID = #{USER_ID}
+    </update>
+    
+    <select id="selectUserRegistCheck" parameterType="HashMap" resultType="HashMap">
+    SELECT USER_ID
+	  FROM Z_USER
+	 WHERE USER_ID = #{USER_ID}
+    </select>
+    
+    <select id="selectAuthList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	SELECT A.MENU_ID
+		  ,A.MENU_NM
+	      ,IF(A.MENU_LVL = 1, '대메뉴', '중메뉴') AS MENU_LVL
+	      ,IF(B.AUTH_CD IS NULL, 'N', 'Y') AS MENU_YN
+	  FROM Z_MENU A 
+	  LEFT JOIN Z_AUTH B
+	    ON B.MENU_ID = A.MENU_ID
+	   AND B.AUTH_CD = #{AUTH_CD}
+	 WHERE 1=1
+	   AND A.USE_YN = 'Y'
+	 ORDER BY A.MENU_SORT ASC;
+    </select>
+    
+    <insert id="insertAuthData" parameterType="HashMap">
+    INSERT INTO Z_AUTH
+       SET AUTH_CD = #{AUTH_CD}
+          ,MENU_ID = #{MENU_ID}
+          ,REG_ID = #{userData.USER_ID}
+          ,REG_DTM = DEFAULT
+	      ,EDT_ID = #{userData.USER_ID}
+	      ,EDT_DTM = DEFAULT
+    </insert>
+    
+    <delete id="deleteAuthData" parameterType="HashMap">
+    DELETE FROM Z_AUTH
+     WHERE AUTH_CD = #{AUTH_CD}
+       AND MENU_ID = #{MENU_ID}
+    </delete>
+    
+    <select id="selectMenuMstList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	SELECT MENU_ID
+	      ,MENU_NM
+	      ,MENU_SORT
+	      ,USE_YN
+	  FROM Z_MENU
+	 WHERE 1=1
+	   AND MENU_UPPER IS NULL
+	 ORDER BY MENU_SORT
+    </select>
+    
+    <select id="selectMenuDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	SELECT MENU_ID
+	      ,MENU_NM
+	      ,MENU_SORT
+	      ,USE_YN
+	  FROM Z_MENU
+	 WHERE 1=1
+	   AND MENU_UPPER = #{MENU_UPPER}
+	 ORDER BY MENU_SORT
+    </select>
+    
+    <select id="selectCodeMstList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	SELECT CODE_MST_CD
+	      ,CODE_MST_NM
+	      ,SORT
+	      ,USE_YN
+	  FROM Z_CODE_MST
+	 WHERE 1=1
+	 ORDER BY SORT+0 ASC
+    </select>
+    
+    <select id="selectCodeDtlList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	SELECT CODE_MST_CD
+		  ,CODE_DTL_CD
+	      ,CODE_DTL_NM
+	      ,SORT
+	      ,USE_YN
+	  FROM Z_CODE_DTL
+	 WHERE 1=1
+	   AND CODE_MST_CD = #{CODE_MST_CD}
+	 ORDER BY SORT+0 ASC
+    </select>
+    
+    <insert id="insertCodeMstData" parameterType="HashMap">
+    INSERT INTO Z_CODE_MST
+       SET CODE_MST_CD = #{CODE_MST_CD}
+	      ,CODE_MST_NM = #{CODE_MST_NM}
+	      ,SORT = #{SORT}
+	      ,USE_YN = #{USE_YN}
+	      ,REG_ID = #{userData.USER_ID}
+		  ,REG_DTM = NOW()
+    </insert>
+    
+    <update id="updateCodeMstData" parameterType="HashMap">
+    UPDATE Z_CODE_MST
+       SET CODE_MST_NM = #{CODE_MST_NM}
+	      ,SORT = #{SORT}
+	      ,USE_YN = #{USE_YN}
+          ,EDT_ID = #{userData.USER_ID}
+		  ,EDT_DTM = NOW()
+     WHERE CODE_MST_CD = #{CODE_MST_CD}
+    </update>
+    
+    <insert id="insertCodeDtlData" parameterType="HashMap">
+    INSERT INTO Z_CODE_DTL
+       SET CODE_MST_CD = #{CODE_MST_CD}
+       	  ,CODE_DTL_CD = #{CODE_DTL_CD}
+	      ,CODE_DTL_NM = #{CODE_DTL_NM}
+	      ,SORT = #{SORT}
+	      ,USE_YN = #{USE_YN}
+	      ,REG_ID = #{userData.USER_ID}
+		  ,REG_DTM = NOW()
+    </insert>
+    
+    <update id="updateCodeDtlData" parameterType="HashMap">
+    UPDATE Z_CODE_DTL
+       SET CODE_DTL_NM = #{CODE_DTL_NM}
+	      ,SORT = #{SORT}
+	      ,USE_YN = #{USE_YN}
+          ,EDT_ID = #{userData.USER_ID}
+		  ,EDT_DTM = NOW()
+     WHERE CODE_MST_CD = #{CODE_MST_CD}
+       AND CODE_DTL_CD = #{CODE_DTL_CD}
+    </update>
+    
+    <sql id="ref_pagingHeader">
+        SELECT Y.*
+            FROM (
+                SELECT
+                    X.*
+                    , @rownum := @rownum + 1 AS RNUM
+                FROM (
+    </sql>
+    
+    <sql id="ref_pagingFooter">                    
+            )X 
+        )Y
+		<if test="sortBy != null and sortBy != ''">
+	    ORDER BY ${sortBy} ${descending}
+	    </if>
+        LIMIT ${firstNum}, ${once_display_count}            
+    </sql>
+</mapper>

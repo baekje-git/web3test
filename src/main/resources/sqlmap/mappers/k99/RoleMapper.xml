@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.role">
+    
+    <select id="selectRole" parameterType="HashMap" resultType="HashMap">
+		SELECT T.ROLE_CODE,
+		       T.ROLE_NAME,
+		       T.USE_YN
+		FROM K99_ROLE T    
+    </select>
+    
+    <insert id="insertRole" parameterType="HashMap">
+        INSERT INTO K99_ROLE (ROLE_CODE, ROLE_NAME, USE_YN, REG_USER, REG_DATE)
+        VALUES (#{ROLE_CODE}, #{ROLE_NAME}, #{USE_YN}, #{REG_USER}, SYSDATE)
+    </insert>
+    
+    <update id="updateRole" parameterType="HashMap">
+        UPDATE K99_ROLE
+          SET  ROLE_NAME = #{ROLE_NAME},               
+               USE_YN = #{USE_YN},
+               EDT_USER = #{EDT_USER},
+               EDT_DATE = SYSDATE
+         WHERE ROLE_CODE = #{ROLE_CODE}    
+    </update>
+    
+    <select id="selectMenuByName" parameterType="HashMap" resultType="HashMap">
+        /* k99.role.selectMenuByName */
+    
+		SELECT LEVEL AS LVL,
+		       T.MENU_ID,
+		       T.MENU_NAME,
+		       T.USE_YN
+		FROM K99_MENU T
+		WHERE T.MENU_NAME LIKE '%'||#{MENU_NAME}||'%'     
+		AND T.MENU_UPPER IS NULL
+        AND PRIOR T.MENU_ID = T.MENU_UPPER
+        ORDER BY T.MENU_SORT        
+    </select>
+    
+    <select id="selectRoleMenu" parameterType="HashMap" resultType="HashMap">
+     <![CDATA[
+     /* k99.role.selectRoleMenu */
+     
+		 SELECT LEVEL AS LVL,
+		        MENU_ID,       
+                N.MENU_NAME,
+                N.USE_YN
+		  FROM (SELECT M.MENU_ID,
+		               M.MENU_NAME,
+		               M.MENU_SORT,
+		               M.USE_YN,
+		               M.REG_DATE,
+		               M.MENU_UPPER,
+		               M.ROUTE_NAME
+		          FROM K99_MENU M
+		         WHERE M.USE_YN = 'Y'
+		           AND EXISTS (SELECT 1
+		                  FROM K99_ROLE A
+		                  JOIN K99_ROLE_MENU B
+		                    ON A.ROLE_CODE = B.ROLE_CODE                  
+		                 WHERE A.ROLE_CODE = #{ROLE_CODE}
+		                   AND B.MENU_ID = M.MENU_ID)) N
+		WHERE N.MENU_UPPER IS NULL
+		AND N.MENU_ID = N.MENU_UPPER
+		ORDER BY N.MENU_SORT
+     ]]> 
+    </select>
+    
+    <insert id="insertRoleMenu" parameterType="HashMap">
+        INSERT INTO K99_ROLE_MENU (ROLE_CODE, MENU_ID, REG_USER, REG_DATE)
+        VALUES (#{ROLE_CODE}, #{MENU_ID}, #{REG_USER}, SYSDATE)
+    </insert>
+    
+    <delete id="deleteRoleMenu" parameterType="HashMap">
+        DELETE FROM K99_ROLE_MENU
+         WHERE ROLE_CODE = #{ROLE_CODE}  
+    </delete>
+    
+    <select id="selectUserByName" parameterType="HashMap" resultType="HashMap">
+		SELECT U.USER_ID,
+		       U.USER_NAME,
+		       U.COMPANY_NAME
+		FROM USER01TB U
+		WHERE U.USER_NAME LIKE '%'||#{USER_NAME}||'%'
+		   OR U.USER_ID LIKE '%'||#{USER_NAME}||'%'
+		ORDER BY U.USER_ID
+    </select>
+    
+    <select id="selectRoleUser" parameterType="HashMap" resultType="HashMap">
+        SELECT U.USER_ID,
+		       U.USER_NAME,
+		       U.COMPANY_NAME
+		FROM K99_ROLE A
+		JOIN K99_ROLE_USER B
+		  ON A.ROLE_CODE = B.ROLE_CODE
+		JOIN USER01TB U
+		  ON B.USER_ID = U.USER_ID  
+       WHERE A.ROLE_CODE = #{ROLE_CODE}     
+    </select>
+    
+    <insert id="insertRoleUser" parameterType="HashMap">
+        /* k99.role.insertRoleUser */
+    
+        INSERT INTO K99_ROLE_USER (ROLE_CODE, USER_ID, REG_USER, REG_DATE)
+        VALUES (#{ROLE_CODE}, #{USER_ID}, #{REG_USER}, SYSDATE)
+    </insert>
+    
+    <delete id="deleteRoleUser" parameterType="HashMap">
+       /* k99.role.deleteRoleUser */
+       
+        DELETE FROM K99_ROLE_USER
+         WHERE ROLE_CODE = #{ROLE_CODE}  
+    </delete>
+    
+    <delete id="deleteRoleUserByUser" parameterType="HashMap">
+       /* k99.role.deleteRoleUserByUser */
+       
+        DELETE FROM K99_ROLE_USER
+         WHERE ROLE_CODE = #{ROLE_CODE}  
+           AND USER_ID = #{USER_ID}
+    </delete>
+    
+    <select id="selectMenuByUser" parameterType="HashMap" resultType="HashMap">
+        /* 사용자별 메뉴(k99.role.selectMenuByUser) */
+    SELECT M.MENU_ID,
+           M.MENU_NM,
+           M.MENU_SORT,
+           M.USE_YN,
+           M.REG_DATE,
+           M.MENU_UPPER,
+           M.ROUTE_NM,
+           (CASE WHEN M.MENU_UPPER IS NULL THEN '1'
+                 ELSE '2' END) AS LVL
+     FROM Z_MENU M
+     JOIN Z_USER U
+       ON U.USER_ID = #{USER_ID}
+     WHERE 1=1
+     AND M.USE_YN = 'Y' 
+     ORDER BY MENU_SORT   
+    </select>
+    
+</mapper>

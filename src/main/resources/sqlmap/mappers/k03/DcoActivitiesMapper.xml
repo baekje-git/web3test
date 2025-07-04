@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k03.dco">
+    <select id="select0313Main" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml - DCOActivities.vue - DCO활동실적*/
+        <![CDATA[
+        		SELECT  ROWNUM AS LIST_SEQUENCE
+        				,A.*
+        		FROM	(
+                        SELECT	T1.USER_ID
+                                ,T1.USER_NAME
+                                ,T1.USER_EN_NAME
+                                ,T1.USER_SEX
+                                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'SEX_CODE' AND DTL_CODE = T1.USER_SEX) AS USER_SEX_NAME
+                                ,(SELECT AUTH_STAGE_NAME FROM AUTH_STAGE WHERE USER_NAME = T1.USER_NAME AND AUTH_STAGE_NO = T1.AUTH_ID) AS AUTH_STAGE_NAME
+                                ,T1.AUTH_ID
+                                ,NVL(T2.CNT_DCO_CONFIRM, 0) AS CNT_DCO_CONFIRM
+                                ,NVL(T2.CNT_BCO_CONFIRM, 0) AS CNT_BCO_CONFIRM
+                                ,NVL(T2.CNT_DCOBCO_CONFIRM, 0) AS CNT_DCOBCO_CONFIRM
+                                ,NVL(T2.CNT_PREDECESSOR, 0) AS CNT_PREDECESSOR
+                                ,NVL(T4.CNT_REQUEST_CHAPERON, 0) AS CNT_REQUEST_CHAPERON
+                                ,NVL(T4.CNT_CHAPERON, 0) AS CNT_CHAPERON
+                                ,NVL(T2.CNT_REQUEST, 0) AS CNT_REQUEST
+                                ,NVL(T2.CNT_REQUEST_UNI, 0) AS CNT_REQUEST_UNI
+                                ,NVL(T3.CNT_STOP_PRIORITY_MISTAKE, 0) AS CNT_STOP_PRIORITY_MISTAKE
+                                ,NVL(T3.CNT_PRIORITY_MISTAKE, 0) AS CNT_PRIORITY_MISTAKE
+                                ,NVL(T3.CNT_NOT_PRIORITY_MISTAKE, 0) AS CNT_NOT_PRIORITY_MISTAKE
+                                ,NVL(T3.CNT_ETC_PRIORITY_MISTAKE, 0) AS CNT_ETC_PRIORITY_MISTAKE
+                                ,COUNT(1) OVER() AS ALL_COUNT
+                        FROM	USER01TB T1
+                                ,(
+                                SELECT	A.USER_ID
+                                        ,SUM(CASE WHEN 'Y' IN (A.CHOOSE_DCO_YN) THEN 1 ELSE 0 END) AS CNT_DCO_CONFIRM
+                                        ,SUM(CASE WHEN 'Y' IN (A.CHOOSE_BCO_YN) THEN 1 ELSE 0 END) AS CNT_BCO_CONFIRM
+                                        ,SUM(CASE WHEN 'Y' IN (A.CHOOSE_DCOBCO_YN) THEN 1 ELSE 0 END) AS CNT_DCOBCO_CONFIRM
+                                        ,SUM(CASE WHEN 'Y' IN (A.PREDECESSOR_YN) THEN 1 ELSE 0 END) AS CNT_PREDECESSOR
+                                        ,COUNT(1) AS CNT_REQUEST
+                                        ,count(distinct ipnt_date) AS CNT_REQUEST_UNI
+                                FROM	K03_DOPING_INSPECT_DCO A
+                                        ,K03_DOPING_INSPECT_REG B
+                                WHERE	A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                                AND		A.USE_YN = 'Y'
+                                AND		B.USE_YN = 'Y'
+                                AND     A.CHAPERON_YN = 'N'
+                                AND     B.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                                GROUP BY A.USER_ID
+                                ) T2
+                                ,(
+                                SELECT	A.USER_ID
+                                        ,SUM(CASE WHEN A.MISTAKE_PRIORITY = '04' THEN 1 ELSE 0 END) AS CNT_STOP_PRIORITY_MISTAKE
+                                        ,SUM(CASE WHEN A.MISTAKE_PRIORITY = '02' THEN 1 ELSE 0 END) AS CNT_PRIORITY_MISTAKE
+                                        ,SUM(CASE WHEN A.MISTAKE_PRIORITY = '01' THEN 1 ELSE 0 END) AS CNT_NOT_PRIORITY_MISTAKE
+                                        ,SUM(CASE WHEN A.MISTAKE_PRIORITY = '03' THEN 1 ELSE 0 END) AS CNT_ETC_PRIORITY_MISTAKE
+                                FROM	K03_ERROR_REPORT A
+                                WHERE	A.USE_YN = 'Y'
+                                AND     EXISTS  (
+                                                SELECT  1
+                                                FROM    K03_DOPING_INSPECT_REG
+                                                WHERE   IPNT_UPPER_SEQ = A.IPNT_UPPER_SEQ
+                                                AND     IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                                                AND     USE_YN = 'Y'
+                                                )
+                                GROUP BY A.USER_ID
+                                ) T3
+                                ,(
+                                SELECT	A.USER_ID
+                                        ,SUM(CASE WHEN 'Y' IN (A.CHAPERON_YN) THEN 1 ELSE 0 END) AS CNT_REQUEST_CHAPERON
+                                        ,SUM(CASE WHEN 'Y' IN (A.CHOOSE_CHAPERON_YN) THEN 1 ELSE 0 END) AS CNT_CHAPERON
+                                FROM	K03_DOPING_INSPECT_DCO A
+                                        ,K03_DOPING_INSPECT_REG B
+                                WHERE	A.IPNT_UPPER_SEQ = B.IPNT_UPPER_SEQ
+                                AND		A.USE_YN = 'Y'
+                                AND		B.USE_YN = 'Y'
+                                AND     A.CHAPERON_YN = 'Y'
+                                AND     B.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+                                GROUP BY A.USER_ID
+                                ) T4
+                        WHERE	T1.USER_ID = T2.USER_ID
+                        AND		T1.USER_ID = T4.USER_ID (+)
+                        AND		T1.USER_ID = T3.USER_ID (+)
+                        ]]>
+				      <if test="CONDITION_CODE != null and CONDITION_CODE != '' and CONDITION_CODE == 'USER_NAME'">
+					      <if test="CONDITION_TEXT != null and CONDITION_TEXT != '' ">
+					      <![CDATA[
+					          AND   UPPER(T1.USER_NAME) LIKE '%' || UPPER(#{CONDITION_TEXT}) || '%'
+					      ]]>
+					      </if>
+				      </if>
+                        <![CDATA[
+						ORDER BY T1.USER_NAME
+                		) A
+				ORDER BY A.USER_NAME
+        ]]>
+    </select>
+    
+    <select id="selectCNT_REQUEST" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_REQUEST- CntRequestUniPopup.vue,CntRequestPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T1.PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND     T1.CHAPERON_YN = 'N'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_REQUEST_CHAPERON" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_REQUEST_CHAPERON- CntRequestChaperonPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T1.CHOOSE_CHAPERON_YN AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND     T1.CHAPERON_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_DCO_CONFIRM" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_DCO_CONFIRM- CntDcoConfirmPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,CASE WHEN T1.CHOOSE_DCO_YN = 'Y' THEN 'DCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_BCO_YN = 'Y' THEN 'BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_DCOBCO_YN = 'Y' THEN 'DCO/BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.PREDECESSOR_YN = 'Y' THEN '선임' ELSE '&nbsp;' END AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND     T1.CHOOSE_DCO_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_BCO_CONFIRM" parameterType="HashMap" resultType="HashMap">
+	/* DcoActivitiesMapper.xml -selectCNT_BCO_CONFIRM- CntBcoConfirmPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,CASE WHEN T1.CHOOSE_DCO_YN = 'Y' THEN 'DCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_BCO_YN = 'Y' THEN 'BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_DCOBCO_YN = 'Y' THEN 'DCO/BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.PREDECESSOR_YN = 'Y' THEN '선임' ELSE '&nbsp;' END AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND     T1.CHOOSE_BCO_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_DCOBCO_CONFIRM" parameterType="HashMap" resultType="HashMap">
+	/* DcoActivitiesMapper.xml -selectCNT_DCOBCO_CONFIRM- CntDcoBcoConfirmPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,CASE WHEN T1.CHOOSE_DCO_YN = 'Y' THEN 'DCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_BCO_YN = 'Y' THEN 'BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_DCOBCO_YN = 'Y' THEN 'DCO/BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.PREDECESSOR_YN = 'Y' THEN '선임' ELSE '&nbsp;' END AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND     T1.CHOOSE_DCOBCO_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_CHAPERON" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_CHAPERON- CntChaperonPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,CASE WHEN T1.CHOOSE_CHAPERON_YN = 'Y' THEN 'CHAPERON' ELSE '&nbsp;' END AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND     T1.CHOOSE_CHAPERON_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_PREDECESSOR" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_PREDECESSOR- CntPredecessorPopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T2.IPNT_PLACE_DETAIL
+                ,CASE WHEN T1.CHOOSE_DCO_YN = 'Y' THEN 'DCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_BCO_YN = 'Y' THEN 'BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.CHOOSE_DCOBCO_YN = 'Y' THEN 'DCO/BCO' ELSE '&nbsp;' END
+                 || CASE WHEN T1.PREDECESSOR_YN = 'Y' THEN '선임' ELSE '&nbsp;' END AS PREDECESSOR_YN
+        FROM	IPNT07TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND		T1.USER_ID = T3.USER_ID
+        AND		T1.USER_ID = #{USER_ID}
+        AND     T1.PREDECESSOR_YN = 'Y'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        ORDER BY T1.REQUEST_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_STOP_PRIORITY_MISTAKE" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_STOP_PRIORITY_MISTAKE- CntStopPriorityMistakePopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T1.MISTAKE_UPPER_CODE AS MASTER_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MASTER_NAME
+                ,T1.MISTAKE_CODE AS DETAIL_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS DETAIL_NAME
+                ,((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) || (SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE)) AS NAME
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+        FROM	IPER01TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.USER_ID = T3.USER_ID
+        AND		T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND		T1.MISTAKE_PRIORITY = '04'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REG_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_PRIORITY_MISTAKE" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_PRIORITY_MISTAKE- CntPriorityMistakePopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T1.MISTAKE_UPPER_CODE AS MASTER_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MASTER_NAME
+                ,T1.MISTAKE_CODE AS DETAIL_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS DETAIL_NAME
+                ,((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) || (SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE)) AS NAME
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+        FROM	IPER01TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.USER_ID = T3.USER_ID
+        AND		T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND		T1.MISTAKE_PRIORITY = '02'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REG_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_NOT_PRIORITY_MISTAKE" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_NOT_PRIORITY_MISTAKE- CntNotPriorityMistakePopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T1.MISTAKE_UPPER_CODE AS MASTER_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MASTER_NAME
+                ,T1.MISTAKE_CODE AS DETAIL_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS DETAIL_NAME
+                ,((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) || (SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE)) AS NAME
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+        FROM	IPER01TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.USER_ID = T3.USER_ID
+        AND		T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND		T1.MISTAKE_PRIORITY = '01'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REG_DATE DESC
+        ]]>
+    </select>
+    
+    <select id="selectCNT_ETC_PRIORITY_MISTAKE" parameterType="HashMap" resultType="HashMap">
+    /* DcoActivitiesMapper.xml -selectCNT_ETC_PRIORITY_MISTAKE- CntEtcPriorityMistakePopup.vue - DCO활동실적(팝업)*/
+        <![CDATA[
+        SELECT  T1.USER_ID
+                ,T3.USER_NAME
+                ,T2.IPNT_DATE
+                ,T2.IPNT_TIME
+                ,T2.IPNT_PLACE_DETAIL
+                ,T2.IPNT_UPPER_SEQ
+                ,T2.IPNT_NO
+                ,T2.IPNT_NAME
+                ,T1.MISTAKE_UPPER_CODE AS MASTER_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) AS MASTER_NAME
+                ,T1.MISTAKE_CODE AS DETAIL_CODE
+                ,(SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE) AS DETAIL_NAME
+                ,((SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_UPPER_CODE' AND DTL_CODE = T1.MISTAKE_UPPER_CODE) || (SELECT CODE_NAME FROM CODE01TB WHERE MST_CODE = 'MISTAKE_CODE' AND DTL_CODE = T1.MISTAKE_CODE)) AS NAME
+                ,T1.IPNT_START_DATE
+                ,T1.IPNT_END_DATE
+                ,T1.MISTAKE_MEMO
+        FROM	IPER01TB T1
+                ,IPNT01TB T2
+                ,USER01TB T3
+        WHERE	T1.USER_ID = T3.USER_ID
+        AND		T1.IPNT_UPPER_SEQ = T2.IPNT_UPPER_SEQ
+        AND     T1.USER_ID = #{USER_ID}
+        AND		T1.USE_YN = 'Y'
+        AND		T2.USE_YN = 'Y'
+        AND		T1.MISTAKE_PRIORITY = '03'
+        AND     T2.IPNT_DATE BETWEEN #{START_DATE} AND #{END_DATE}
+        ORDER BY T1.REG_DATE DESC
+        ]]>
+    </select>
+
+</mapper>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="fdgq.fnrec">
+   	<select id="selectFdgqFnrecList" parameterType="HashMap" resultType="HashMap" >
+     /* fdgq.fnrec.selectFdgqFnrecList (fnrec.xml) */
+	SELECT FN_FMT_DT(A.PROD_DT)    AS PROD_DT    /* 제조일 */
+		  ,A.PROD_NO               AS PROD_NO    /* 제조번호 */
+		  ,FN_FMT_DT(H.WORK_DT)	   AS WORK_DT  	 /* 작업일자(시험일자) */
+	      ,FN_FMT_DT(H.TESTER_DT)  AS CHARGE_DT  /* 담당자확인일 */
+	      ,H.TESTER       AS CHARGE_NM  /* 담당자 */
+	      ,FN_FMT_DT(H.CONFIRM_DT) AS MANDATE_DT  /* 지시자확인일 */
+	      ,H.CONFIRM      AS MANDATE_NM /* 지시자 */
+	      ,IF(COUNT(CASE WHEN TFQ.PROCESS = '/fdgq-fnrec' THEN 1 END)>0,'O','') AS QNA_YN
+	      ,IF(A.DEL_NY = 'Y','O','') AS DEL_NY
+      FROM T_FDGP_BPR A
+      JOIN T_FDGP_CSFM B
+        ON B.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_CMPS C
+        ON C.PROD_NO = A.PROD_NO
+      JOIN T_FDGP_DSPS D
+        ON D.PROD_NO = A.PROD_NO
+      JOIN t_fdgP_pack E
+        ON E.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNREQ F
+        ON F.PROD_NO = A.PROD_NO
+      JOIN T_FDGQ_FNINS G
+        ON G.PROD_NO = A.PROD_NO
+      LEFT JOIN T_FDGQ_FNREC H
+        ON H.PROD_NO = A.PROD_NO
+	  LEFT JOIN T_FDG_QNA TFQ
+	    ON TFQ.PROD_NO = A.PROD_NO
+	 WHERE 1=1
+	   AND G.BE04 IS NOT NULL
+	   <if test="START_PROD_DT != null and START_PROD_DT != '' and END_PROD_DT != null and END_PROD_DT != ''">
+       AND A.PROD_DT between REPLACE(#{START_PROD_DT},'-','') AND REPLACE(#{END_PROD_DT},'-','')
+       </if>
+       <if test="START_WORK_DT != null and START_WORK_DT != '' and END_WORK_DT != null and END_WORK_DT != ''">
+       AND H.WORK_DT between REPLACE(#{START_WORK_DT},'-','') AND REPLACE(#{END_WORK_DT},'-','')
+       </if>
+	   <if test="PROD_NO != null and PROD_NO != ''">
+       AND A.PROD_NO LIKE CONCAT('%',#{PROD_NO},'%')
+       </if>
+       <if test="CHARGE_NM != null and CHARGE_NM != ''">
+       AND H.TESTER LIKE CONCAT('%',#{CHARGE_NM},'%')
+       </if>
+       <if test="MANDATE_NM != null and MANDATE_NM != ''">
+       AND H.CONFIRM LIKE CONCAT('%',#{MANDATE_NM},'%')
+       </if>
+       <if test="DEL_NY != null and DEL_NY != ''">
+       AND A.DEL_NY = #{DEL_NY}
+       </if>
+     GROUP BY A.PROD_NO
+       <if test="QNA_YN != null and QNA_YN != ''">
+    HAVING IF(QNA_YN = 'O','Y','N') = #{QNA_YN}
+       </if>
+	 ORDER BY A.PROD_DT DESC, A.PROD_NO DESC
+    </select>
+    
+ <insert id="insertFdgqFnrec" parameterType="HashMap">
+    /* fdgq.fnrec.insertFdgqFnrec */
+
+                INSERT INTO T_FDGQ_FNREC
+                SET PROD_NO = #{eData.PROD_NO}
+					,WORK_DT = #{eData.WORK_DT}
+					,A03 = #{eData.A03}
+					,B0401 = #{eData.B0401}
+					,B0402 = #{eData.B0402}
+					,B0403 = #{eData.B0403}
+					,C03 = #{eData.C03}
+					,D0601 = #{eData.D0601}
+					,D0602 = #{eData.D0602}
+					,E03 = #{eData.E03}
+					,F03 = #{eData.F03}
+					,G04 = #{eData.G04}
+					,H020204 = #{eData.H020204}
+					,H03 = #{eData.H03}
+					,I03 = #{eData.I03}
+					,J03 = #{eData.J03}
+					,TESTER = #{eData.TESTER}
+					,TESTER_DT = #{eData.TESTER_DT}
+					,CONFIRM = #{eData.CONFIRM}
+					,CONFIRM_DT = #{eData.CONFIRM_DT}
+				    ,REG_ID = #{userData.USER_ID}
+				    ,REG_DTM = NOW()
+    ON DUPLICATE KEY UPDATE
+					 WORK_DT = #{eData.WORK_DT}
+					,A03 = #{eData.A03}
+					,B0401 = #{eData.B0401}
+					,B0402 = #{eData.B0402}
+					,B0403 = #{eData.B0403}
+					,C03 = #{eData.C03}
+					,D0601 = #{eData.D0601}
+					,D0602 = #{eData.D0602}
+					,E03 = #{eData.E03}
+					,F03 = #{eData.F03}
+					,G04 = #{eData.G04}
+					,H020204 = #{eData.H020204}
+					,H03 = #{eData.H03}
+					,I03 = #{eData.I03}
+					,J03 = #{eData.J03}
+					,TESTER = #{eData.TESTER}
+					,TESTER_DT = #{eData.TESTER_DT}
+					,CONFIRM = #{eData.CONFIRM}
+					,CONFIRM_DT = #{eData.CONFIRM_DT}
+			        ,EDT_ID = #{userData.USER_ID}
+			        ,EDT_DTM = NOW()
+    </insert>
+</mapper>

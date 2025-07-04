@@ -1,0 +1,1 @@
+import{_ as e}from"./index.23979a80.js";var _=({app:t})=>{const o=navigator.userAgent;/Mobi|Android|iPhone/i.test(o)?e(()=>Promise.resolve({}),["assets/mobile.7cde36fd.css"]):e(()=>Promise.resolve({}),["assets/web.96771718.css"])};export{_ as default};

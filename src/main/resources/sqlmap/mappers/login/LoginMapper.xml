@@ -1,0 +1,900 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="login">
+    <select id="selectLogin" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLogin 로그인 */
+        SELECT A.USER_ID
+             , A.LOGIN_ID 
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , B.DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS HP_NO_CUST
+             , B.CUST_NM
+             , ''  AS EMP_ID
+             , ''  AS EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , B.CEO_NM
+             , '' AS EMP_HP
+             , B.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{encLoginId} THEN 'INIT'
+                    WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(B.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , B.CUST_GB_CD                  /*거래처구분코드*/
+             , B.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(B.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = B.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          JOIN T_CUST B
+            ON A.CUST_CD = B.CUST_CD
+           AND B.WEB_USE_YN='Y'
+           AND B.DEAL_END_YN = 'N' /*약국(30 거래처)*/
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = B.CUST_CD 
+           AND Z.BRCH_CD = B.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE 
+            A.USE_YN = 'Y' 
+           AND A.USER_GB_CD = '30' /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           <!--
+           AND A.LOGIN_ID = #{loginId}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+                AND A.PASSWORD = #{pwd}
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),0,4) || '-' || CASE WHEN LENGTH(damo.SCP_DECB64('SCP_ALL', B.HP_NO)) = 11
+                                                                              THEN SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,4)
+                                                                              ELSE SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,3)
+                                                                         END || '-' || SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),8) AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS EMP_HP
+             , C.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          LEFT JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = C.CUST_CD 
+           AND Z.BRCH_CD = C.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE A.USER_GB_CD = '10'  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+            AND A.USE_YN = 'Y' 
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+                AND A.PASSWORD = #{pwd}
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , '20' AS USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),0,4) || '-' ||
+                 CASE WHEN LENGTH(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-','')) = 11
+                      THEN SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,4) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                      ELSE SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,3) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                 END   AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , IFNULL(B.DEPT_CD,'') AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO)  AS EMP_HP
+             , C.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2, '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') AS SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */ 
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = C.CUST_CD 
+           AND Z.BRCH_CD = C.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE A.USER_GB_CD IN ('20','40','50','60','70','80','90')  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           AND A.USE_YN = 'Y'
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+                AND A.PASSWORD = #{pwd}
+            </otherwise>
+        </choose>
+    </select>
+    
+<select id="selectLoginNoPwd" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLoginNoPwd 로그인 */
+        SELECT A.USER_ID
+             , A.LOGIN_ID 
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , B.DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS HP_NO_CUST
+             , B.CUST_NM
+             , ''  AS EMP_ID
+             , ''  AS EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , B.CEO_NM
+             , '' AS EMP_HP
+             , B.CUST_GB_CD
+             , F_S_SUBDIV_BACK_YN(B.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , B.CUST_GB_CD                  /*거래처구분코드*/
+             , B.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(B.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = B.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          JOIN T_CUST B
+            ON A.CUST_CD = B.CUST_CD
+           AND B.WEB_USE_YN='Y'
+           AND B.DEAL_END_YN = 'N' /*약국(30 거래처)*/
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = B.CUST_CD 
+           AND Z.BRCH_CD = B.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE 
+           A.USE_YN = 'Y' 
+           AND A.USER_GB_CD = '30' /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           <!--
+           AND A.LOGIN_ID = #{loginId}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),0,4) || '-' || CASE WHEN LENGTH(damo.SCP_DECB64('SCP_ALL', B.HP_NO)) = 11
+                                                                              THEN SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,4)
+                                                                              ELSE SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,3)
+                                                                         END || '-' || SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),8) AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS EMP_HP
+             , C.CUST_GB_CD
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          LEFT JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = C.CUST_CD 
+           AND Z.BRCH_CD = C.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE A.USER_GB_CD = '10'  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           AND A.USE_YN = 'Y' 
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , '20' AS USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),0,4) || '-' ||
+                 CASE WHEN LENGTH(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-','')) = 11
+                      THEN SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,4) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                      ELSE SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,3) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                 END   AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , IFNULL(B.DEPT_CD,'') AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO)  AS EMP_HP
+             , C.CUST_GB_CD
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2, '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') AS SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */ 
+             , A.USE_YN
+             , (CASE WHEN Z.SALE_2 >= '3000000' THEN 'Y' ELSE 'N' END) AS CASH_LIMIT_BACK_YN
+             ,(SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END  FROM T_CODE MIS WHERE MIS.P_CODE = '986' AND MIS.USE_YN = 'Y' AND MIS.CD_NM = A.LOGIN_ID) AS MIS_YN
+          FROM T_USER A
+          JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+          LEFT OUTER JOIN V_BALANCE_MONTH Z 
+            ON Z.CUST_CD = C.CUST_CD 
+           AND Z.BRCH_CD = C.BRCH_CD 
+           AND Z.BALANCE_YM = TO_CHAR(CURRENT TIMESTAMP - 1 MONTH,'YYYYMM')
+         WHERE A.USER_GB_CD IN ('20','40','50','60','70','80','90')  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+            AND A.USE_YN = 'Y' 
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectLoginForMaker" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLoginForMaker 제약사 로그인 */
+        SELECT A.MAKER_CD
+             , A.MAKER_NM
+             , SUPPLY_USE_YN
+             , CASE WHEN A.SUPPLY_MED_CD IS NULL OR A.SUPPLY_MED_CD = '00' THEN ''
+                    ELSE A.SUPPLY_MED_CD
+               END SUPPLY_MED_CD
+             , SUPPLY_SERVICE_NO_YN
+          FROM T_MAKER A
+         WHERE A.ANIMAL_MAKER_YN = 'N'
+           <!-- AND A.MAKER_CD = #{loginId}
+           AND A.SUPPLY_PASSWORD = #{pwd} -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.MAKER_CD = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.MAKER_CD = #{loginId}
+                AND A.SUPPLY_PASSWORD = #{pwd}
+            </otherwise>
+        </choose>
+    </select>
+
+    <update id="updateRefreshTokenForUser" parameterType="HashMap">
+        /* login.updateRefreshTokenForUser 로그인시 RefreshToken저장 */
+        UPDATE T_USER
+           SET REFRESH_TOKEN = #{refreshToken}
+             , LAST_LOGIN_DTM = F_S_NOW()
+         WHERE LOGIN_ID = #{loginId}
+    </update>
+
+    <update id="updateRefreshTokenForMaker" parameterType="HashMap">
+        /* login.updateRefreshTokenForMaker 제약사 로그인시 RefreshToken저장 */
+        UPDATE T_MAKER
+           SET REFRESH_TOKEN = #{refreshToken}
+         WHERE MAKER_CD = #{loginId}
+    </update>
+
+    <select id="selectChangeUser" parameterType="HashMap" resultType="HashMap">
+        /* login.selectChangeUser  */
+
+        SELECT  U1.USER_ID,
+                U1.ADDRESS_TYPE1,
+                U1.ADDRESS_TYPE2,
+                U1.AUTH_DCO_YMD,
+                U1.AUTH_EDU_YMD,
+                U1.AUTH_ID,
+                U1.AUTH_STAGE_NAME,
+                U1.AUTH_STAGE_NO,
+                U1.BANK_ACCOUNT_NO,
+                U1.BANK_CODE,
+                U1.BANK_OWNER_NAME,
+                U1.BCO_YN,
+                U1.CHANGE_PWD_DATE,
+                U1.CHARGER_YN,
+                U1.COMPANY_NAME,
+                U1.COMPANY_POSITION,
+                U1.DCO_YN,
+                U1.EDT_DATE,
+                U1.EDT_USER,
+                U1.EDU_CHARGER_YN,
+                U1.EDU_YN,
+                U1.EMAIL_AGREE_YN,
+                U1.EMP_CODE,
+                U1.HOMEPAGE_USE_YN,
+                U1.INSPECTOR_POOL,
+                U1.IP_ADDR,
+                U1.IS_ROAD_ADDRESS1,
+                U1.IS_ROAD_ADDRESS2,
+                U1.REG_DATE,
+                U1.REG_USER,
+                U1.SMS_AGREE_YN,
+                U1.TEST_CODE,
+                U1.TOKEN_DATE,
+                U1.TOKEN_VALUE,
+                U1.UNIFORM_SIZE,
+                U1.USER_ADDRESS1,
+                U1.USER_ADDRESS2,
+                U1.USER_ADDRESS_LATITUDE1,
+                U1.USER_ADDRESS_LATITUDE2,
+                U1.USER_ADDRESS_LONGITUDE1,
+                U1.USER_ADDRESS_LONGITUDE2,
+                U1.USER_AGENT,
+                U1.USER_COMPANY_PHONE,
+                U1.USER_DETAIL_ADDRESS1,
+                U1.USER_DETAIL_ADDRESS2,
+                U1.USER_EMAIL_PREFIX,
+                U1.USER_EMAIL_SUFFIX,
+                U1.USER_EN_NAME,
+                U1.USER_FILE_NAME,
+                U1.USER_FILE_PATH,
+                U1.USER_HOME_PHONE,
+                U1.USER_ID,
+                U1.USER_NAME,
+                U1.USER_PHONE,
+                U1.USER_SEX,
+                U1.USER_ZIPCODE1,
+                U1.USER_ZIPCODE2,
+                U1.WRONG_COUNT,
+                U1.USER_FLAG,
+                F_CODE_NM('USER_FLAG',U1.USER_FLAG) AS USER_FLAG_NM,
+                U1.PRO_ORGZ, 
+                F_CODE_NM('PRO_ORGZ',U1.PRO_ORGZ) AS PRO_ORGZ_NM,
+                U1.CLUB_CODE, 
+                F_CODE_NM(U1.PRO_ORGZ,U1.CLUB_CODE) AS CLUB_NM,
+                U1.PLAYER_NO
+         FROM USER01TB U1
+        WHERE U1.USER_ID = #{USER_ID}
+    </select>
+
+    <select id="selectUserCheck" parameterType="HashMap" resultType="HashMap">
+        /* login.selectUserCheck :  비밀번호 초기화 요청전 유저 존재여부 체크  */
+
+        SELECT U.USER_ID
+          FROM USER01TB U 
+         WHERE U.USER_NAME = #{USER_NAME}
+           AND U.USER_EMAIL_PREFIX||'@'||U.USER_EMAIL_SUFFIX = #{USER_EMAIL}
+
+    </select>
+
+    <update id="updateCertSms" parameterType="HashMap">
+        /* login.updateCertSms 문자인증 저장 */
+
+        UPDATE USER01TB
+           SET CERT_SMS = #{CERT_SMS},
+               CERT_SMS_DT = SYSDATE
+         WHERE USER_ID = #{USER_ID}
+    </update>
+
+    <select id="selectUserPhone" parameterType="HashMap" resultType="String">
+    <![CDATA[
+        /* login.selectUserPhone :  사용자의 휴대폰번호  */
+
+        SELECT REPLACE(U.USER_PHONE,'-','')
+          FROM USER01TB U
+         WHERE U.USER_ID = #{USER_ID}
+    ]]>
+    </select>
+
+    <select id="selectCertSmsCheck" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* login.selectCertSmsCheck :  문자인증 체크  */
+
+        SELECT U.USER_ID
+          FROM USER01TB U
+         WHERE U.USER_ID = #{USER_ID}
+    ]]>
+    </select>
+
+    <select id="selectRegisterCheck" parameterType="HashMap" resultType="HashMap">
+    <![CDATA[
+        /* login.selectRegisterCheck :  존재하는 선수인지 체크  */
+
+        SELECT UT.USER_ID, UT.PLAYER_REG_YN
+          FROM USER01TB ut
+         WHERE UT.USER_NAME = #{USER_NAME}
+           AND UT.BIRTH_DT = #{BIRTH_DT}
+           AND UT.PRO_ORGZ = #{PRO_ORGZ}
+           AND UT.CLUB_CODE = #{CLUB_CODE}
+           AND UT.USER_FLAG = 'P' /* 선수 */
+    ]]>
+    </select>
+
+    <update id="registerUser" parameterType="HashMap">
+        /* login.registerUser 회원가입(선수) */
+
+        UPDATE USER01TB
+           SET LOGIN_ID = #{LOGIN_ID},
+               USER_PHONE = #{USER_PHONE},
+               USER_PWD = #{USER_PWD},
+               PLAYER_REG_YN = 'Y',
+               PLAYER_REG_DT = SYSDATE
+         WHERE USER_ID = #{USER_ID}
+    </update>
+
+    <select id="selectMenuByUser" parameterType="HashMap" resultType="HashMap">
+        /* login.selectMenuByUser (LoginMapper.xml) */
+    SELECT A.MENU_ID,
+           A.MENU_NM,
+           A.MENU_SORT,
+           A.MENU_UPPER,
+           A.ROUTE_NM,
+           A.MENU_LVL
+     FROM Z_MENU A
+     LEFT JOIN Z_AUTH B
+     ON B.MENU_ID = A.MENU_ID
+     AND B.AUTH_CD = FN_USER_AUTH(#{USER_ID})
+     WHERE 1=1
+     AND A.USE_YN = 'Y'
+     AND B.AUTH_CD IS NOT NULL
+     ORDER BY A.MENU_SORT;
+    </select>
+
+    <insert id="insertLoginHistory" parameterType="java.util.HashMap">
+        /* login.insertLoginHistory 로그인 이력 저장 */
+        INSERT INTO T_WEB_LOGIN_LOG
+             ( LOGIN_DTM
+             , LOGIN_ID
+             , CUST_CD
+             , INS_ID
+             , INS_DTM
+             , BRCH_CD
+             , IP_ADDR
+             , WEB_TOKEN
+             )
+        VALUES
+             ( F_S_NOW()
+             , #{loginId}
+             , #{userData.CUST_CD}
+             , #{loginId}
+             , F_S_NOW()
+             , #{userData.BRCH_CD}
+             , #{ipAddr}
+             , #{accessToken}
+             )
+    </insert>
+    
+    <select id="selectLoginCust" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLoginCust 로그인 */
+        SELECT A.USER_ID
+             , A.LOGIN_ID 
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , B.DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS HP_NO_CUST
+             , B.CUST_NM
+             , ''  AS EMP_ID
+             , ''  AS EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , B.CEO_NM
+             , '' AS EMP_HP
+             , B.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{encLoginId} THEN 'INIT'
+                    WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(B.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , B.CUST_GB_CD                  /*거래처구분코드*/
+             , B.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(B.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = B.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+          FROM T_USER A
+          JOIN T_CUST B
+            ON A.CUST_CD = B.CUST_CD
+           AND B.WEB_USE_YN='Y'
+           AND B.DEAL_END_YN = 'N' /*약국(30 거래처)*/
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+         WHERE 
+           A.USE_YN = 'Y' 
+           AND A.USER_GB_CD = '30' /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           <!--
+           AND A.LOGIN_ID = #{loginId}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}                
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , A.USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),0,4) || '-' || CASE WHEN LENGTH(damo.SCP_DECB64('SCP_ALL', B.HP_NO)) = 11
+                                                                              THEN SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,4)
+                                                                              ELSE SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),4,3)
+                                                                         END || '-' || SUBSTR(damo.SCP_DECB64('SCP_ALL', B.HP_NO),8) AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , ''  AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO) AS EMP_HP
+             , C.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2 , '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */
+             , A.USE_YN
+          FROM T_USER A
+          LEFT JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+         WHERE A.USER_GB_CD = '10'  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           AND A.USE_YN = 'Y' 
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}                
+            </otherwise>
+        </choose>
+         UNION ALL
+        SELECT A.USER_ID
+             , A.LOGIN_ID
+             , A.BRCH_CD AS BRCH_CD
+             , A.BRCH_CD AS LOGIN_BRCH_CD
+             , X.BRCH_NM AS BRCH_NM        /*지점명*/
+             , X.BRCH_SNM AS BRCH_SNM      /*지점명*/
+             , D.BASIC_DLV_BRCH_CD AS DLV_BRCH_CD
+             , A.USER_NM
+             , A.ROLE_CD
+             , '20' AS USER_GB_CD
+             , A.CUST_CD
+             , A.EMP_NO
+             , SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),0,4) || '-' ||
+                 CASE WHEN LENGTH(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-','')) = 11
+                      THEN SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,4) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                      ELSE SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),4,3) || '-' || SUBSTR(REPLACE(REPLACE(damo.SCP_DECB64('SCP_ALL', B.HP_NO), ' ', '') ,'-',''),8)
+                 END   AS HP_NO_CUST
+             , C.CUST_NM
+             , B.EMP_ID
+             , B.EMP_NM
+             , IFNULL(B.DEPT_CD,'') AS LOGIN_DEPT_CD
+             , C.CEO_NM
+             , damo.SCP_DECB64('SCP_ALL', B.HP_NO)  AS EMP_HP
+             , C.CUST_GB_CD
+             , CASE WHEN A.PASSWORD = #{pwd} THEN 'Y'
+                    ELSE 'N'
+               END PASSWORD_INIT_YN
+             , F_S_SUBDIV_BACK_YN(A.BRCH_CD) AS SUBDIV_BACK_YN
+             , F_S_EMPTY(#{webAppGb},'') AS WEB_APP_GB
+             , F_S_EMPTY((SELECT Z.USER_STRING6 FROM T_CODE Z WHERE Z.P_CODE = '105' AND Z.CODE = A.BRCH_CD),'N') AS ACCPT_YN
+             , F_S_EMPTY(Y.USER_STRING2, '') AS DRUG_CD
+             , C.CUST_GB_CD                  /*거래처구분코드*/
+             , C.CLOSE_READY_YN              /*페업준비여부*/
+             , F_S_EMPTY(#{special_id},'N') AS SPECIAL_ID
+             , F_S_EMPTY(C.ORD_MAKER_CD, '') AS ORD_MAKER_CD
+             , (CASE WHEN (SELECT COUNT(1) FROM T_GREAT_BRCH_INFO S1 WHERE S1.B_DLV_BRCH_CD = C.DLV_BRCH_CD AND S1.USE_YN = 'Y') > 0 THEN 'Y' 
+                             ELSE 'N'
+                             END) AS G_DLV_YN /* 광역배송사용여부 */ 
+             , A.USE_YN
+          FROM T_USER A
+          JOIN T_EMP B
+            ON A.USER_ID = B.EMP_ID
+          LEFT JOIN T_CUST C
+            ON A.CUST_CD = C.CUST_CD
+          JOIN T_BRANCH D
+            ON D.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_BRANCH X
+            ON X.BRCH_CD = A.BRCH_CD
+          LEFT OUTER JOIN T_CODE Y
+            ON Y.CODE = X.P_BRCH_CD
+           AND Y.P_CODE = '576'
+         WHERE A.USER_GB_CD IN ('20','40','50','60','70','80','90')  /* 10:전산관리자, 20:내부직원 , 30:거래처*/
+           AND A.USE_YN = 'Y'
+           <!--  
+           AND A.LOGIN_ID = #{loginId}
+           AND A.PASSWORD = #{pwd}
+           -->
+        <choose>
+            <when test="refreshToken != null and refreshToken != ''">
+                AND A.USER_ID = #{userId}
+                AND A.REFRESH_TOKEN = #{refreshToken}
+            </when>
+            <otherwise>
+                AND A.LOGIN_ID = #{loginId}                
+            </otherwise>
+        </choose>
+    </select>
+    <select id="selectLoginUrl" parameterType="HashMap" resultType="HashMap">
+        /* login.selectLoginUrl 로그인 */
+	SELECT COUNT(1) AS CNT
+	      ,MAX(FULL_CD_NM) AS BRCH_NM
+	FROM T_CODE
+	WHERE P_CODE = '333'
+	AND USER_STRING1 != ''
+	AND LOWER(#{url}) LIKE '%'||USER_STRING1||'%'
+    </select>
+    <select id="selectLoginOnuri" parameterType="HashMap" resultType="int">
+        /* login.selectLoginOnuri 로그인 */
+    SELECT COUNT(1) as CNT /* onuriKey 와 동일한지 체크 */
+	  FROM T_CODE A
+	 WHERE A.CODE = '44' /* 온누리코드 */
+	   AND A.P_CODE = '975' /* 고정 */
+	   <!-- AND USER_STRING2 = #{loginKey} -->
+	</select>
+    <select id="selectLoginShinhan" parameterType="HashMap" resultType="String">
+        /* login.selectLoginShinhan 로그인 */
+    SELECT COUNT(1) as CNT /* shinhanKey 와 동일한지 체크 */
+      FROM T_CODE A
+     WHERE A.CODE = '46' /* 신한코드 */
+       AND A.P_CODE = '975' /* 고정 */
+       <!-- AND USER_STRING2 = #{loginKey} -->
+    </select>
+    
+    <!-- 콜드체인 종료처리 관련 쿼리 시작 -->
+    <select id="selectCdcnSalesDlvEndCheck" parameterType="HashMap" resultType="HashMap">
+        /* login.selectCdcnSalesDlvEndCheck */
+         SELECT A.SN
+              , CASE WHEN A.DLV_END_DT IS NULL OR A.DLV_END_DT ='' THEN 1 ELSE 2 END END_CHK
+              , D.CUST_NM
+              , A.THERMO_ID
+              , A.BOX_ID
+           FROM T_BIO_DLV_DTL A
+           JOIN T_BIO_DLV_MST B
+             ON B.SN=A.SN
+           JOIN T_SALE C 
+             ON C.SN =A.SN
+           JOIN T_CUST D 
+             ON D.CUST_CD=C.CUST_CD
+          WHERE A.SN =#{JanggiSn}
+            AND A.THERMO_ID=#{ThermoId}
+            AND A.BOX_ID =#{BoxId}
+    </select>
+    
+    <update id="updateCdcnSalesDlvEndProc" parameterType="HashMap" >
+        /* login.updateCdcnSalesDlvEndProc */
+         UPDATE T_BIO_DLV_DTL A
+            SET A.DLV_STATUS = 'D'
+              , A.THERMO_RET_STATUS = 'D'
+              , A.BOX_RET_STATUS    = 'D'
+              , A.DLV_END_DT =TO_CHAR(CURRENT DATE ,'YYYYMMDD')
+              , A.DLV_END_TM =TO_CHAR(CURRENT TIMESTAMP ,'HH24MISS')
+          WHERE A.SN =#{JanggiSn}
+            AND A.THERMO_ID=#{ThermoId}
+            AND A.BOX_ID =#{BoxId}
+    </update>
+</mapper>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="k99.recertification">
+    <select id="selectREAUTH01TB" parameterType="HashMap" resultType="HashMap">
+            /* RecertificationPutMapper.xml - selectREAUTH01TB -  RecertificationPut.vue - 재인증신청관리*/
+     		SELECT  ROWNUM AS LIST_SEQUENCE
+     				,A.*
+     		FROM	(
+		    SELECT 	T1.REAUTH_SEQ,
+		    		T1.SUBJECT,
+		    		T1.START_DATE,
+		    		T1.END_DATE,
+		    		(T1.START_DATE || ' ~ ' || T1.END_DATE) AS ALL_DATE,
+		    		T1.REG_USER,
+		    		U.USER_NAME,
+		    		TO_CHAR(T1.REG_DATE, 'YYYYMMDD') AS REG_DATE,
+		    		T1.USE_YN,
+		    		COUNT(1) OVER() AS ALL_COUNT
+		    FROM REAUTH01TB T1 LEFT OUTER JOIN USER01TB U ON T1.REG_USER = U.USER_ID
+			<where>
+			<if test="USE_YN != null and USE_YN != ''">
+				AND	T1.USE_YN = #{USE_YN}
+			</if>
+			</where>
+		    ORDER BY T1.END_DATE DESC, T1.REAUTH_SEQ DESC
+                     ) A
+                     
+    </select>
+    
+    <select id="selectREAUTH01TBByPK" parameterType="HashMap" resultType="HashMap">
+        /* k99.recertification.selectREAUTH01TBByPK - 상세조회 */
+    
+	    SELECT 	T1.REAUTH_SEQ,
+	    		T1.SUBJECT,
+	    		T1.START_DATE,
+	    		T1.END_DATE,
+	    		(T1.START_DATE || ' ~ ' || T1.END_DATE) AS ALL_DATE,
+	    		T1.USE_YN,
+	    		T1.REG_USER,
+	    		TO_CHAR(T1.REG_DATE, 'YYYYMMDD') AS REG_DATE
+	    FROM REAUTH01TB T1
+	    WHERE T1.REAUTH_SEQ = #{REAUTH_SEQ}
+    </select>
+    
+    <update id="insertREAUTH01TB" parameterType="HashMap">
+    <![CDATA[
+        /* k99.recertification.insertREAUTH01TB - 등록 */
+    
+	    INSERT INTO REAUTH01TB (
+	        REAUTH_SEQ,
+	        SUBJECT,
+	        START_DATE,
+	        END_DATE,
+	        REG_USER,
+	        REG_DATE
+	    ) 
+	    SELECT  NVL(MAX(REAUTH_SEQ), 0) + 1 AS REAUTH_SEQ,
+	            #{SUBJECT},
+	            #{START_DATE},
+	            #{END_DATE},
+	            #{GSS.USER_ID},
+	            SYSDATE
+	    FROM    REAUTH01TB
+    ]]>
+    </update>
+    
+    <update id="changeUseYnREAUTH01TB" parameterType="HashMap">
+        /* k99.recertification.changeUseYnREAUTH01TB - 사용,미사용 처리 */
+        
+	    UPDATE REAUTH01TB 
+	       SET USE_YN = #{USE_YN}
+	     WHERE REAUTH_SEQ = #{REAUTH_SEQ}
+    </update>
+    
+    <update id="deleteREAUTH01TB" parameterType="HashMap">
+        /* k99.recertification.deleteREAUTH01TB - 삭제 */
+        
+	    UPDATE REAUTH01TB 
+	       SET USE_YN = 'N'
+	     WHERE REAUTH_SEQ = #{REAUTH_SEQ}
+    </update>
+    
+    <update id="updateREAUTH01TB" parameterType="HashMap">
+        /* k99.recertification.updateREAUTH01TB - 수정 */
+        
+	    UPDATE REAUTH01TB 
+	       SET SUBJECT = #{SUBJECT},
+	           START_DATE = #{START_DATE},
+	           END_DATE = #{END_DATE}	        
+	     WHERE REAUTH_SEQ = #{REAUTH_SEQ}
+    </update>
+    
+	<select id="selectREAUTH02TB" parameterType="HashMap" resultType="HashMap">
+	   /* k99.recertification.selectREAUTH02TB - 재인증신청내역 */
+	   
+	    SELECT 	T1.REAUTH_SEQ,
+	    		T1.REAUTH_ID,
+	    		(SELECT USER_NAME FROM USER01TB WHERE USER_ID = T1.REAUTH_ID) AS REAUTH_NAME,
+	    		T1.REQUEST_DCO,
+	    		T1.REQUEST_BCO,
+	    		TO_CHAR(T1.REQUEST_DATE, 'YYYY-MM-DD') AS REQUEST_DATE,
+	    		T1.CONFIRM_STATUS,
+	    		DECODE(T1.CONFIRM_STATUS, 'A' ,'신청', 'B', '재신청', 'C', '승인', 'R', '반려') AS CONFIRM_STATUS_NAME
+	     FROM REAUTH02TB T1
+	    WHERE T1.REAUTH_SEQ = #{REAUTH_SEQ}
+		ORDER BY REQUEST_DATE DESC, CONFIRM_DATE DESC
+	</select>
+	
+	<update id="changeConfirmREAUTH02TB" parameterType="HashMap">
+	   /* k99.recertification.changeConfirmREAUTH02TB - 재인증신청내역에서 개별 승인,반려 */
+	
+	    UPDATE REAUTH02TB 
+	       SET CONFIRM_STATUS = #{CONFIRM_STATUS},
+	           CONFIRM_USER = #{GSS.USER_ID},
+	           CONFIRM_DATE = SYSDATE
+	     WHERE REAUTH_ID = #{REAUTH_ID}
+	       AND REAUTH_SEQ = #{REAUTH_SEQ}
+    </update>
+</mapper>

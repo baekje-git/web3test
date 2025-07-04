@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="payment">
+    <select id="selectCreditcardList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /*payment.selectCreditcardList 신용카드 결제금액조회 */
+        SELECT A.BALANCE_B_AMT                 /*  잔고B금액(실잔고)  */
+             , A.BALANCE_B_M1                /* 잔고B(1개월)  */
+             , A.BALANCE_B_M2                /* 잔고B(2개월)  */
+             , B.SERVICE_NO                  /* 사업자번호 */
+             , C.SERVICE_NO AS BR_SERVICE_NO /* 사업자번호   */
+             , C.BRCH_NM                     /* 지점명 */
+             , A.BALANCE_YM                   /*    잔고일 */
+             , B.ETAXBILL_YN                  /*팜페이결제가능여부*/
+             , IFNULL((SELECT D.BALANCE_B_AMT
+                     FROM T_CUST_BALANCE_DAY D
+                    WHERE D.CUST_CD = #{custCd}
+                      AND D.BALANCE_DT = CASE WHEN TO_CHAR(CURRENT DATE, 'YYYYMMDD') <![CDATA[<=]]> TO_CHAR(CURRENT DATE, 'YYYYMM') || '15'
+                                              THEN TO_CHAR(CURRENT DATE, 'YYYYMMDD')
+                                              ELSE TO_CHAR(CURRENT DATE, 'YYYYMM') || '15'
+                                         END
+                  ), 0) WITHIN_15 /*당월15일이전잔고*/
+             , (SELECT D.BALANCE_B_AMT
+                  FROM T_CUST_BALANCE_DAY D
+                 WHERE D.CUST_CD=#{custCd}
+                   AND D.BALANCE_YM =VARCHAR_FORMAT((CURRENT DATE - 1 MONTH ), 'YYYYMM')
+               ) BEFOR_MONTH /*전월말잔고*/
+             , IFNULL((SELECT IFNULL(X.PAY_AMT_M0, 0) +
+                              IFNULL(X.PAY_AMT_M1, 0) +
+                              IFNULL(X.PAY_AMT_M2, 0) +
+                              IFNULL(X.PAY_AMT_M3, 0) +
+                              IFNULL(X.PAY_AMT_M4, 0)
+                        FROM T_PAY_FORECAST X
+                       WHERE X.PAY_YM = A.BALANCE_YM
+                         AND X.CUST_CD = A.CUST_CD
+                         AND X.BRCH_CD = A.BRCH_CD
+                    ), 0) AS PMNT_REQ_AMT /* 결제요청금액 */
+          FROM V_BALANCE_MONTH A
+          JOIN T_CUST B
+            ON A.BRCH_CD = B.BRCH_CD
+           AND A.CUST_CD = B.CUST_CD
+          JOIN T_BRANCH C
+            ON B.BRCH_CD = C.BRCH_CD
+         WHERE A.BRCH_CD = #{brchCd}
+           AND A.CUST_CD = #{custCd}
+           AND A.BALANCE_YM = VARCHAR_FORMAT((CURRENT DATE - 1 DAY), 'YYYYMM')
+    </select>
+
+    <select id="selectPaymentSearchList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectPaymentSearchList 신용카드 결제 내역조회 */
+        SELECT
+            ROW_NUMBER() OVER () ROWNUMBER
+            , ORDERNO
+            , ORDERDATE
+            ,SUBSTR(ORDERTIME,1,2) || ':'||SUBSTR(ORDERTIME,3,2) AS ORDERTIME
+            ,APPROVENO
+            ,SUBSTR(APPROVEDATE,1,4) || '-' || SUBSTR(APPROVEDATE,5,2) || '-' || SUBSTR(APPROVEDATE,7,2) AS APPROVEDATE                         /*승인일자*/
+            ,SUBSTR(APPROVEDATE,9,2) || ':'||SUBSTR(APPROVEDATE,11,2) AS APPROVETIME /*승인시간*/
+            ,SUBSTR(APPROVEDATE,0,9) || ' ' || SUBSTR(APPROVEDATE,9,2) || ':'||SUBSTR(APPROVEDATE,11,2) AS APPROVE_DT
+            ,RETMSG
+            ,TRANAMT
+            ,DAMO.SCP_DECB64('SCP_CDN', CARDNO )  AS CARDNO
+            , CARDNAME
+            , CARDNAMEM
+            , INS         /*할부*/
+            , APRV_INS    /*할부(승인)*/
+        FROM
+            T_CREDITCARD
+        WHERE
+            BRCH_CD = #{brchCd}
+            AND CUST_CD = #{custCd}
+            AND RETCODE = '0000'            /*정상처리*/
+            AND ORDERNO BETWEEN #{startDt} AND #{endDt}||'9999'
+        ORDER BY SUBSTR(ORDERNO,0,9) DESC
+        <!-- LIMIT #{pagePerCnt} OFFSET #{pageOffsetCnt} -->
+    </select>
+
+    <select id="selectPaymentmMaster" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectPaymentMaster 신용카드 결제 건수, 결제총액 조회 */
+        SELECT COUNT(1) AS PMNT_CNT
+             , SUM(IFNULL(TRANAMT, 0)) AS PMNT_AMT
+          FROM T_CREDITCARD
+         WHERE BRCH_CD = #{brchCd}
+           AND CUST_CD = #{custCd}
+           AND RETCODE = '0000'            /*정상처리*/
+           AND SUBSTR(APPROVEDATE,0,9) BETWEEN #{startDt} AND #{endDt}
+    </select>
+
+    <select id="selectDepositStatusList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectDepositStatusList 입금현황 목록 조회 */
+        SELECT ROW_NUMBER() OVER (ORDER BY F_S_FORMAT(A.APRV_DT,'YYYY.MM.DD') DESC) ROWNUMBER
+             , F_S_FORMAT(A.APRV_DT,'YYYY.MM.DD')  AS APRV_DT
+             , SUBSTRING(A.APRV_TM, 1, 2) || ':' || SUBSTRING(A.APRV_TM, 3, 2) AS APRV_TM
+             , A.PAY_AMT
+             , A.PAYBACK_AMT
+          FROM V_PAY A
+         WHERE 1 = 1
+           AND A.CUST_CD = #{custCd}
+           AND A.APRV_DT BETWEEN #{startDt} AND #{endDt}
+         <!-- LIMIT #{pagePerCnt} OFFSET #{pageOffsetCnt} -->
+         ORDER BY F_S_FORMAT(A.APRV_DT,'YYYY.MM.DD') DESC
+    </select>
+
+    <select id="selectDepositStatusMaster" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectDepositStatusMaster 입금현황 건수, 금액 조회 */
+        SELECT COUNT(1) AS DPST_CNT
+             , IFNULL(SUM(A.PAY_AMT), 0) AS PAY_AMT_SUM
+             , IFNULL(SUM(A.PAYBACK_AMT), 0) AS PAYBACK_AMT_SUM
+          FROM V_PAY A
+         WHERE 1 = 1
+           AND A.CUST_CD = #{custCd}
+           AND A.APRV_DT BETWEEN #{startDt} AND #{endDt}
+    </select>
+
+    <insert id="insertMyCard" parameterType="java.util.HashMap">
+        /* payment.insertMyCard 나의카드 등록 */
+        INSERT INTO T_WEB_MY_CARD
+             ( CUST_CD
+             , SNO
+             , CARD_NM
+             , PG_GB
+             , CARD_COMP
+             , CARD_NO
+             , EXP_YY
+             , EXP_MM
+             , PWD
+             , INS_ID
+             , INS_DTM
+             )
+        VALUES
+             ( #{custCd}
+             , (SELECT IFNULL(MAX(X.SNO), 0) + 1
+                  FROM T_WEB_MY_CARD X
+                 WHERE X.CUST_CD = #{custCd}
+               )
+             , #{cardNm}
+             , #{pg}
+             , #{cardComp}
+             , DAMO.SCP_ENCB64('SCP_CDN', #{cardNo})
+             , #{expYy}
+             , #{expMm}
+             , #{pwd}
+             , #{userId}
+             , F_S_NOW()
+             )
+    </insert>
+
+    <update id="updateMyCard" parameterType="java.util.HashMap">
+        /* payment.updateMyCard 나의카드 수정 */
+        UPDATE T_WEB_MY_CARD A
+           SET A.CARD_NM = #{cardNm}
+             , A.PG_GB = #{pg}
+             , A.CARD_COMP = #{cardComp}
+             , A.CARD_NO = DAMO.SCP_ENCB64('SCP_CDN', #{cardNo})
+             , A.EXP_YY = #{expYy}
+             , A.EXP_MM = #{expMm}
+             , A.MOD_ID = #{userId}
+             , A.MOD_DTM = F_S_NOW()
+         WHERE A.CUST_CD = #{custCd}
+           AND A.SNO = #{sno}
+    </update>
+
+    <select id="selectMyCardList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectMyCardList 나의카드 목록 조회 */
+        SELECT A.CUST_CD
+             , A.SNO
+             , A.CARD_COMP
+             , DAMO.SCP_DECB64('SCP_CDN', A.CARD_NO) AS CARD_NO
+             , A.CARD_NM
+          FROM T_WEB_MY_CARD A
+         WHERE 1 = 1
+           AND A.CUST_CD = #{custCd}
+         ORDER BY SNO
+    </select>
+
+    <select id="selectMyCardDtl" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectMyCardDtl 나의카드 상세 조회 */
+        SELECT A.CUST_CD
+             , A.SNO
+             , A.CARD_NM
+             , A.CARD_COMP
+             , A.PG_GB
+             , DAMO.SCP_DECB64('SCP_CDN', A.CARD_NO) AS CARD_NO
+             , A.EXP_YY
+             , A.EXP_MM
+          FROM T_WEB_MY_CARD A
+         WHERE 1 = 1
+           AND A.CUST_CD = #{custCd}
+           AND A.SNO = #{sno}
+    </select>
+
+    <select id="selectPwdChk" parameterType="java.util.HashMap" resultType="int">
+        /* payment.selectPwdChk 비밀번호 체크 */
+        SELECT COUNT(1)
+          FROM T_WEB_MY_CARD
+         WHERE 1 = 1
+           AND CUST_CD = #{custCd}
+           AND CARD_NO = DAMO.SCP_ENCB64('SCP_CDN', #{cardNo})
+           AND EXP_MM = #{expMm}
+           AND EXP_YY = #{expYy}
+           AND PWD = #{pwd}
+    </select>
+    
+    <delete id="deleteMyCard" parameterType="java.util.HashMap">
+        /* payment.deleteMyCard 나의 카드 삭제 */
+        DELETE
+          FROM T_WEB_MY_CARD
+         WHERE CUST_CD = #{custCd}
+           AND SNO = #{sno}
+    </delete>
+    
+    <select id="selectPaymentCustInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectPaymentCustInfo 신용카드 결제 요청 고객 정보 조회 */
+        SELECT
+            A.CUST_CD
+            , A.CUST_NM
+            , A.SERVICE_NO AS CUST_SERVICE_NO
+            , A.CEO_NM
+            , B.USER_STRING4  AS SERVICE_NO
+            , B.USER_STRING3  AS SUPCODE
+            , B.USER_STRING6  AS MID
+            , B.USER_STRING7  AS EMAIL
+            , B.USER_STRING8  AS URL
+            , B.USER_STRING9  AS KEY
+            , B.USER_STRING10 AS IV
+            , A.BRCH_CD
+            , A.EMP_ID
+            , C.EMP_NM
+            , D.LOGIN_ID AS EMP_LOGIN_ID
+        FROM T_CUST A 
+        JOIN T_CODE B ON A.BRCH_CD = B.CODE
+        LEFT JOIN T_EMP C ON C.EMP_ID = A.EMP_ID  
+        LEFT JOIN T_USER D ON D.USER_ID = A.EMP_ID
+        WHERE 1=1
+        AND A.CUST_CD = #{custCd}
+        AND B.P_CODE = '880'    
+    </select>
+    
+    <select id="selectWpayUserKey" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectWpayUserKey 이니시스에서 발행한 wpayUserKey 조회 */
+        SELECT 
+               A.CUST_CD
+             , A.CUST_NM
+             , A.SERVICE_NO AS CUST_SERVICE_NO
+             , A.CEO_NM
+             , A.BRCH_CD
+             , A.EMP_ID
+             , REPLACE(A.WPAY_USER_KEY,(CASE WHEN #{cardGb} = '01' THEN B.USER_STRING5 ELSE B.USER_STRING6 END),'') AS  WPAY_USER_KEY
+             , B.USER_STRING1 AS REQUEST_DOMAIN
+             , B.USER_STRING2 AS SEED_KEY
+             , B.USER_STRING3 AS SEED_IV
+             , B.USER_STRING4 AS HASH_KEY
+             , CASE WHEN #{cardGb} = '01' THEN '01' ELSE '02' END AS CARDCODE
+             , CASE WHEN #{cardGb} = '01' THEN B.USER_STRING5 ELSE B.USER_STRING6 END AS MID
+             , CASE WHEN #{cardGb} = '01' THEN B.USER_STRING7 ELSE B.USER_STRING8 END AS SIGNKEY
+             , C.EMP_NM
+             , D.LOGIN_ID AS EMP_LOGIN_ID
+             , F_S_EMPTY(DAMO.SCP_DECB64('SCP_ALL', A.EMAIL ),'@') AS EMAIL
+        FROM T_CUST A 
+        JOIN T_CODE B ON A.BRCH_CD = B.CODE
+        JOIN T_CODE E ON A.BRCH_CD = E.CODE
+        LEFT JOIN T_EMP C ON C.EMP_ID = A.EMP_ID  
+        LEFT JOIN T_USER D ON D.USER_ID = A.EMP_ID
+       WHERE 1=1
+         AND A.CUST_CD = #{custCd}
+         AND B.P_CODE = '881'
+         AND E.P_CODE = '880'
+    </select>
+    
+    <select id="selectByWpayUserKey" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectByWpayUserKey 이니시스에서 발행한 wpayUserKey로 조회 */
+        SELECT 
+               A.CUST_CD
+             , A.CUST_NM
+             , A.SERVICE_NO AS CUST_SERVICE_NO
+             , A.CEO_NM
+             , A.BRCH_CD
+             , A.EMP_ID
+             , REPLACE(A.WPAY_USER_KEY,(CASE #{cardGb} WHEN '01' THEN B.USER_STRING5 WHEN '02' THEN B.USER_STRING6 END),'') AS  WPAY_USER_KEY
+             , B.USER_STRING1 AS REQUEST_DOMAIN
+             , B.USER_STRING2 AS SEED_KEY
+             , B.USER_STRING3 AS SEED_IV
+             , B.USER_STRING4 AS HASH_KEY
+             , #{cardGb} AS CARDCODE
+             , CASE #{cardGb} WHEN '01' THEN B.USER_STRING5 WHEN '02' THEN B.USER_STRING6 END AS MID
+             , CASE #{cardGb} WHEN '01' THEN B.USER_STRING7 WHEN '02' THEN B.USER_STRING8 END AS SIGNKEY
+             , C.EMP_NM
+             , D.LOGIN_ID AS EMP_LOGIN_ID
+             , F_S_EMPTY(DAMO.SCP_DECB64('SCP_ALL', A.EMAIL ),'@') AS EMAIL
+        FROM T_CUST A 
+        JOIN T_CODE B ON A.BRCH_CD = B.CODE
+        JOIN T_CODE E ON A.BRCH_CD = E.CODE
+        LEFT JOIN T_EMP C ON C.EMP_ID = A.EMP_ID  
+        LEFT JOIN T_USER D ON D.USER_ID = A.EMP_ID
+       WHERE 1=1
+         AND A.WPAY_USER_KEY = #{wpayUserKey}
+         AND B.P_CODE = '881'
+         AND E.P_CODE = '880'
+    </select>
+    
+    <select id="selectWpayInfoByMid" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        /* payment.selectWpayInfoByMid Mid로 결제정보 조회 */
+        SELECT CODE AS BRCH_CD
+		      ,USER_STRING1 AS REQUEST_DOMAIN
+		      ,USER_STRING2 AS SEED_KEY
+		      ,USER_STRING3 AS SEED_IV
+		      ,USER_STRING4 AS HASH_KEY
+		      ,CAST(#{mid} AS VARCHAR(20)) AS MID
+		      ,CASE CAST(#{mid} AS VARCHAR(20)) WHEN USER_STRING5 THEN '01'
+	                                            WHEN USER_STRING6 THEN '01' END AS CARDCODE
+	          ,CASE CAST(#{mid} AS VARCHAR(20)) WHEN USER_STRING5 THEN USER_STRING7
+	                                            WHEN USER_STRING6 THEN USER_STRING8 END AS SIGNKEY
+		  FROM T_CODE
+		 WHERE P_CODE = '881'
+		   AND USER_STRING5 IN (CAST(#{mid} AS VARCHAR(20)))
+		    OR USER_STRING6 IN (CAST(#{mid} AS VARCHAR(20)))
+    </select>
+    
+    <insert id="insertResultPayment" parameterType="java.util.HashMap" >
+        /* payment.insertResultPayment 웹 결제 결과 저장 */
+        INSERT INTO T_CREDITCARD
+            (
+                BRCH_CD
+                , CUST_CD
+                , TRANGUBN
+                , TRANGUBNSUB
+                , ORDERNO
+                , ORDERDATE
+                , ORDERTIME
+                , TRADENO
+                , APPROVENO
+                , APPROVEDATE
+                , RETCODE
+                , RETMSG
+                , TRANAMT
+                , AUTHDATE
+                , AUTHNO
+                , CARDNO
+                , CARDCODE
+                , CARDNAME
+                , CARDCODEM
+                , CARDNAMEM
+                , TID
+                , INS
+                , APRV_INS
+                , INS_ID
+                , INS_DTM
+                , MOD_ID
+                , MOD_DTM
+            )
+        VALUES
+            (
+                #{BRCH_CD}
+                , #{CUST_CD}
+                , #{TRANGUBN}     
+                , #{TRANGUBNSUB}     
+                , #{ORDERNO}     
+                , #{ORDERDATE}     
+                , #{ORDERTIME}     
+                , #{TRADENO}     
+                , #{APPROVENO}     
+                , #{APPROVEDATE}     
+                , #{RETCODE}  
+                , #{RETMSG}   
+                , #{TRANAMT}   
+                , #{AUTHDATE}   
+                , #{AUTHNO}   
+                , DAMO.SCP_ENCB64('SCP_CDN', #{CARDNO})   
+                , #{CARDCODE}   
+                , #{CARDNAME}   
+                , #{CARDCODEM}
+                , #{CARDNAMEM}   
+                , #{TID}
+                , #{INS}
+                , CASE WHEN #{APRV_INS} IS NULL OR #{APRV_INS} IN ('','null')  THEN '' ELSE SUBSTRING(CAST(#{APRV_INS} AS VARCHAR(20)),1,3) END
+                , #{USER_ID}
+                , F_S_NOW()
+                , #{USER_ID}
+                , F_S_NOW()
+            )
+    </insert>
+    
+    <insert id="insertWorkIngPayment" parameterType="java.util.HashMap" >
+        /*+[PaymentMapper.xml][payment.insertWorkIngPayment][간편결제 결과 저장][by.ABJ1]+*/
+        INSERT INTO T_CREDITCARD_LOG
+            (
+                BRCH_CD
+                , CUST_CD
+                , INS_ID
+                , PROCTYPE
+                , REQUESTURL
+                , FORWARDURL
+                <if test="CARDTYPE != null and CARDTYPE != 'null' and CARDTYPE != '' ">
+                , CARDTYPE
+                </if>
+                <if test="TRANAMT != null and TRANAMT != 'null' and TRANAMT != '' ">
+                , TRANAMT
+                </if>
+                , INS_DT
+                , INS_DTM
+            )
+        VALUES
+            (
+                #{BRCH_CD}
+                , #{CUST_CD}
+                , #{USER_ID}     
+                , #{PROCTYPE}     
+                , #{REQUESTURL}   
+                , #{FORWARDURL}  
+                <if test="CARDTYPE != null and CARDTYPE != 'null' and CARDTYPE != '' ">
+                , #{CARDTYPE}     
+                </if>
+                <if test="TRANAMT != null and TRANAMT != 'null' and TRANAMT != '' ">
+                , #{TRANAMT}
+                </if>
+                , TO_CHAR(NOW(),'YYYYMMDD')   
+                , NOW()
+            )
+    </insert>
+    
+    <insert id="insertWebWpayError" parameterType="java.util.HashMap">
+        INSERT INTO T_WEB_WPAY_ERROR
+				(
+				 IN_YMD
+				,IN_HMS
+				,MID
+				,WTID
+				,RESULTCODE
+				,RESULTMSG
+				,INS_ID
+				,INS_DTM
+				)
+				VALUES
+				(
+				 TO_CHAR(CURRENT TIMESTAMP,'YYYYMMDD')
+				,TO_CHAR(CURRENT TIMESTAMP,'HH24MISS')
+				,CAST(#{MID} AS VARCHAR(20))
+				,CAST(#{WTID} AS VARCHAR(50))
+				,CAST(#{RESULT_CODE} AS VARCHAR(10))
+				,SUBSTRING(CAST(#{RESULT_MSG} AS VARCHAR(300)),1,300)
+				,'INICIS'
+				,NOW()
+				)
+    </insert>
+    
+    <!-- wpayUserKey 저장  -->
+    <update id="updateWpayUserKeyPayment" parameterType="java.util.HashMap" >
+    /*+[PaymentMapper.xml][payment.updateWpayUserKeyPayment][간편결제 wpayUserKey 저장][by.ABJ1]+*/
+        UPDATE T_CUST
+           SET 
+               WPAY_USER_KEY = #{WPAY_USER_KEY}
+              ,MOD_ID  = #{custCd}
+              ,MOD_DTM = NOW()
+         WHERE CUST_CD = #{custCd}
+    </update>
+    
+</mapper>
