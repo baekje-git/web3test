@@ -1,0 +1,78 @@
+
+$w: #ffffff;
+$b: #000;
+
+$b1: #354265;
+$b2: #003853;
+$b3: #1f3f82; //default
+$b4: #384dd6;
+$b5: #e8ebf2;
+
+$r1: #f5536d;
+
+@mixin fs-1 {font-size: 48px;}
+@mixin fs-2 {font-size: 32px;}
+@mixin fs-3 {font-size: 24px;}
+@mixin fs-4 {font-size: 20px;}
+@mixin fs-5 {font-size: 14px;}
+@mixin fs-6 {font-size: 12px;}
+@mixin fs-7 {font-size: 10px;}
+@mixin fs-8 {font-size: 8px;}
+
+@mixin fw-9 {font-weight: 900;}
+@mixin fw-8 {font-weight: 800;}
+@mixin fw-7 {font-weight: 700;}
+@mixin fw-6 {font-weight: 600;}
+@mixin fw-5 {font-weight: 500;}
+@mixin fw-4 {font-weight: 400;}
+
+@mixin gradation {
+  background-image: linear-gradient(to bottom, $b3, $b2);
+}
+@mixin disable {
+  background-image: linear-gradient(to bottom, #999, #999);
+}
+@mixin boxshadow{
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.33);
+}
+@mixin countbox_shadow{
+  box-shadow: inset 0 0 6px 0 rgba(0, 0, 0, 0.16);
+}
+@mixin flex_center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+@mixin flex_start {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+@mixin flex_end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+@mixin flex_around {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+@mixin flex_between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin border {
+  border: 1px solid $b3;
+}
+@mixin border-b {
+  border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+@mixin border-default {
+  border-bottom: 2px solid $b3;
+}
+@mixin border-top {
+  border-top: 2px solid $b3;
+}
